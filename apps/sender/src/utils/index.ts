@@ -1,4 +1,4 @@
-import { MARKET_TYPE } from "../constants";
+import { Exchange } from "../constants";
 import type { SymbolInfo } from "../types/metadata";
 
 export function split_symbols(
@@ -13,7 +13,7 @@ export function split_symbols(
 }
 
 export const filter_solo = (old_coins_info: any) => {
-  const active_exchange_count = MARKET_TYPE.reduce((count, exchange) => {
+  const active_exchange_count = Exchange.reduce((count, exchange) => {
     return count + (old_coins_info[exchange] === true ? 1 : 0);
   }, 0);
 

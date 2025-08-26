@@ -1,19 +1,32 @@
-import { Exchange } from "../enums";
+export const Exchange = {
+  Indodax: "indodax",
+  Pintu: "pintu",
 
-export const MARKET_TYPE = [
-  Exchange.Indodax,
-  Exchange.Pintu,
-  // "bittime",
+  Huobi: "huobi",
+  Binance: "binance",
+  GateIO: "gate-io",
+  Mexc: "mexc",
+  Bitget: "bitget",
+  Kucoin: "kucoin",
+  Bitmart: "bitmart",
+} as const;
+export type Exchange = (typeof Exchange)[keyof typeof Exchange];
 
-  Exchange.Binance,
-  Exchange.Huobi,
-  Exchange.Mexc,
-  Exchange.GateIO,
-  Exchange.Bitget,
-  Exchange.Kucoin,
-  Exchange.Bitmart,
-  // "bybit",
-  // "okx",
-  // "upbit",
-  // "upbit_usdt",
-];
+export const BaseCurrency = {
+  USDT: "usdt",
+  IDR: "idr",
+} as const;
+export type BaseCurrency = (typeof BaseCurrency)[keyof typeof BaseCurrency];
+
+export const ExchangeBaseCurrencyMap = new Map<Exchange, BaseCurrency>([
+  [Exchange.Indodax, BaseCurrency.IDR],
+  [Exchange.Pintu, BaseCurrency.IDR],
+
+  [Exchange.Binance, BaseCurrency.USDT],
+  [Exchange.Huobi, BaseCurrency.USDT],
+  [Exchange.GateIO, BaseCurrency.USDT],
+  [Exchange.Mexc, BaseCurrency.USDT],
+  [Exchange.Bitget, BaseCurrency.USDT],
+  [Exchange.Kucoin, BaseCurrency.USDT],
+  [Exchange.Bitmart, BaseCurrency.USDT],
+]);

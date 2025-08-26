@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "lister",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@trpc/server": "catalog:core",
+    "drizzle-orm": "catalog:core",
+    "drizzle-kit": "catalog:tools"
+  }
+}

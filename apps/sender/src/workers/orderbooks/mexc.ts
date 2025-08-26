@@ -1,20 +1,23 @@
-export const MEXC_ORDERBOOK_WORKER = __filename;
+export const MEXC_ORDERBOOK_WORKER_PATH = __filename;
 
-// declare var self: Worker;
+declare var self: Worker;
 // NOTE: for debugging purposes when not running as a worker
-const self = {
-  postMessage(...args: any[]) {
-    console.log(args);
-  },
-};
+// const self = {
+//   postMessage(...args: any[]) {
+//     console.log(args);
+//   },
+// };
 
 import { threadId as processId } from "node:worker_threads";
+import { PushDataV3ApiWrapper } from "../../vendor/mexc-websocket-proto/gen/PushDataV3ApiWrapper";
+import amqplib from "amqplib";
 
 // import dns from "node:dns/promises";
 // dns.setServers(["1.1.1.1", "1.0.0.1"]);
 
 const exchange = "mexc";
 const threadId = exchange + "-orderbook-" + processId;
+const logger = createLogger(threadId);
 
 // import WebSocket from "ws";
 import {
@@ -22,11 +25,12 @@ import {
   WorkerState,
   type OrderbookWorkerMessage,
 } from "../../types";
+import { createLogger } from "../../utils/logger";
 
 const SymbolStore = new Map<string, number>();
 
-async function main(coins: { symbol: string; cmcId: number }[]) {
-  const socket = new WebSocket("wss://wbs.mexc.fm/ws", {
+function stream(coins: { symbol: string; cmcId: number }[]) {
+  const socket = new WebSocket("wss://wbs-api.mexc.com/ws", {
     // tls: {
     //   rejectUnauthorized: false,
     // },
@@ -34,6 +38,7 @@ async function main(coins: { symbol: string; cmcId: number }[]) {
   // const coins = [{ symbol: "adsf", cmcId: 123 }];
 
   socket.onopen = () => {
+    logger.info("socket open");
     const message: OrderbookWorkerMessage = {
       type: WorkerMessageType.StateChange,
       threadId,
@@ -61,33 +66,24 @@ async function main(coins: { symbol: string; cmcId: number }[]) {
     }
   };
 
-  socket.onmessage = (event) => {
-    console.log(event.data);
-    // const data = JSON.parse(event.toString());
-    // if ("s" in data) {
-    //   const cmcId = SymbolStore.get(data.s);
-    //   const bids = data.d.bids.map(({ p, v }: { p: string; v: string }) => [
-    //     Number(p),
-    //     Number(v),
-    //   ]);
-    //   const asks = data.d.asks.map(({ p, v }: { p: string; v: string }) => [
-    //     Number(p),
-    //     Number(v),
-    //   ]);
-    //   const message: OrderbookWorkerMessage = {
-    //     type: WorkerMessageType.Data,
-    //     threadId,
-    //     exchange,
-    //     content: {
-    //       cmcId: cmcId,
-    //       asks,
-    //       bids,
-    //     },
-    //   };
-    //   self.postMessage(message);
-    //
-    //   return;
-    // }
+  socket.onmessage = (event: Bun.MessageEvent<Buffer>) => {
+    // NOTE: their message is a little bit wierd, they have 2 types of messages
+    // is a json encoded ping / pong and some event of subscription
+    // the other one is their message from protobuf encoded buffer
+    try {
+      const data = JSON.parse(event.data.toString()) as {
+        id: number;
+        code: number;
+        msg: string;
+      };
+      if (data.msg === "PONG") {
+        return;
+      }
+      return;
+    } catch (error) {}
+
+    const data = PushDataV3ApiWrapper.decode(event.data);
+    console.log(JSON.stringify(data.publicLimitDepths));
   };
 
   const pingInterval = setInterval(() => {
@@ -96,15 +92,10 @@ async function main(coins: { symbol: string; cmcId: number }[]) {
         method: "PING",
       }),
     );
-    // TODO: add last ping property to the parent worker state store
-    // loggingChannel.sendToQueue(
-    //   "crawler-logs",
-    //   Buffer.from(JSON.stringify({ market: "mexc-1", status: "ping" })),
-    // );
   }, 5000);
 
-  socket.onclose = async (ev) => {
-    console.log("WORKER_SIDE", ev.code, ev.reason);
+  socket.onclose = async (event) => {
+    logger.info("socket closed, code: " + event.code);
     clearInterval(pingInterval);
     const message: OrderbookWorkerMessage = {
       type: WorkerMessageType.StateChange,
@@ -116,8 +107,9 @@ async function main(coins: { symbol: string; cmcId: number }[]) {
     };
     self.postMessage(message);
 
-    setTimeout(async () => {
-      await main(coins);
+    setTimeout(() => {
+      logger.info("socket reconnecting");
+      stream(coins);
       const reconnecting_message: OrderbookWorkerMessage = {
         type: WorkerMessageType.StateChange,
         threadId,
@@ -130,7 +122,8 @@ async function main(coins: { symbol: string; cmcId: number }[]) {
     }, 2000);
   };
 
-  socket.onerror = (ev) => {
+  socket.onerror = (_) => {
+    logger.error("socket error");
     const message: OrderbookWorkerMessage = {
       type: WorkerMessageType.StateChange,
       threadId,
@@ -153,5 +146,6 @@ if (Bun.main === __filename) {
       const cmcId = Number(id);
       return { symbol, cmcId };
     });
-  main(arg);
+
+  stream(arg);
 }

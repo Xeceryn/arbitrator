@@ -1,4 +1,4 @@
-import { BaseCurrency, Exchange, ExchangeBaseCurrencyMap } from "./enums";
+import { BaseCurrency, Exchange, ExchangeBaseCurrencyMap } from "./constants";
 import {
   WorkerMessageType,
   WorkerState,
@@ -21,9 +21,9 @@ type CrawlerWorkerState = {
 const price_search_worker = new Worker("src/workers/price-search.ts");
 const converter_worker = new Worker("src/workers/converter.ts");
 
-const crawler_worker_state: CrawlerWorkerState[] = [];
-const crawler_worker_path = "src/workers/orderbooks";
-const crawler_worker_configs: CrawlerWorkerConfig[] = [
+const crawlerConfigState: CrawlerWorkerState[] = [];
+const crawlerWorkerPath = "src/workers/orderbooks";
+const crawlerWorkerConfigs: CrawlerWorkerConfig[] = [
   {
     exchange: Exchange.Indodax,
     base_currency: BaseCurrency.IDR,
@@ -49,7 +49,7 @@ const crawler_worker_configs: CrawlerWorkerConfig[] = [
 for (const {
   exchange,
   max_subscriptions_each_connection,
-} of crawler_worker_configs) {
+} of crawlerWorkerConfigs) {
   const coin_list_request = await fetch(
     `http://localhost:3001/assignments/market/${exchange}/coin`,
   );
@@ -72,7 +72,7 @@ for (const {
       .map(({ cmcId, symbol }) => `${cmcId}-${symbol}`)
       .join(",");
 
-    const worker = new Worker(`${crawler_worker_path}/${exchange}.ts`, {
+    const worker = new Worker(`${crawlerWorkerPath}/${exchange}.ts`, {
       argv: [argv],
     });
 
@@ -93,13 +93,13 @@ for (const {
       if (data.type === WorkerMessageType.StateChange) {
         const { exchange, content, threadId } = data;
         const state = content.state;
-        const existing_worker = crawler_worker_state.find(
+        const existing_worker = crawlerConfigState.find(
           (x) => x.threadId === threadId,
         );
         if (existing_worker) {
           existing_worker.state = state;
         } else {
-          crawler_worker_state.push({
+          crawlerConfigState.push({
             exchange,
             threadId,
             state,
