@@ -9,12 +9,12 @@
     "gateio-api": "^1.2.8",
     "kucoin-api": "^2.1.21",
     "okx-api": "^3.0.5",
-    "winston": "^3.17.0",
+    "winston": "catalog:tools",
     "ws": "^8.18.3",
     "amqplib": "catalog:core"
   },
   "devDependencies": {
-    "@types/ws": "^8.18.1",
-    "@types/amqplib": "catalog:types"
+    "@types/amqplib": "catalog:types",
+    "@types/ws": "^8.18.1"
   }
 }

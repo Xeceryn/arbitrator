@@ -6,7 +6,7 @@ export default defineConfig({
   out: "./migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: "postgres://sulthonuladib:123456@localhost:5432/lister",
   },
-  schema: "./src/database/schema.ts",
+  schema: "./src/*/*.sql.ts",
 });

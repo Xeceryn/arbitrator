@@ -18,75 +18,104 @@ function createBasePublicBookTickerBatchV3Api(): PublicBookTickerBatchV3Api {
   return { items: [] };
 }
 
-export const PublicBookTickerBatchV3Api: MessageFns<PublicBookTickerBatchV3Api> = {
-  encode(message: PublicBookTickerBatchV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.items) {
-      PublicBookTickerV3Api.encode(v!, writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
+export const PublicBookTickerBatchV3Api: MessageFns<PublicBookTickerBatchV3Api> =
+  {
+    encode(
+      message: PublicBookTickerBatchV3Api,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      for (const v of message.items) {
+        PublicBookTickerV3Api.encode(v!, writer.uint32(10).fork()).join();
+      }
+      return writer;
+    },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicBookTickerBatchV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePublicBookTickerBatchV3Api();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): PublicBookTickerBatchV3Api {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBasePublicBookTickerBatchV3Api();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.items.push(
+              PublicBookTickerV3Api.decode(reader, reader.uint32()),
+            );
+            continue;
           }
-
-          message.items.push(PublicBookTickerV3Api.decode(reader, reader.uint32()));
-          continue;
         }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      return message;
+    },
+
+    fromJSON(object: any): PublicBookTickerBatchV3Api {
+      return {
+        items: globalThis.Array.isArray(object?.items)
+          ? object.items.map((e: any) => PublicBookTickerV3Api.fromJSON(e))
+          : [],
+      };
+    },
+
+    toJSON(message: PublicBookTickerBatchV3Api): unknown {
+      const obj: any = {};
+      if (message.items?.length) {
+        obj.items = message.items.map((e) => PublicBookTickerV3Api.toJSON(e));
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return obj;
+    },
 
-  fromJSON(object: any): PublicBookTickerBatchV3Api {
-    return {
-      items: globalThis.Array.isArray(object?.items)
-        ? object.items.map((e: any) => PublicBookTickerV3Api.fromJSON(e))
-        : [],
-    };
-  },
+    create<I extends Exact<DeepPartial<PublicBookTickerBatchV3Api>, I>>(
+      base?: I,
+    ): PublicBookTickerBatchV3Api {
+      return PublicBookTickerBatchV3Api.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<PublicBookTickerBatchV3Api>, I>>(
+      object: I,
+    ): PublicBookTickerBatchV3Api {
+      const message = createBasePublicBookTickerBatchV3Api();
+      message.items =
+        object.items?.map((e) => PublicBookTickerV3Api.fromPartial(e)) || [];
+      return message;
+    },
+  };
 
-  toJSON(message: PublicBookTickerBatchV3Api): unknown {
-    const obj: any = {};
-    if (message.items?.length) {
-      obj.items = message.items.map((e) => PublicBookTickerV3Api.toJSON(e));
-    }
-    return obj;
-  },
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-  create<I extends Exact<DeepPartial<PublicBookTickerBatchV3Api>, I>>(base?: I): PublicBookTickerBatchV3Api {
-    return PublicBookTickerBatchV3Api.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<PublicBookTickerBatchV3Api>, I>>(object: I): PublicBookTickerBatchV3Api {
-    const message = createBasePublicBookTickerBatchV3Api();
-    message.items = object.items?.map((e) => PublicBookTickerV3Api.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
-
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;

@@ -19,93 +19,125 @@ function createBasePublicIncreaseDepthsBatchV3Api(): PublicIncreaseDepthsBatchV3
   return { items: [], eventType: "" };
 }
 
-export const PublicIncreaseDepthsBatchV3Api: MessageFns<PublicIncreaseDepthsBatchV3Api> = {
-  encode(message: PublicIncreaseDepthsBatchV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.items) {
-      PublicIncreaseDepthsV3Api.encode(v!, writer.uint32(10).fork()).join();
-    }
-    if (message.eventType !== "") {
-      writer.uint32(18).string(message.eventType);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicIncreaseDepthsBatchV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePublicIncreaseDepthsBatchV3Api();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.items.push(PublicIncreaseDepthsV3Api.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.eventType = reader.string();
-          continue;
-        }
+export const PublicIncreaseDepthsBatchV3Api: MessageFns<PublicIncreaseDepthsBatchV3Api> =
+  {
+    encode(
+      message: PublicIncreaseDepthsBatchV3Api,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      for (const v of message.items) {
+        PublicIncreaseDepthsV3Api.encode(v!, writer.uint32(10).fork()).join();
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      if (message.eventType !== "") {
+        writer.uint32(18).string(message.eventType);
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return writer;
+    },
 
-  fromJSON(object: any): PublicIncreaseDepthsBatchV3Api {
-    return {
-      items: globalThis.Array.isArray(object?.items)
-        ? object.items.map((e: any) => PublicIncreaseDepthsV3Api.fromJSON(e))
-        : [],
-      eventType: isSet(object.eventType) ? globalThis.String(object.eventType) : "",
-    };
-  },
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): PublicIncreaseDepthsBatchV3Api {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBasePublicIncreaseDepthsBatchV3Api();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
 
-  toJSON(message: PublicIncreaseDepthsBatchV3Api): unknown {
-    const obj: any = {};
-    if (message.items?.length) {
-      obj.items = message.items.map((e) => PublicIncreaseDepthsV3Api.toJSON(e));
-    }
-    if (message.eventType !== "") {
-      obj.eventType = message.eventType;
-    }
-    return obj;
-  },
+            message.items.push(
+              PublicIncreaseDepthsV3Api.decode(reader, reader.uint32()),
+            );
+            continue;
+          }
+          case 2: {
+            if (tag !== 18) {
+              break;
+            }
 
-  create<I extends Exact<DeepPartial<PublicIncreaseDepthsBatchV3Api>, I>>(base?: I): PublicIncreaseDepthsBatchV3Api {
-    return PublicIncreaseDepthsBatchV3Api.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<PublicIncreaseDepthsBatchV3Api>, I>>(
-    object: I,
-  ): PublicIncreaseDepthsBatchV3Api {
-    const message = createBasePublicIncreaseDepthsBatchV3Api();
-    message.items = object.items?.map((e) => PublicIncreaseDepthsV3Api.fromPartial(e)) || [];
-    message.eventType = object.eventType ?? "";
-    return message;
-  },
-};
+            message.eventType = reader.string();
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+    fromJSON(object: any): PublicIncreaseDepthsBatchV3Api {
+      return {
+        items: globalThis.Array.isArray(object?.items)
+          ? object.items.map((e: any) => PublicIncreaseDepthsV3Api.fromJSON(e))
+          : [],
+        eventType: isSet(object.eventType)
+          ? globalThis.String(object.eventType)
+          : "",
+      };
+    },
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+    toJSON(message: PublicIncreaseDepthsBatchV3Api): unknown {
+      const obj: any = {};
+      if (message.items?.length) {
+        obj.items = message.items.map((e) =>
+          PublicIncreaseDepthsV3Api.toJSON(e),
+        );
+      }
+      if (message.eventType !== "") {
+        obj.eventType = message.eventType;
+      }
+      return obj;
+    },
+
+    create<I extends Exact<DeepPartial<PublicIncreaseDepthsBatchV3Api>, I>>(
+      base?: I,
+    ): PublicIncreaseDepthsBatchV3Api {
+      return PublicIncreaseDepthsBatchV3Api.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<
+      I extends Exact<DeepPartial<PublicIncreaseDepthsBatchV3Api>, I>,
+    >(object: I): PublicIncreaseDepthsBatchV3Api {
+      const message = createBasePublicIncreaseDepthsBatchV3Api();
+      message.items =
+        object.items?.map((e) => PublicIncreaseDepthsV3Api.fromPartial(e)) ||
+        [];
+      message.eventType = object.eventType ?? "";
+      return message;
+    },
+  };
+
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
+
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

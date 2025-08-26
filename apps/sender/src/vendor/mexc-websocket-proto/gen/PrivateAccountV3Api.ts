@@ -34,7 +34,10 @@ function createBasePrivateAccountV3Api(): PrivateAccountV3Api {
 }
 
 export const PrivateAccountV3Api: MessageFns<PrivateAccountV3Api> = {
-  encode(message: PrivateAccountV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PrivateAccountV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     if (message.vcoinName !== "") {
       writer.uint32(10).string(message.vcoinName);
     }
@@ -62,8 +65,12 @@ export const PrivateAccountV3Api: MessageFns<PrivateAccountV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PrivateAccountV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PrivateAccountV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePrivateAccountV3Api();
     while (reader.pos < end) {
@@ -144,12 +151,22 @@ export const PrivateAccountV3Api: MessageFns<PrivateAccountV3Api> = {
 
   fromJSON(object: any): PrivateAccountV3Api {
     return {
-      vcoinName: isSet(object.vcoinName) ? globalThis.String(object.vcoinName) : "",
+      vcoinName: isSet(object.vcoinName)
+        ? globalThis.String(object.vcoinName)
+        : "",
       coinId: isSet(object.coinId) ? globalThis.String(object.coinId) : "",
-      balanceAmount: isSet(object.balanceAmount) ? globalThis.String(object.balanceAmount) : "",
-      balanceAmountChange: isSet(object.balanceAmountChange) ? globalThis.String(object.balanceAmountChange) : "",
-      frozenAmount: isSet(object.frozenAmount) ? globalThis.String(object.frozenAmount) : "",
-      frozenAmountChange: isSet(object.frozenAmountChange) ? globalThis.String(object.frozenAmountChange) : "",
+      balanceAmount: isSet(object.balanceAmount)
+        ? globalThis.String(object.balanceAmount)
+        : "",
+      balanceAmountChange: isSet(object.balanceAmountChange)
+        ? globalThis.String(object.balanceAmountChange)
+        : "",
+      frozenAmount: isSet(object.frozenAmount)
+        ? globalThis.String(object.frozenAmount)
+        : "",
+      frozenAmountChange: isSet(object.frozenAmountChange)
+        ? globalThis.String(object.frozenAmountChange)
+        : "",
       type: isSet(object.type) ? globalThis.String(object.type) : "",
       time: isSet(object.time) ? globalThis.Number(object.time) : 0,
     };
@@ -184,10 +201,14 @@ export const PrivateAccountV3Api: MessageFns<PrivateAccountV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PrivateAccountV3Api>, I>>(base?: I): PrivateAccountV3Api {
+  create<I extends Exact<DeepPartial<PrivateAccountV3Api>, I>>(
+    base?: I,
+  ): PrivateAccountV3Api {
     return PrivateAccountV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PrivateAccountV3Api>, I>>(object: I): PrivateAccountV3Api {
+  fromPartial<I extends Exact<DeepPartial<PrivateAccountV3Api>, I>>(
+    object: I,
+  ): PrivateAccountV3Api {
     const message = createBasePrivateAccountV3Api();
     message.vcoinName = object.vcoinName ?? "";
     message.coinId = object.coinId ?? "";
@@ -201,17 +222,31 @@ export const PrivateAccountV3Api: MessageFns<PrivateAccountV3Api> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());

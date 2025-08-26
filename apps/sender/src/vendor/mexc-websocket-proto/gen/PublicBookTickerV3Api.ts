@@ -21,7 +21,10 @@ function createBasePublicBookTickerV3Api(): PublicBookTickerV3Api {
 }
 
 export const PublicBookTickerV3Api: MessageFns<PublicBookTickerV3Api> = {
-  encode(message: PublicBookTickerV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PublicBookTickerV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     if (message.bidPrice !== "") {
       writer.uint32(10).string(message.bidPrice);
     }
@@ -37,8 +40,12 @@ export const PublicBookTickerV3Api: MessageFns<PublicBookTickerV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicBookTickerV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PublicBookTickerV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublicBookTickerV3Api();
     while (reader.pos < end) {
@@ -87,10 +94,18 @@ export const PublicBookTickerV3Api: MessageFns<PublicBookTickerV3Api> = {
 
   fromJSON(object: any): PublicBookTickerV3Api {
     return {
-      bidPrice: isSet(object.bidPrice) ? globalThis.String(object.bidPrice) : "",
-      bidQuantity: isSet(object.bidQuantity) ? globalThis.String(object.bidQuantity) : "",
-      askPrice: isSet(object.askPrice) ? globalThis.String(object.askPrice) : "",
-      askQuantity: isSet(object.askQuantity) ? globalThis.String(object.askQuantity) : "",
+      bidPrice: isSet(object.bidPrice)
+        ? globalThis.String(object.bidPrice)
+        : "",
+      bidQuantity: isSet(object.bidQuantity)
+        ? globalThis.String(object.bidQuantity)
+        : "",
+      askPrice: isSet(object.askPrice)
+        ? globalThis.String(object.askPrice)
+        : "",
+      askQuantity: isSet(object.askQuantity)
+        ? globalThis.String(object.askQuantity)
+        : "",
     };
   },
 
@@ -111,10 +126,14 @@ export const PublicBookTickerV3Api: MessageFns<PublicBookTickerV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PublicBookTickerV3Api>, I>>(base?: I): PublicBookTickerV3Api {
+  create<I extends Exact<DeepPartial<PublicBookTickerV3Api>, I>>(
+    base?: I,
+  ): PublicBookTickerV3Api {
     return PublicBookTickerV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PublicBookTickerV3Api>, I>>(object: I): PublicBookTickerV3Api {
+  fromPartial<I extends Exact<DeepPartial<PublicBookTickerV3Api>, I>>(
+    object: I,
+  ): PublicBookTickerV3Api {
     const message = createBasePublicBookTickerV3Api();
     message.bidPrice = object.bidPrice ?? "";
     message.bidQuantity = object.bidQuantity ?? "";
@@ -124,17 +143,31 @@ export const PublicBookTickerV3Api: MessageFns<PublicBookTickerV3Api> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

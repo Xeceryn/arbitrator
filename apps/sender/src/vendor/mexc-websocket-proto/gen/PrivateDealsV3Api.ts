@@ -42,7 +42,10 @@ function createBasePrivateDealsV3Api(): PrivateDealsV3Api {
 }
 
 export const PrivateDealsV3Api: MessageFns<PrivateDealsV3Api> = {
-  encode(message: PrivateDealsV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PrivateDealsV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     if (message.price !== "") {
       writer.uint32(10).string(message.price);
     }
@@ -83,7 +86,8 @@ export const PrivateDealsV3Api: MessageFns<PrivateDealsV3Api> = {
   },
 
   decode(input: BinaryReader | Uint8Array, length?: number): PrivateDealsV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePrivateDealsV3Api();
     while (reader.pos < end) {
@@ -197,16 +201,30 @@ export const PrivateDealsV3Api: MessageFns<PrivateDealsV3Api> = {
   fromJSON(object: any): PrivateDealsV3Api {
     return {
       price: isSet(object.price) ? globalThis.String(object.price) : "",
-      quantity: isSet(object.quantity) ? globalThis.String(object.quantity) : "",
+      quantity: isSet(object.quantity)
+        ? globalThis.String(object.quantity)
+        : "",
       amount: isSet(object.amount) ? globalThis.String(object.amount) : "",
-      tradeType: isSet(object.tradeType) ? globalThis.Number(object.tradeType) : 0,
-      isMaker: isSet(object.isMaker) ? globalThis.Boolean(object.isMaker) : false,
-      isSelfTrade: isSet(object.isSelfTrade) ? globalThis.Boolean(object.isSelfTrade) : false,
+      tradeType: isSet(object.tradeType)
+        ? globalThis.Number(object.tradeType)
+        : 0,
+      isMaker: isSet(object.isMaker)
+        ? globalThis.Boolean(object.isMaker)
+        : false,
+      isSelfTrade: isSet(object.isSelfTrade)
+        ? globalThis.Boolean(object.isSelfTrade)
+        : false,
       tradeId: isSet(object.tradeId) ? globalThis.String(object.tradeId) : "",
-      clientOrderId: isSet(object.clientOrderId) ? globalThis.String(object.clientOrderId) : "",
+      clientOrderId: isSet(object.clientOrderId)
+        ? globalThis.String(object.clientOrderId)
+        : "",
       orderId: isSet(object.orderId) ? globalThis.String(object.orderId) : "",
-      feeAmount: isSet(object.feeAmount) ? globalThis.String(object.feeAmount) : "",
-      feeCurrency: isSet(object.feeCurrency) ? globalThis.String(object.feeCurrency) : "",
+      feeAmount: isSet(object.feeAmount)
+        ? globalThis.String(object.feeAmount)
+        : "",
+      feeCurrency: isSet(object.feeCurrency)
+        ? globalThis.String(object.feeCurrency)
+        : "",
       time: isSet(object.time) ? globalThis.Number(object.time) : 0,
     };
   },
@@ -252,10 +270,14 @@ export const PrivateDealsV3Api: MessageFns<PrivateDealsV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PrivateDealsV3Api>, I>>(base?: I): PrivateDealsV3Api {
+  create<I extends Exact<DeepPartial<PrivateDealsV3Api>, I>>(
+    base?: I,
+  ): PrivateDealsV3Api {
     return PrivateDealsV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PrivateDealsV3Api>, I>>(object: I): PrivateDealsV3Api {
+  fromPartial<I extends Exact<DeepPartial<PrivateDealsV3Api>, I>>(
+    object: I,
+  ): PrivateDealsV3Api {
     const message = createBasePrivateDealsV3Api();
     message.price = object.price ?? "";
     message.quantity = object.quantity ?? "";
@@ -273,17 +295,31 @@ export const PrivateDealsV3Api: MessageFns<PrivateDealsV3Api> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());

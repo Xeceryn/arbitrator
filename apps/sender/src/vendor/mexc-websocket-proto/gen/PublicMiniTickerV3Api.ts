@@ -54,7 +54,10 @@ function createBasePublicMiniTickerV3Api(): PublicMiniTickerV3Api {
 }
 
 export const PublicMiniTickerV3Api: MessageFns<PublicMiniTickerV3Api> = {
-  encode(message: PublicMiniTickerV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PublicMiniTickerV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     if (message.symbol !== "") {
       writer.uint32(10).string(message.symbol);
     }
@@ -94,8 +97,12 @@ export const PublicMiniTickerV3Api: MessageFns<PublicMiniTickerV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicMiniTickerV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PublicMiniTickerV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublicMiniTickerV3Api();
     while (reader.pos < end) {
@@ -211,15 +218,27 @@ export const PublicMiniTickerV3Api: MessageFns<PublicMiniTickerV3Api> = {
       symbol: isSet(object.symbol) ? globalThis.String(object.symbol) : "",
       price: isSet(object.price) ? globalThis.String(object.price) : "",
       rate: isSet(object.rate) ? globalThis.String(object.rate) : "",
-      zonedRate: isSet(object.zonedRate) ? globalThis.String(object.zonedRate) : "",
+      zonedRate: isSet(object.zonedRate)
+        ? globalThis.String(object.zonedRate)
+        : "",
       high: isSet(object.high) ? globalThis.String(object.high) : "",
       low: isSet(object.low) ? globalThis.String(object.low) : "",
       volume: isSet(object.volume) ? globalThis.String(object.volume) : "",
-      quantity: isSet(object.quantity) ? globalThis.String(object.quantity) : "",
-      lastCloseRate: isSet(object.lastCloseRate) ? globalThis.String(object.lastCloseRate) : "",
-      lastCloseZonedRate: isSet(object.lastCloseZonedRate) ? globalThis.String(object.lastCloseZonedRate) : "",
-      lastCloseHigh: isSet(object.lastCloseHigh) ? globalThis.String(object.lastCloseHigh) : "",
-      lastCloseLow: isSet(object.lastCloseLow) ? globalThis.String(object.lastCloseLow) : "",
+      quantity: isSet(object.quantity)
+        ? globalThis.String(object.quantity)
+        : "",
+      lastCloseRate: isSet(object.lastCloseRate)
+        ? globalThis.String(object.lastCloseRate)
+        : "",
+      lastCloseZonedRate: isSet(object.lastCloseZonedRate)
+        ? globalThis.String(object.lastCloseZonedRate)
+        : "",
+      lastCloseHigh: isSet(object.lastCloseHigh)
+        ? globalThis.String(object.lastCloseHigh)
+        : "",
+      lastCloseLow: isSet(object.lastCloseLow)
+        ? globalThis.String(object.lastCloseLow)
+        : "",
     };
   },
 
@@ -264,10 +283,14 @@ export const PublicMiniTickerV3Api: MessageFns<PublicMiniTickerV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PublicMiniTickerV3Api>, I>>(base?: I): PublicMiniTickerV3Api {
+  create<I extends Exact<DeepPartial<PublicMiniTickerV3Api>, I>>(
+    base?: I,
+  ): PublicMiniTickerV3Api {
     return PublicMiniTickerV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PublicMiniTickerV3Api>, I>>(object: I): PublicMiniTickerV3Api {
+  fromPartial<I extends Exact<DeepPartial<PublicMiniTickerV3Api>, I>>(
+    object: I,
+  ): PublicMiniTickerV3Api {
     const message = createBasePublicMiniTickerV3Api();
     message.symbol = object.symbol ?? "";
     message.price = object.price ?? "";
@@ -285,17 +308,31 @@ export const PublicMiniTickerV3Api: MessageFns<PublicMiniTickerV3Api> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

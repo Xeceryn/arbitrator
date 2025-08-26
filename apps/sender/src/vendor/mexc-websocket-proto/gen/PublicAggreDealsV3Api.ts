@@ -26,7 +26,10 @@ function createBasePublicAggreDealsV3Api(): PublicAggreDealsV3Api {
 }
 
 export const PublicAggreDealsV3Api: MessageFns<PublicAggreDealsV3Api> = {
-  encode(message: PublicAggreDealsV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PublicAggreDealsV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     for (const v of message.deals) {
       PublicAggreDealsV3ApiItem.encode(v!, writer.uint32(10).fork()).join();
     }
@@ -36,8 +39,12 @@ export const PublicAggreDealsV3Api: MessageFns<PublicAggreDealsV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicAggreDealsV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PublicAggreDealsV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublicAggreDealsV3Api();
     while (reader.pos < end) {
@@ -48,7 +55,9 @@ export const PublicAggreDealsV3Api: MessageFns<PublicAggreDealsV3Api> = {
             break;
           }
 
-          message.deals.push(PublicAggreDealsV3ApiItem.decode(reader, reader.uint32()));
+          message.deals.push(
+            PublicAggreDealsV3ApiItem.decode(reader, reader.uint32()),
+          );
           continue;
         }
         case 2: {
@@ -73,7 +82,9 @@ export const PublicAggreDealsV3Api: MessageFns<PublicAggreDealsV3Api> = {
       deals: globalThis.Array.isArray(object?.deals)
         ? object.deals.map((e: any) => PublicAggreDealsV3ApiItem.fromJSON(e))
         : [],
-      eventType: isSet(object.eventType) ? globalThis.String(object.eventType) : "",
+      eventType: isSet(object.eventType)
+        ? globalThis.String(object.eventType)
+        : "",
     };
   },
 
@@ -88,12 +99,17 @@ export const PublicAggreDealsV3Api: MessageFns<PublicAggreDealsV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PublicAggreDealsV3Api>, I>>(base?: I): PublicAggreDealsV3Api {
+  create<I extends Exact<DeepPartial<PublicAggreDealsV3Api>, I>>(
+    base?: I,
+  ): PublicAggreDealsV3Api {
     return PublicAggreDealsV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PublicAggreDealsV3Api>, I>>(object: I): PublicAggreDealsV3Api {
+  fromPartial<I extends Exact<DeepPartial<PublicAggreDealsV3Api>, I>>(
+    object: I,
+  ): PublicAggreDealsV3Api {
     const message = createBasePublicAggreDealsV3Api();
-    message.deals = object.deals?.map((e) => PublicAggreDealsV3ApiItem.fromPartial(e)) || [];
+    message.deals =
+      object.deals?.map((e) => PublicAggreDealsV3ApiItem.fromPartial(e)) || [];
     message.eventType = object.eventType ?? "";
     return message;
   },
@@ -103,121 +119,151 @@ function createBasePublicAggreDealsV3ApiItem(): PublicAggreDealsV3ApiItem {
   return { price: "", quantity: "", tradeType: 0, time: 0 };
 }
 
-export const PublicAggreDealsV3ApiItem: MessageFns<PublicAggreDealsV3ApiItem> = {
-  encode(message: PublicAggreDealsV3ApiItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.price !== "") {
-      writer.uint32(10).string(message.price);
-    }
-    if (message.quantity !== "") {
-      writer.uint32(18).string(message.quantity);
-    }
-    if (message.tradeType !== 0) {
-      writer.uint32(24).int32(message.tradeType);
-    }
-    if (message.time !== 0) {
-      writer.uint32(32).int64(message.time);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicAggreDealsV3ApiItem {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePublicAggreDealsV3ApiItem();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.price = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.quantity = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.tradeType = reader.int32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.time = longToNumber(reader.int64());
-          continue;
-        }
+export const PublicAggreDealsV3ApiItem: MessageFns<PublicAggreDealsV3ApiItem> =
+  {
+    encode(
+      message: PublicAggreDealsV3ApiItem,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.price !== "") {
+        writer.uint32(10).string(message.price);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      if (message.quantity !== "") {
+        writer.uint32(18).string(message.quantity);
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      if (message.tradeType !== 0) {
+        writer.uint32(24).int32(message.tradeType);
+      }
+      if (message.time !== 0) {
+        writer.uint32(32).int64(message.time);
+      }
+      return writer;
+    },
 
-  fromJSON(object: any): PublicAggreDealsV3ApiItem {
-    return {
-      price: isSet(object.price) ? globalThis.String(object.price) : "",
-      quantity: isSet(object.quantity) ? globalThis.String(object.quantity) : "",
-      tradeType: isSet(object.tradeType) ? globalThis.Number(object.tradeType) : 0,
-      time: isSet(object.time) ? globalThis.Number(object.time) : 0,
-    };
-  },
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): PublicAggreDealsV3ApiItem {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBasePublicAggreDealsV3ApiItem();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
 
-  toJSON(message: PublicAggreDealsV3ApiItem): unknown {
-    const obj: any = {};
-    if (message.price !== "") {
-      obj.price = message.price;
-    }
-    if (message.quantity !== "") {
-      obj.quantity = message.quantity;
-    }
-    if (message.tradeType !== 0) {
-      obj.tradeType = Math.round(message.tradeType);
-    }
-    if (message.time !== 0) {
-      obj.time = Math.round(message.time);
-    }
-    return obj;
-  },
+            message.price = reader.string();
+            continue;
+          }
+          case 2: {
+            if (tag !== 18) {
+              break;
+            }
 
-  create<I extends Exact<DeepPartial<PublicAggreDealsV3ApiItem>, I>>(base?: I): PublicAggreDealsV3ApiItem {
-    return PublicAggreDealsV3ApiItem.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<PublicAggreDealsV3ApiItem>, I>>(object: I): PublicAggreDealsV3ApiItem {
-    const message = createBasePublicAggreDealsV3ApiItem();
-    message.price = object.price ?? "";
-    message.quantity = object.quantity ?? "";
-    message.tradeType = object.tradeType ?? 0;
-    message.time = object.time ?? 0;
-    return message;
-  },
-};
+            message.quantity = reader.string();
+            continue;
+          }
+          case 3: {
+            if (tag !== 24) {
+              break;
+            }
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+            message.tradeType = reader.int32();
+            continue;
+          }
+          case 4: {
+            if (tag !== 32) {
+              break;
+            }
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+            message.time = longToNumber(reader.int64());
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): PublicAggreDealsV3ApiItem {
+      return {
+        price: isSet(object.price) ? globalThis.String(object.price) : "",
+        quantity: isSet(object.quantity)
+          ? globalThis.String(object.quantity)
+          : "",
+        tradeType: isSet(object.tradeType)
+          ? globalThis.Number(object.tradeType)
+          : 0,
+        time: isSet(object.time) ? globalThis.Number(object.time) : 0,
+      };
+    },
+
+    toJSON(message: PublicAggreDealsV3ApiItem): unknown {
+      const obj: any = {};
+      if (message.price !== "") {
+        obj.price = message.price;
+      }
+      if (message.quantity !== "") {
+        obj.quantity = message.quantity;
+      }
+      if (message.tradeType !== 0) {
+        obj.tradeType = Math.round(message.tradeType);
+      }
+      if (message.time !== 0) {
+        obj.time = Math.round(message.time);
+      }
+      return obj;
+    },
+
+    create<I extends Exact<DeepPartial<PublicAggreDealsV3ApiItem>, I>>(
+      base?: I,
+    ): PublicAggreDealsV3ApiItem {
+      return PublicAggreDealsV3ApiItem.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<PublicAggreDealsV3ApiItem>, I>>(
+      object: I,
+    ): PublicAggreDealsV3ApiItem {
+      const message = createBasePublicAggreDealsV3ApiItem();
+      message.price = object.price ?? "";
+      message.quantity = object.quantity ?? "";
+      message.tradeType = object.tradeType ?? 0;
+      message.time = object.time ?? 0;
+      return message;
+    },
+  };
+
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
+
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());

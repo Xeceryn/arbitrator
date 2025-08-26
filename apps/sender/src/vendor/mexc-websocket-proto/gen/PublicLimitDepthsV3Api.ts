@@ -26,7 +26,10 @@ function createBasePublicLimitDepthsV3Api(): PublicLimitDepthsV3Api {
 }
 
 export const PublicLimitDepthsV3Api: MessageFns<PublicLimitDepthsV3Api> = {
-  encode(message: PublicLimitDepthsV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PublicLimitDepthsV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     for (const v of message.asks) {
       PublicLimitDepthV3ApiItem.encode(v!, writer.uint32(10).fork()).join();
     }
@@ -42,8 +45,12 @@ export const PublicLimitDepthsV3Api: MessageFns<PublicLimitDepthsV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicLimitDepthsV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PublicLimitDepthsV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublicLimitDepthsV3Api();
     while (reader.pos < end) {
@@ -54,7 +61,9 @@ export const PublicLimitDepthsV3Api: MessageFns<PublicLimitDepthsV3Api> = {
             break;
           }
 
-          message.asks.push(PublicLimitDepthV3ApiItem.decode(reader, reader.uint32()));
+          message.asks.push(
+            PublicLimitDepthV3ApiItem.decode(reader, reader.uint32()),
+          );
           continue;
         }
         case 2: {
@@ -62,7 +71,9 @@ export const PublicLimitDepthsV3Api: MessageFns<PublicLimitDepthsV3Api> = {
             break;
           }
 
-          message.bids.push(PublicLimitDepthV3ApiItem.decode(reader, reader.uint32()));
+          message.bids.push(
+            PublicLimitDepthV3ApiItem.decode(reader, reader.uint32()),
+          );
           continue;
         }
         case 3: {
@@ -98,7 +109,9 @@ export const PublicLimitDepthsV3Api: MessageFns<PublicLimitDepthsV3Api> = {
       bids: globalThis.Array.isArray(object?.bids)
         ? object.bids.map((e: any) => PublicLimitDepthV3ApiItem.fromJSON(e))
         : [],
-      eventType: isSet(object.eventType) ? globalThis.String(object.eventType) : "",
+      eventType: isSet(object.eventType)
+        ? globalThis.String(object.eventType)
+        : "",
       version: isSet(object.version) ? globalThis.String(object.version) : "",
     };
   },
@@ -120,13 +133,19 @@ export const PublicLimitDepthsV3Api: MessageFns<PublicLimitDepthsV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PublicLimitDepthsV3Api>, I>>(base?: I): PublicLimitDepthsV3Api {
+  create<I extends Exact<DeepPartial<PublicLimitDepthsV3Api>, I>>(
+    base?: I,
+  ): PublicLimitDepthsV3Api {
     return PublicLimitDepthsV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PublicLimitDepthsV3Api>, I>>(object: I): PublicLimitDepthsV3Api {
+  fromPartial<I extends Exact<DeepPartial<PublicLimitDepthsV3Api>, I>>(
+    object: I,
+  ): PublicLimitDepthsV3Api {
     const message = createBasePublicLimitDepthsV3Api();
-    message.asks = object.asks?.map((e) => PublicLimitDepthV3ApiItem.fromPartial(e)) || [];
-    message.bids = object.bids?.map((e) => PublicLimitDepthV3ApiItem.fromPartial(e)) || [];
+    message.asks =
+      object.asks?.map((e) => PublicLimitDepthV3ApiItem.fromPartial(e)) || [];
+    message.bids =
+      object.bids?.map((e) => PublicLimitDepthV3ApiItem.fromPartial(e)) || [];
     message.eventType = object.eventType ?? "";
     message.version = object.version ?? "";
     return message;
@@ -137,89 +156,117 @@ function createBasePublicLimitDepthV3ApiItem(): PublicLimitDepthV3ApiItem {
   return { price: "", quantity: "" };
 }
 
-export const PublicLimitDepthV3ApiItem: MessageFns<PublicLimitDepthV3ApiItem> = {
-  encode(message: PublicLimitDepthV3ApiItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.price !== "") {
-      writer.uint32(10).string(message.price);
-    }
-    if (message.quantity !== "") {
-      writer.uint32(18).string(message.quantity);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicLimitDepthV3ApiItem {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePublicLimitDepthV3ApiItem();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.price = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.quantity = reader.string();
-          continue;
-        }
+export const PublicLimitDepthV3ApiItem: MessageFns<PublicLimitDepthV3ApiItem> =
+  {
+    encode(
+      message: PublicLimitDepthV3ApiItem,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.price !== "") {
+        writer.uint32(10).string(message.price);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      if (message.quantity !== "") {
+        writer.uint32(18).string(message.quantity);
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return writer;
+    },
 
-  fromJSON(object: any): PublicLimitDepthV3ApiItem {
-    return {
-      price: isSet(object.price) ? globalThis.String(object.price) : "",
-      quantity: isSet(object.quantity) ? globalThis.String(object.quantity) : "",
-    };
-  },
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): PublicLimitDepthV3ApiItem {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBasePublicLimitDepthV3ApiItem();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
 
-  toJSON(message: PublicLimitDepthV3ApiItem): unknown {
-    const obj: any = {};
-    if (message.price !== "") {
-      obj.price = message.price;
-    }
-    if (message.quantity !== "") {
-      obj.quantity = message.quantity;
-    }
-    return obj;
-  },
+            message.price = reader.string();
+            continue;
+          }
+          case 2: {
+            if (tag !== 18) {
+              break;
+            }
 
-  create<I extends Exact<DeepPartial<PublicLimitDepthV3ApiItem>, I>>(base?: I): PublicLimitDepthV3ApiItem {
-    return PublicLimitDepthV3ApiItem.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<PublicLimitDepthV3ApiItem>, I>>(object: I): PublicLimitDepthV3ApiItem {
-    const message = createBasePublicLimitDepthV3ApiItem();
-    message.price = object.price ?? "";
-    message.quantity = object.quantity ?? "";
-    return message;
-  },
-};
+            message.quantity = reader.string();
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+    fromJSON(object: any): PublicLimitDepthV3ApiItem {
+      return {
+        price: isSet(object.price) ? globalThis.String(object.price) : "",
+        quantity: isSet(object.quantity)
+          ? globalThis.String(object.quantity)
+          : "",
+      };
+    },
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+    toJSON(message: PublicLimitDepthV3ApiItem): unknown {
+      const obj: any = {};
+      if (message.price !== "") {
+        obj.price = message.price;
+      }
+      if (message.quantity !== "") {
+        obj.quantity = message.quantity;
+      }
+      return obj;
+    },
+
+    create<I extends Exact<DeepPartial<PublicLimitDepthV3ApiItem>, I>>(
+      base?: I,
+    ): PublicLimitDepthV3ApiItem {
+      return PublicLimitDepthV3ApiItem.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<PublicLimitDepthV3ApiItem>, I>>(
+      object: I,
+    ): PublicLimitDepthV3ApiItem {
+      const message = createBasePublicLimitDepthV3ApiItem();
+      message.price = object.price ?? "";
+      message.quantity = object.quantity ?? "";
+      return message;
+    },
+  };
+
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
+
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

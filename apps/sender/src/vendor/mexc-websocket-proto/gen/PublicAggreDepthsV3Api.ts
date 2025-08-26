@@ -27,7 +27,10 @@ function createBasePublicAggreDepthsV3Api(): PublicAggreDepthsV3Api {
 }
 
 export const PublicAggreDepthsV3Api: MessageFns<PublicAggreDepthsV3Api> = {
-  encode(message: PublicAggreDepthsV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PublicAggreDepthsV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     for (const v of message.asks) {
       PublicAggreDepthV3ApiItem.encode(v!, writer.uint32(10).fork()).join();
     }
@@ -46,8 +49,12 @@ export const PublicAggreDepthsV3Api: MessageFns<PublicAggreDepthsV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicAggreDepthsV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PublicAggreDepthsV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublicAggreDepthsV3Api();
     while (reader.pos < end) {
@@ -58,7 +65,9 @@ export const PublicAggreDepthsV3Api: MessageFns<PublicAggreDepthsV3Api> = {
             break;
           }
 
-          message.asks.push(PublicAggreDepthV3ApiItem.decode(reader, reader.uint32()));
+          message.asks.push(
+            PublicAggreDepthV3ApiItem.decode(reader, reader.uint32()),
+          );
           continue;
         }
         case 2: {
@@ -66,7 +75,9 @@ export const PublicAggreDepthsV3Api: MessageFns<PublicAggreDepthsV3Api> = {
             break;
           }
 
-          message.bids.push(PublicAggreDepthV3ApiItem.decode(reader, reader.uint32()));
+          message.bids.push(
+            PublicAggreDepthV3ApiItem.decode(reader, reader.uint32()),
+          );
           continue;
         }
         case 3: {
@@ -110,9 +121,15 @@ export const PublicAggreDepthsV3Api: MessageFns<PublicAggreDepthsV3Api> = {
       bids: globalThis.Array.isArray(object?.bids)
         ? object.bids.map((e: any) => PublicAggreDepthV3ApiItem.fromJSON(e))
         : [],
-      eventType: isSet(object.eventType) ? globalThis.String(object.eventType) : "",
-      fromVersion: isSet(object.fromVersion) ? globalThis.String(object.fromVersion) : "",
-      toVersion: isSet(object.toVersion) ? globalThis.String(object.toVersion) : "",
+      eventType: isSet(object.eventType)
+        ? globalThis.String(object.eventType)
+        : "",
+      fromVersion: isSet(object.fromVersion)
+        ? globalThis.String(object.fromVersion)
+        : "",
+      toVersion: isSet(object.toVersion)
+        ? globalThis.String(object.toVersion)
+        : "",
     };
   },
 
@@ -136,13 +153,19 @@ export const PublicAggreDepthsV3Api: MessageFns<PublicAggreDepthsV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PublicAggreDepthsV3Api>, I>>(base?: I): PublicAggreDepthsV3Api {
+  create<I extends Exact<DeepPartial<PublicAggreDepthsV3Api>, I>>(
+    base?: I,
+  ): PublicAggreDepthsV3Api {
     return PublicAggreDepthsV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PublicAggreDepthsV3Api>, I>>(object: I): PublicAggreDepthsV3Api {
+  fromPartial<I extends Exact<DeepPartial<PublicAggreDepthsV3Api>, I>>(
+    object: I,
+  ): PublicAggreDepthsV3Api {
     const message = createBasePublicAggreDepthsV3Api();
-    message.asks = object.asks?.map((e) => PublicAggreDepthV3ApiItem.fromPartial(e)) || [];
-    message.bids = object.bids?.map((e) => PublicAggreDepthV3ApiItem.fromPartial(e)) || [];
+    message.asks =
+      object.asks?.map((e) => PublicAggreDepthV3ApiItem.fromPartial(e)) || [];
+    message.bids =
+      object.bids?.map((e) => PublicAggreDepthV3ApiItem.fromPartial(e)) || [];
     message.eventType = object.eventType ?? "";
     message.fromVersion = object.fromVersion ?? "";
     message.toVersion = object.toVersion ?? "";
@@ -154,89 +177,117 @@ function createBasePublicAggreDepthV3ApiItem(): PublicAggreDepthV3ApiItem {
   return { price: "", quantity: "" };
 }
 
-export const PublicAggreDepthV3ApiItem: MessageFns<PublicAggreDepthV3ApiItem> = {
-  encode(message: PublicAggreDepthV3ApiItem, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.price !== "") {
-      writer.uint32(10).string(message.price);
-    }
-    if (message.quantity !== "") {
-      writer.uint32(18).string(message.quantity);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicAggreDepthV3ApiItem {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePublicAggreDepthV3ApiItem();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.price = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.quantity = reader.string();
-          continue;
-        }
+export const PublicAggreDepthV3ApiItem: MessageFns<PublicAggreDepthV3ApiItem> =
+  {
+    encode(
+      message: PublicAggreDepthV3ApiItem,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.price !== "") {
+        writer.uint32(10).string(message.price);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      if (message.quantity !== "") {
+        writer.uint32(18).string(message.quantity);
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return writer;
+    },
 
-  fromJSON(object: any): PublicAggreDepthV3ApiItem {
-    return {
-      price: isSet(object.price) ? globalThis.String(object.price) : "",
-      quantity: isSet(object.quantity) ? globalThis.String(object.quantity) : "",
-    };
-  },
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): PublicAggreDepthV3ApiItem {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      let end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBasePublicAggreDepthV3ApiItem();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
 
-  toJSON(message: PublicAggreDepthV3ApiItem): unknown {
-    const obj: any = {};
-    if (message.price !== "") {
-      obj.price = message.price;
-    }
-    if (message.quantity !== "") {
-      obj.quantity = message.quantity;
-    }
-    return obj;
-  },
+            message.price = reader.string();
+            continue;
+          }
+          case 2: {
+            if (tag !== 18) {
+              break;
+            }
 
-  create<I extends Exact<DeepPartial<PublicAggreDepthV3ApiItem>, I>>(base?: I): PublicAggreDepthV3ApiItem {
-    return PublicAggreDepthV3ApiItem.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<PublicAggreDepthV3ApiItem>, I>>(object: I): PublicAggreDepthV3ApiItem {
-    const message = createBasePublicAggreDepthV3ApiItem();
-    message.price = object.price ?? "";
-    message.quantity = object.quantity ?? "";
-    return message;
-  },
-};
+            message.quantity = reader.string();
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+    fromJSON(object: any): PublicAggreDepthV3ApiItem {
+      return {
+        price: isSet(object.price) ? globalThis.String(object.price) : "",
+        quantity: isSet(object.quantity)
+          ? globalThis.String(object.quantity)
+          : "",
+      };
+    },
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+    toJSON(message: PublicAggreDepthV3ApiItem): unknown {
+      const obj: any = {};
+      if (message.price !== "") {
+        obj.price = message.price;
+      }
+      if (message.quantity !== "") {
+        obj.quantity = message.quantity;
+      }
+      return obj;
+    },
+
+    create<I extends Exact<DeepPartial<PublicAggreDepthV3ApiItem>, I>>(
+      base?: I,
+    ): PublicAggreDepthV3ApiItem {
+      return PublicAggreDepthV3ApiItem.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<PublicAggreDepthV3ApiItem>, I>>(
+      object: I,
+    ): PublicAggreDepthV3ApiItem {
+      const message = createBasePublicAggreDepthV3ApiItem();
+      message.price = object.price ?? "";
+      message.quantity = object.quantity ?? "";
+      return message;
+    },
+  };
+
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
+
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

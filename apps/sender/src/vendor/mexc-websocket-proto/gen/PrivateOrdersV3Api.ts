@@ -70,7 +70,10 @@ function createBasePrivateOrdersV3Api(): PrivateOrdersV3Api {
 }
 
 export const PrivateOrdersV3Api: MessageFns<PrivateOrdersV3Api> = {
-  encode(message: PrivateOrdersV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PrivateOrdersV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -152,8 +155,12 @@ export const PrivateOrdersV3Api: MessageFns<PrivateOrdersV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PrivateOrdersV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PrivateOrdersV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePrivateOrdersV3Api();
     while (reader.pos < end) {
@@ -379,31 +386,71 @@ export const PrivateOrdersV3Api: MessageFns<PrivateOrdersV3Api> = {
   fromJSON(object: any): PrivateOrdersV3Api {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      clientId: isSet(object.clientId) ? globalThis.String(object.clientId) : "",
+      clientId: isSet(object.clientId)
+        ? globalThis.String(object.clientId)
+        : "",
       price: isSet(object.price) ? globalThis.String(object.price) : "",
-      quantity: isSet(object.quantity) ? globalThis.String(object.quantity) : "",
+      quantity: isSet(object.quantity)
+        ? globalThis.String(object.quantity)
+        : "",
       amount: isSet(object.amount) ? globalThis.String(object.amount) : "",
-      avgPrice: isSet(object.avgPrice) ? globalThis.String(object.avgPrice) : "",
-      orderType: isSet(object.orderType) ? globalThis.Number(object.orderType) : 0,
-      tradeType: isSet(object.tradeType) ? globalThis.Number(object.tradeType) : 0,
-      isMaker: isSet(object.isMaker) ? globalThis.Boolean(object.isMaker) : false,
-      remainAmount: isSet(object.remainAmount) ? globalThis.String(object.remainAmount) : "",
-      remainQuantity: isSet(object.remainQuantity) ? globalThis.String(object.remainQuantity) : "",
-      lastDealQuantity: isSet(object.lastDealQuantity) ? globalThis.String(object.lastDealQuantity) : undefined,
-      cumulativeQuantity: isSet(object.cumulativeQuantity) ? globalThis.String(object.cumulativeQuantity) : "",
-      cumulativeAmount: isSet(object.cumulativeAmount) ? globalThis.String(object.cumulativeAmount) : "",
+      avgPrice: isSet(object.avgPrice)
+        ? globalThis.String(object.avgPrice)
+        : "",
+      orderType: isSet(object.orderType)
+        ? globalThis.Number(object.orderType)
+        : 0,
+      tradeType: isSet(object.tradeType)
+        ? globalThis.Number(object.tradeType)
+        : 0,
+      isMaker: isSet(object.isMaker)
+        ? globalThis.Boolean(object.isMaker)
+        : false,
+      remainAmount: isSet(object.remainAmount)
+        ? globalThis.String(object.remainAmount)
+        : "",
+      remainQuantity: isSet(object.remainQuantity)
+        ? globalThis.String(object.remainQuantity)
+        : "",
+      lastDealQuantity: isSet(object.lastDealQuantity)
+        ? globalThis.String(object.lastDealQuantity)
+        : undefined,
+      cumulativeQuantity: isSet(object.cumulativeQuantity)
+        ? globalThis.String(object.cumulativeQuantity)
+        : "",
+      cumulativeAmount: isSet(object.cumulativeAmount)
+        ? globalThis.String(object.cumulativeAmount)
+        : "",
       status: isSet(object.status) ? globalThis.Number(object.status) : 0,
-      createTime: isSet(object.createTime) ? globalThis.Number(object.createTime) : 0,
-      market: isSet(object.market) ? globalThis.String(object.market) : undefined,
-      triggerType: isSet(object.triggerType) ? globalThis.Number(object.triggerType) : undefined,
-      triggerPrice: isSet(object.triggerPrice) ? globalThis.String(object.triggerPrice) : undefined,
+      createTime: isSet(object.createTime)
+        ? globalThis.Number(object.createTime)
+        : 0,
+      market: isSet(object.market)
+        ? globalThis.String(object.market)
+        : undefined,
+      triggerType: isSet(object.triggerType)
+        ? globalThis.Number(object.triggerType)
+        : undefined,
+      triggerPrice: isSet(object.triggerPrice)
+        ? globalThis.String(object.triggerPrice)
+        : undefined,
       state: isSet(object.state) ? globalThis.Number(object.state) : undefined,
       ocoId: isSet(object.ocoId) ? globalThis.String(object.ocoId) : undefined,
-      routeFactor: isSet(object.routeFactor) ? globalThis.String(object.routeFactor) : undefined,
-      symbolId: isSet(object.symbolId) ? globalThis.String(object.symbolId) : undefined,
-      marketId: isSet(object.marketId) ? globalThis.String(object.marketId) : undefined,
-      marketCurrencyId: isSet(object.marketCurrencyId) ? globalThis.String(object.marketCurrencyId) : undefined,
-      currencyId: isSet(object.currencyId) ? globalThis.String(object.currencyId) : undefined,
+      routeFactor: isSet(object.routeFactor)
+        ? globalThis.String(object.routeFactor)
+        : undefined,
+      symbolId: isSet(object.symbolId)
+        ? globalThis.String(object.symbolId)
+        : undefined,
+      marketId: isSet(object.marketId)
+        ? globalThis.String(object.marketId)
+        : undefined,
+      marketCurrencyId: isSet(object.marketCurrencyId)
+        ? globalThis.String(object.marketCurrencyId)
+        : undefined,
+      currencyId: isSet(object.currencyId)
+        ? globalThis.String(object.currencyId)
+        : undefined,
     };
   },
 
@@ -490,10 +537,14 @@ export const PrivateOrdersV3Api: MessageFns<PrivateOrdersV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PrivateOrdersV3Api>, I>>(base?: I): PrivateOrdersV3Api {
+  create<I extends Exact<DeepPartial<PrivateOrdersV3Api>, I>>(
+    base?: I,
+  ): PrivateOrdersV3Api {
     return PrivateOrdersV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PrivateOrdersV3Api>, I>>(object: I): PrivateOrdersV3Api {
+  fromPartial<I extends Exact<DeepPartial<PrivateOrdersV3Api>, I>>(
+    object: I,
+  ): PrivateOrdersV3Api {
     const message = createBasePrivateOrdersV3Api();
     message.id = object.id ?? "";
     message.clientId = object.clientId ?? "";
@@ -525,17 +576,31 @@ export const PrivateOrdersV3Api: MessageFns<PrivateOrdersV3Api> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());

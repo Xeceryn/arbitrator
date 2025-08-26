@@ -4,12 +4,16 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "bun run src/index.ts",
-    "build": "bun run src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
   },
   "dependencies": {
-    "@trpc/server": "catalog:core",
+    "@orpc/server": "catalog:core",
+    "drizzle-kit": "catalog:tools",
     "drizzle-orm": "catalog:core",
-    "drizzle-kit": "catalog:tools"
+    "drizzle-zod": "catalog:core",
+    "@arbitrator/logger": "workspace:*",
+    "zod": "catalog:core",
+    "pg": "^8.16.3"
   }
 }

@@ -45,7 +45,10 @@ function createBasePublicSpotKlineV3Api(): PublicSpotKlineV3Api {
 }
 
 export const PublicSpotKlineV3Api: MessageFns<PublicSpotKlineV3Api> = {
-  encode(message: PublicSpotKlineV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PublicSpotKlineV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     if (message.interval !== "") {
       writer.uint32(10).string(message.interval);
     }
@@ -76,8 +79,12 @@ export const PublicSpotKlineV3Api: MessageFns<PublicSpotKlineV3Api> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicSpotKlineV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PublicSpotKlineV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublicSpotKlineV3Api();
     while (reader.pos < end) {
@@ -166,15 +173,29 @@ export const PublicSpotKlineV3Api: MessageFns<PublicSpotKlineV3Api> = {
 
   fromJSON(object: any): PublicSpotKlineV3Api {
     return {
-      interval: isSet(object.interval) ? globalThis.String(object.interval) : "",
-      windowStart: isSet(object.windowStart) ? globalThis.Number(object.windowStart) : 0,
-      openingPrice: isSet(object.openingPrice) ? globalThis.String(object.openingPrice) : "",
-      closingPrice: isSet(object.closingPrice) ? globalThis.String(object.closingPrice) : "",
-      highestPrice: isSet(object.highestPrice) ? globalThis.String(object.highestPrice) : "",
-      lowestPrice: isSet(object.lowestPrice) ? globalThis.String(object.lowestPrice) : "",
+      interval: isSet(object.interval)
+        ? globalThis.String(object.interval)
+        : "",
+      windowStart: isSet(object.windowStart)
+        ? globalThis.Number(object.windowStart)
+        : 0,
+      openingPrice: isSet(object.openingPrice)
+        ? globalThis.String(object.openingPrice)
+        : "",
+      closingPrice: isSet(object.closingPrice)
+        ? globalThis.String(object.closingPrice)
+        : "",
+      highestPrice: isSet(object.highestPrice)
+        ? globalThis.String(object.highestPrice)
+        : "",
+      lowestPrice: isSet(object.lowestPrice)
+        ? globalThis.String(object.lowestPrice)
+        : "",
       volume: isSet(object.volume) ? globalThis.String(object.volume) : "",
       amount: isSet(object.amount) ? globalThis.String(object.amount) : "",
-      windowEnd: isSet(object.windowEnd) ? globalThis.Number(object.windowEnd) : 0,
+      windowEnd: isSet(object.windowEnd)
+        ? globalThis.Number(object.windowEnd)
+        : 0,
     };
   },
 
@@ -210,10 +231,14 @@ export const PublicSpotKlineV3Api: MessageFns<PublicSpotKlineV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PublicSpotKlineV3Api>, I>>(base?: I): PublicSpotKlineV3Api {
+  create<I extends Exact<DeepPartial<PublicSpotKlineV3Api>, I>>(
+    base?: I,
+  ): PublicSpotKlineV3Api {
     return PublicSpotKlineV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PublicSpotKlineV3Api>, I>>(object: I): PublicSpotKlineV3Api {
+  fromPartial<I extends Exact<DeepPartial<PublicSpotKlineV3Api>, I>>(
+    object: I,
+  ): PublicSpotKlineV3Api {
     const message = createBasePublicSpotKlineV3Api();
     message.interval = object.interval ?? "";
     message.windowStart = object.windowStart ?? 0;
@@ -228,17 +253,31 @@ export const PublicSpotKlineV3Api: MessageFns<PublicSpotKlineV3Api> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());

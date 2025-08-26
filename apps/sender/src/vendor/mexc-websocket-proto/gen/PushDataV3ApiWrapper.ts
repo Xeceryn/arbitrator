@@ -41,21 +41,13 @@ export interface PushDataV3ApiWrapper {
   publicIncreaseDepthsBatch?: PublicIncreaseDepthsBatchV3Api | undefined;
   publicAggreDepths?: PublicAggreDepthsV3Api | undefined;
   publicAggreDeals?: PublicAggreDealsV3Api | undefined;
-  publicAggreBookTicker?:
-    | PublicAggreBookTickerV3Api
-    | undefined;
+  publicAggreBookTicker?: PublicAggreBookTickerV3Api | undefined;
   /** 交易对 */
-  symbol?:
-    | string
-    | undefined;
+  symbol?: string | undefined;
   /** 交易对ID */
-  symbolId?:
-    | string
-    | undefined;
+  symbolId?: string | undefined;
   /** 消息生成时间 */
-  createTime?:
-    | number
-    | undefined;
+  createTime?: number | undefined;
   /** 消息推送时间 */
   sendTime?: number | undefined;
 }
@@ -86,54 +78,102 @@ function createBasePushDataV3ApiWrapper(): PushDataV3ApiWrapper {
 }
 
 export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
-  encode(message: PushDataV3ApiWrapper, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PushDataV3ApiWrapper,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     if (message.channel !== "") {
       writer.uint32(10).string(message.channel);
     }
     if (message.publicDeals !== undefined) {
-      PublicDealsV3Api.encode(message.publicDeals, writer.uint32(2410).fork()).join();
+      PublicDealsV3Api.encode(
+        message.publicDeals,
+        writer.uint32(2410).fork(),
+      ).join();
     }
     if (message.publicIncreaseDepths !== undefined) {
-      PublicIncreaseDepthsV3Api.encode(message.publicIncreaseDepths, writer.uint32(2418).fork()).join();
+      PublicIncreaseDepthsV3Api.encode(
+        message.publicIncreaseDepths,
+        writer.uint32(2418).fork(),
+      ).join();
     }
     if (message.publicLimitDepths !== undefined) {
-      PublicLimitDepthsV3Api.encode(message.publicLimitDepths, writer.uint32(2426).fork()).join();
+      PublicLimitDepthsV3Api.encode(
+        message.publicLimitDepths,
+        writer.uint32(2426).fork(),
+      ).join();
     }
     if (message.privateOrders !== undefined) {
-      PrivateOrdersV3Api.encode(message.privateOrders, writer.uint32(2434).fork()).join();
+      PrivateOrdersV3Api.encode(
+        message.privateOrders,
+        writer.uint32(2434).fork(),
+      ).join();
     }
     if (message.publicBookTicker !== undefined) {
-      PublicBookTickerV3Api.encode(message.publicBookTicker, writer.uint32(2442).fork()).join();
+      PublicBookTickerV3Api.encode(
+        message.publicBookTicker,
+        writer.uint32(2442).fork(),
+      ).join();
     }
     if (message.privateDeals !== undefined) {
-      PrivateDealsV3Api.encode(message.privateDeals, writer.uint32(2450).fork()).join();
+      PrivateDealsV3Api.encode(
+        message.privateDeals,
+        writer.uint32(2450).fork(),
+      ).join();
     }
     if (message.privateAccount !== undefined) {
-      PrivateAccountV3Api.encode(message.privateAccount, writer.uint32(2458).fork()).join();
+      PrivateAccountV3Api.encode(
+        message.privateAccount,
+        writer.uint32(2458).fork(),
+      ).join();
     }
     if (message.publicSpotKline !== undefined) {
-      PublicSpotKlineV3Api.encode(message.publicSpotKline, writer.uint32(2466).fork()).join();
+      PublicSpotKlineV3Api.encode(
+        message.publicSpotKline,
+        writer.uint32(2466).fork(),
+      ).join();
     }
     if (message.publicMiniTicker !== undefined) {
-      PublicMiniTickerV3Api.encode(message.publicMiniTicker, writer.uint32(2474).fork()).join();
+      PublicMiniTickerV3Api.encode(
+        message.publicMiniTicker,
+        writer.uint32(2474).fork(),
+      ).join();
     }
     if (message.publicMiniTickers !== undefined) {
-      PublicMiniTickersV3Api.encode(message.publicMiniTickers, writer.uint32(2482).fork()).join();
+      PublicMiniTickersV3Api.encode(
+        message.publicMiniTickers,
+        writer.uint32(2482).fork(),
+      ).join();
     }
     if (message.publicBookTickerBatch !== undefined) {
-      PublicBookTickerBatchV3Api.encode(message.publicBookTickerBatch, writer.uint32(2490).fork()).join();
+      PublicBookTickerBatchV3Api.encode(
+        message.publicBookTickerBatch,
+        writer.uint32(2490).fork(),
+      ).join();
     }
     if (message.publicIncreaseDepthsBatch !== undefined) {
-      PublicIncreaseDepthsBatchV3Api.encode(message.publicIncreaseDepthsBatch, writer.uint32(2498).fork()).join();
+      PublicIncreaseDepthsBatchV3Api.encode(
+        message.publicIncreaseDepthsBatch,
+        writer.uint32(2498).fork(),
+      ).join();
     }
     if (message.publicAggreDepths !== undefined) {
-      PublicAggreDepthsV3Api.encode(message.publicAggreDepths, writer.uint32(2506).fork()).join();
+      PublicAggreDepthsV3Api.encode(
+        message.publicAggreDepths,
+        writer.uint32(2506).fork(),
+      ).join();
     }
     if (message.publicAggreDeals !== undefined) {
-      PublicAggreDealsV3Api.encode(message.publicAggreDeals, writer.uint32(2514).fork()).join();
+      PublicAggreDealsV3Api.encode(
+        message.publicAggreDeals,
+        writer.uint32(2514).fork(),
+      ).join();
     }
     if (message.publicAggreBookTicker !== undefined) {
-      PublicAggreBookTickerV3Api.encode(message.publicAggreBookTicker, writer.uint32(2522).fork()).join();
+      PublicAggreBookTickerV3Api.encode(
+        message.publicAggreBookTicker,
+        writer.uint32(2522).fork(),
+      ).join();
     }
     if (message.symbol !== undefined) {
       writer.uint32(26).string(message.symbol);
@@ -150,8 +190,12 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PushDataV3ApiWrapper {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PushDataV3ApiWrapper {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePushDataV3ApiWrapper();
     while (reader.pos < end) {
@@ -170,7 +214,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicDeals = PublicDealsV3Api.decode(reader, reader.uint32());
+          message.publicDeals = PublicDealsV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 302: {
@@ -178,7 +225,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicIncreaseDepths = PublicIncreaseDepthsV3Api.decode(reader, reader.uint32());
+          message.publicIncreaseDepths = PublicIncreaseDepthsV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 303: {
@@ -186,7 +236,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicLimitDepths = PublicLimitDepthsV3Api.decode(reader, reader.uint32());
+          message.publicLimitDepths = PublicLimitDepthsV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 304: {
@@ -194,7 +247,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.privateOrders = PrivateOrdersV3Api.decode(reader, reader.uint32());
+          message.privateOrders = PrivateOrdersV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 305: {
@@ -202,7 +258,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicBookTicker = PublicBookTickerV3Api.decode(reader, reader.uint32());
+          message.publicBookTicker = PublicBookTickerV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 306: {
@@ -210,7 +269,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.privateDeals = PrivateDealsV3Api.decode(reader, reader.uint32());
+          message.privateDeals = PrivateDealsV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 307: {
@@ -218,7 +280,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.privateAccount = PrivateAccountV3Api.decode(reader, reader.uint32());
+          message.privateAccount = PrivateAccountV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 308: {
@@ -226,7 +291,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicSpotKline = PublicSpotKlineV3Api.decode(reader, reader.uint32());
+          message.publicSpotKline = PublicSpotKlineV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 309: {
@@ -234,7 +302,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicMiniTicker = PublicMiniTickerV3Api.decode(reader, reader.uint32());
+          message.publicMiniTicker = PublicMiniTickerV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 310: {
@@ -242,7 +313,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicMiniTickers = PublicMiniTickersV3Api.decode(reader, reader.uint32());
+          message.publicMiniTickers = PublicMiniTickersV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 311: {
@@ -250,7 +324,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicBookTickerBatch = PublicBookTickerBatchV3Api.decode(reader, reader.uint32());
+          message.publicBookTickerBatch = PublicBookTickerBatchV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 312: {
@@ -258,7 +335,8 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicIncreaseDepthsBatch = PublicIncreaseDepthsBatchV3Api.decode(reader, reader.uint32());
+          message.publicIncreaseDepthsBatch =
+            PublicIncreaseDepthsBatchV3Api.decode(reader, reader.uint32());
           continue;
         }
         case 313: {
@@ -266,7 +344,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicAggreDepths = PublicAggreDepthsV3Api.decode(reader, reader.uint32());
+          message.publicAggreDepths = PublicAggreDepthsV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 314: {
@@ -274,7 +355,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicAggreDeals = PublicAggreDealsV3Api.decode(reader, reader.uint32());
+          message.publicAggreDeals = PublicAggreDealsV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 315: {
@@ -282,7 +366,10 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
             break;
           }
 
-          message.publicAggreBookTicker = PublicAggreBookTickerV3Api.decode(reader, reader.uint32());
+          message.publicAggreBookTicker = PublicAggreBookTickerV3Api.decode(
+            reader,
+            reader.uint32(),
+          );
           continue;
         }
         case 3: {
@@ -329,19 +416,27 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
   fromJSON(object: any): PushDataV3ApiWrapper {
     return {
       channel: isSet(object.channel) ? globalThis.String(object.channel) : "",
-      publicDeals: isSet(object.publicDeals) ? PublicDealsV3Api.fromJSON(object.publicDeals) : undefined,
+      publicDeals: isSet(object.publicDeals)
+        ? PublicDealsV3Api.fromJSON(object.publicDeals)
+        : undefined,
       publicIncreaseDepths: isSet(object.publicIncreaseDepths)
         ? PublicIncreaseDepthsV3Api.fromJSON(object.publicIncreaseDepths)
         : undefined,
       publicLimitDepths: isSet(object.publicLimitDepths)
         ? PublicLimitDepthsV3Api.fromJSON(object.publicLimitDepths)
         : undefined,
-      privateOrders: isSet(object.privateOrders) ? PrivateOrdersV3Api.fromJSON(object.privateOrders) : undefined,
+      privateOrders: isSet(object.privateOrders)
+        ? PrivateOrdersV3Api.fromJSON(object.privateOrders)
+        : undefined,
       publicBookTicker: isSet(object.publicBookTicker)
         ? PublicBookTickerV3Api.fromJSON(object.publicBookTicker)
         : undefined,
-      privateDeals: isSet(object.privateDeals) ? PrivateDealsV3Api.fromJSON(object.privateDeals) : undefined,
-      privateAccount: isSet(object.privateAccount) ? PrivateAccountV3Api.fromJSON(object.privateAccount) : undefined,
+      privateDeals: isSet(object.privateDeals)
+        ? PrivateDealsV3Api.fromJSON(object.privateDeals)
+        : undefined,
+      privateAccount: isSet(object.privateAccount)
+        ? PrivateAccountV3Api.fromJSON(object.privateAccount)
+        : undefined,
       publicSpotKline: isSet(object.publicSpotKline)
         ? PublicSpotKlineV3Api.fromJSON(object.publicSpotKline)
         : undefined,
@@ -355,7 +450,9 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
         ? PublicBookTickerBatchV3Api.fromJSON(object.publicBookTickerBatch)
         : undefined,
       publicIncreaseDepthsBatch: isSet(object.publicIncreaseDepthsBatch)
-        ? PublicIncreaseDepthsBatchV3Api.fromJSON(object.publicIncreaseDepthsBatch)
+        ? PublicIncreaseDepthsBatchV3Api.fromJSON(
+            object.publicIncreaseDepthsBatch,
+          )
         : undefined,
       publicAggreDepths: isSet(object.publicAggreDepths)
         ? PublicAggreDepthsV3Api.fromJSON(object.publicAggreDepths)
@@ -366,10 +463,18 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
       publicAggreBookTicker: isSet(object.publicAggreBookTicker)
         ? PublicAggreBookTickerV3Api.fromJSON(object.publicAggreBookTicker)
         : undefined,
-      symbol: isSet(object.symbol) ? globalThis.String(object.symbol) : undefined,
-      symbolId: isSet(object.symbolId) ? globalThis.String(object.symbolId) : undefined,
-      createTime: isSet(object.createTime) ? globalThis.Number(object.createTime) : undefined,
-      sendTime: isSet(object.sendTime) ? globalThis.Number(object.sendTime) : undefined,
+      symbol: isSet(object.symbol)
+        ? globalThis.String(object.symbol)
+        : undefined,
+      symbolId: isSet(object.symbolId)
+        ? globalThis.String(object.symbolId)
+        : undefined,
+      createTime: isSet(object.createTime)
+        ? globalThis.Number(object.createTime)
+        : undefined,
+      sendTime: isSet(object.sendTime)
+        ? globalThis.Number(object.sendTime)
+        : undefined,
     };
   },
 
@@ -382,16 +487,22 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
       obj.publicDeals = PublicDealsV3Api.toJSON(message.publicDeals);
     }
     if (message.publicIncreaseDepths !== undefined) {
-      obj.publicIncreaseDepths = PublicIncreaseDepthsV3Api.toJSON(message.publicIncreaseDepths);
+      obj.publicIncreaseDepths = PublicIncreaseDepthsV3Api.toJSON(
+        message.publicIncreaseDepths,
+      );
     }
     if (message.publicLimitDepths !== undefined) {
-      obj.publicLimitDepths = PublicLimitDepthsV3Api.toJSON(message.publicLimitDepths);
+      obj.publicLimitDepths = PublicLimitDepthsV3Api.toJSON(
+        message.publicLimitDepths,
+      );
     }
     if (message.privateOrders !== undefined) {
       obj.privateOrders = PrivateOrdersV3Api.toJSON(message.privateOrders);
     }
     if (message.publicBookTicker !== undefined) {
-      obj.publicBookTicker = PublicBookTickerV3Api.toJSON(message.publicBookTicker);
+      obj.publicBookTicker = PublicBookTickerV3Api.toJSON(
+        message.publicBookTicker,
+      );
     }
     if (message.privateDeals !== undefined) {
       obj.privateDeals = PrivateDealsV3Api.toJSON(message.privateDeals);
@@ -400,28 +511,44 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
       obj.privateAccount = PrivateAccountV3Api.toJSON(message.privateAccount);
     }
     if (message.publicSpotKline !== undefined) {
-      obj.publicSpotKline = PublicSpotKlineV3Api.toJSON(message.publicSpotKline);
+      obj.publicSpotKline = PublicSpotKlineV3Api.toJSON(
+        message.publicSpotKline,
+      );
     }
     if (message.publicMiniTicker !== undefined) {
-      obj.publicMiniTicker = PublicMiniTickerV3Api.toJSON(message.publicMiniTicker);
+      obj.publicMiniTicker = PublicMiniTickerV3Api.toJSON(
+        message.publicMiniTicker,
+      );
     }
     if (message.publicMiniTickers !== undefined) {
-      obj.publicMiniTickers = PublicMiniTickersV3Api.toJSON(message.publicMiniTickers);
+      obj.publicMiniTickers = PublicMiniTickersV3Api.toJSON(
+        message.publicMiniTickers,
+      );
     }
     if (message.publicBookTickerBatch !== undefined) {
-      obj.publicBookTickerBatch = PublicBookTickerBatchV3Api.toJSON(message.publicBookTickerBatch);
+      obj.publicBookTickerBatch = PublicBookTickerBatchV3Api.toJSON(
+        message.publicBookTickerBatch,
+      );
     }
     if (message.publicIncreaseDepthsBatch !== undefined) {
-      obj.publicIncreaseDepthsBatch = PublicIncreaseDepthsBatchV3Api.toJSON(message.publicIncreaseDepthsBatch);
+      obj.publicIncreaseDepthsBatch = PublicIncreaseDepthsBatchV3Api.toJSON(
+        message.publicIncreaseDepthsBatch,
+      );
     }
     if (message.publicAggreDepths !== undefined) {
-      obj.publicAggreDepths = PublicAggreDepthsV3Api.toJSON(message.publicAggreDepths);
+      obj.publicAggreDepths = PublicAggreDepthsV3Api.toJSON(
+        message.publicAggreDepths,
+      );
     }
     if (message.publicAggreDeals !== undefined) {
-      obj.publicAggreDeals = PublicAggreDealsV3Api.toJSON(message.publicAggreDeals);
+      obj.publicAggreDeals = PublicAggreDealsV3Api.toJSON(
+        message.publicAggreDeals,
+      );
     }
     if (message.publicAggreBookTicker !== undefined) {
-      obj.publicAggreBookTicker = PublicAggreBookTickerV3Api.toJSON(message.publicAggreBookTicker);
+      obj.publicAggreBookTicker = PublicAggreBookTickerV3Api.toJSON(
+        message.publicAggreBookTicker,
+      );
     }
     if (message.symbol !== undefined) {
       obj.symbol = message.symbol;
@@ -438,58 +565,83 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PushDataV3ApiWrapper>, I>>(base?: I): PushDataV3ApiWrapper {
+  create<I extends Exact<DeepPartial<PushDataV3ApiWrapper>, I>>(
+    base?: I,
+  ): PushDataV3ApiWrapper {
     return PushDataV3ApiWrapper.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PushDataV3ApiWrapper>, I>>(object: I): PushDataV3ApiWrapper {
+  fromPartial<I extends Exact<DeepPartial<PushDataV3ApiWrapper>, I>>(
+    object: I,
+  ): PushDataV3ApiWrapper {
     const message = createBasePushDataV3ApiWrapper();
     message.channel = object.channel ?? "";
-    message.publicDeals = (object.publicDeals !== undefined && object.publicDeals !== null)
-      ? PublicDealsV3Api.fromPartial(object.publicDeals)
-      : undefined;
-    message.publicIncreaseDepths = (object.publicIncreaseDepths !== undefined && object.publicIncreaseDepths !== null)
-      ? PublicIncreaseDepthsV3Api.fromPartial(object.publicIncreaseDepths)
-      : undefined;
-    message.publicLimitDepths = (object.publicLimitDepths !== undefined && object.publicLimitDepths !== null)
-      ? PublicLimitDepthsV3Api.fromPartial(object.publicLimitDepths)
-      : undefined;
-    message.privateOrders = (object.privateOrders !== undefined && object.privateOrders !== null)
-      ? PrivateOrdersV3Api.fromPartial(object.privateOrders)
-      : undefined;
-    message.publicBookTicker = (object.publicBookTicker !== undefined && object.publicBookTicker !== null)
-      ? PublicBookTickerV3Api.fromPartial(object.publicBookTicker)
-      : undefined;
-    message.privateDeals = (object.privateDeals !== undefined && object.privateDeals !== null)
-      ? PrivateDealsV3Api.fromPartial(object.privateDeals)
-      : undefined;
-    message.privateAccount = (object.privateAccount !== undefined && object.privateAccount !== null)
-      ? PrivateAccountV3Api.fromPartial(object.privateAccount)
-      : undefined;
-    message.publicSpotKline = (object.publicSpotKline !== undefined && object.publicSpotKline !== null)
-      ? PublicSpotKlineV3Api.fromPartial(object.publicSpotKline)
-      : undefined;
-    message.publicMiniTicker = (object.publicMiniTicker !== undefined && object.publicMiniTicker !== null)
-      ? PublicMiniTickerV3Api.fromPartial(object.publicMiniTicker)
-      : undefined;
-    message.publicMiniTickers = (object.publicMiniTickers !== undefined && object.publicMiniTickers !== null)
-      ? PublicMiniTickersV3Api.fromPartial(object.publicMiniTickers)
-      : undefined;
+    message.publicDeals =
+      object.publicDeals !== undefined && object.publicDeals !== null
+        ? PublicDealsV3Api.fromPartial(object.publicDeals)
+        : undefined;
+    message.publicIncreaseDepths =
+      object.publicIncreaseDepths !== undefined &&
+      object.publicIncreaseDepths !== null
+        ? PublicIncreaseDepthsV3Api.fromPartial(object.publicIncreaseDepths)
+        : undefined;
+    message.publicLimitDepths =
+      object.publicLimitDepths !== undefined &&
+      object.publicLimitDepths !== null
+        ? PublicLimitDepthsV3Api.fromPartial(object.publicLimitDepths)
+        : undefined;
+    message.privateOrders =
+      object.privateOrders !== undefined && object.privateOrders !== null
+        ? PrivateOrdersV3Api.fromPartial(object.privateOrders)
+        : undefined;
+    message.publicBookTicker =
+      object.publicBookTicker !== undefined && object.publicBookTicker !== null
+        ? PublicBookTickerV3Api.fromPartial(object.publicBookTicker)
+        : undefined;
+    message.privateDeals =
+      object.privateDeals !== undefined && object.privateDeals !== null
+        ? PrivateDealsV3Api.fromPartial(object.privateDeals)
+        : undefined;
+    message.privateAccount =
+      object.privateAccount !== undefined && object.privateAccount !== null
+        ? PrivateAccountV3Api.fromPartial(object.privateAccount)
+        : undefined;
+    message.publicSpotKline =
+      object.publicSpotKline !== undefined && object.publicSpotKline !== null
+        ? PublicSpotKlineV3Api.fromPartial(object.publicSpotKline)
+        : undefined;
+    message.publicMiniTicker =
+      object.publicMiniTicker !== undefined && object.publicMiniTicker !== null
+        ? PublicMiniTickerV3Api.fromPartial(object.publicMiniTicker)
+        : undefined;
+    message.publicMiniTickers =
+      object.publicMiniTickers !== undefined &&
+      object.publicMiniTickers !== null
+        ? PublicMiniTickersV3Api.fromPartial(object.publicMiniTickers)
+        : undefined;
     message.publicBookTickerBatch =
-      (object.publicBookTickerBatch !== undefined && object.publicBookTickerBatch !== null)
+      object.publicBookTickerBatch !== undefined &&
+      object.publicBookTickerBatch !== null
         ? PublicBookTickerBatchV3Api.fromPartial(object.publicBookTickerBatch)
         : undefined;
     message.publicIncreaseDepthsBatch =
-      (object.publicIncreaseDepthsBatch !== undefined && object.publicIncreaseDepthsBatch !== null)
-        ? PublicIncreaseDepthsBatchV3Api.fromPartial(object.publicIncreaseDepthsBatch)
+      object.publicIncreaseDepthsBatch !== undefined &&
+      object.publicIncreaseDepthsBatch !== null
+        ? PublicIncreaseDepthsBatchV3Api.fromPartial(
+            object.publicIncreaseDepthsBatch,
+          )
         : undefined;
-    message.publicAggreDepths = (object.publicAggreDepths !== undefined && object.publicAggreDepths !== null)
-      ? PublicAggreDepthsV3Api.fromPartial(object.publicAggreDepths)
-      : undefined;
-    message.publicAggreDeals = (object.publicAggreDeals !== undefined && object.publicAggreDeals !== null)
-      ? PublicAggreDealsV3Api.fromPartial(object.publicAggreDeals)
-      : undefined;
+    message.publicAggreDepths =
+      object.publicAggreDepths !== undefined &&
+      object.publicAggreDepths !== null
+        ? PublicAggreDepthsV3Api.fromPartial(object.publicAggreDepths)
+        : undefined;
+    message.publicAggreDeals =
+      object.publicAggreDeals !== undefined && object.publicAggreDeals !== null
+        ? PublicAggreDealsV3Api.fromPartial(object.publicAggreDeals)
+        : undefined;
     message.publicAggreBookTicker =
-      (object.publicAggreBookTicker !== undefined && object.publicAggreBookTicker !== null)
+      object.publicAggreBookTicker !== undefined &&
+      object.publicAggreBookTicker !== null
         ? PublicAggreBookTickerV3Api.fromPartial(object.publicAggreBookTicker)
         : undefined;
     message.symbol = object.symbol ?? undefined;
@@ -500,17 +652,31 @@ export const PushDataV3ApiWrapper: MessageFns<PushDataV3ApiWrapper> = {
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());

@@ -19,15 +19,22 @@ function createBasePublicMiniTickersV3Api(): PublicMiniTickersV3Api {
 }
 
 export const PublicMiniTickersV3Api: MessageFns<PublicMiniTickersV3Api> = {
-  encode(message: PublicMiniTickersV3Api, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: PublicMiniTickersV3Api,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
     for (const v of message.items) {
       PublicMiniTickerV3Api.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): PublicMiniTickersV3Api {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): PublicMiniTickersV3Api {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePublicMiniTickersV3Api();
     while (reader.pos < end) {
@@ -38,7 +45,9 @@ export const PublicMiniTickersV3Api: MessageFns<PublicMiniTickersV3Api> = {
             break;
           }
 
-          message.items.push(PublicMiniTickerV3Api.decode(reader, reader.uint32()));
+          message.items.push(
+            PublicMiniTickerV3Api.decode(reader, reader.uint32()),
+          );
           continue;
         }
       }
@@ -66,27 +75,46 @@ export const PublicMiniTickersV3Api: MessageFns<PublicMiniTickersV3Api> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<PublicMiniTickersV3Api>, I>>(base?: I): PublicMiniTickersV3Api {
+  create<I extends Exact<DeepPartial<PublicMiniTickersV3Api>, I>>(
+    base?: I,
+  ): PublicMiniTickersV3Api {
     return PublicMiniTickersV3Api.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<PublicMiniTickersV3Api>, I>>(object: I): PublicMiniTickersV3Api {
+  fromPartial<I extends Exact<DeepPartial<PublicMiniTickersV3Api>, I>>(
+    object: I,
+  ): PublicMiniTickersV3Api {
     const message = createBasePublicMiniTickersV3Api();
-    message.items = object.items?.map((e) => PublicMiniTickerV3Api.fromPartial(e)) || [];
+    message.items =
+      object.items?.map((e) => PublicMiniTickerV3Api.fromPartial(e)) || [];
     return message;
   },
 };
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 export interface MessageFns<T> {
   encode(message: T, writer?: BinaryWriter): BinaryWriter;
