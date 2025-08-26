@@ -1,0 +1,17 @@
+{
+  "name": "sender",
+  "dependencies": {
+    "@bufbuild/buf": "^1.56.0",
+    "@bufbuild/protobuf": "^2.7.0",
+    "binance": "^3.0.7",
+    "bitget-api": "^3.0.5",
+    "bitmart-api": "^2.1.29",
+    "gateio-api": "^1.2.8",
+    "kucoin-api": "^2.1.21",
+    "okx-api": "^3.0.5",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}
