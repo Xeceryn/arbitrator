@@ -8,5 +8,5 @@ export default defineConfig({
   dbCredentials: {
     url: "postgres://sulthonuladib:123456@localhost:5432/lister",
   },
-  schema: "./src/*/*.sql.ts",
+  schema: "./src/**/*.sql.ts",
 });

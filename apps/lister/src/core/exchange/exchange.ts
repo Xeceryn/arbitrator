@@ -4,6 +4,14 @@ import { exchangeTable } from "./exchange.sql";
 import { exchangeCryptocurrencyTable } from "../exchange-cryptocurrency/exchange-cryptocurrency.sql";
 
 export namespace Exchange {
+  export async function add(exchange: typeof exchangeTable.$inferInsert) {
+    return await database
+      .insert(exchangeTable)
+      .values(exchange)
+      .returning()
+      .then((result) => result.at(0));
+  }
+
   export type FindAllFilter = {
     cmcid?: number;
     hasCryptocurrencyWithId?: number;
@@ -31,10 +39,10 @@ export namespace Exchange {
 
   export async function cmcIdExists(cmcId: number) {
     return await database
-      .select()
+      .select({ count: count() })
       .from(exchangeTable)
       .where(eq(exchangeTable.cmcId, cmcId))
-      .then((result) => result.length > 0);
+      .then((result) => !!result.at(0)?.count);
   }
 
   export async function getById(id: number) {
@@ -42,7 +50,7 @@ export namespace Exchange {
       .select()
       .from(exchangeTable)
       .where(eq(exchangeTable.id, id))
-      .then((result) => result[0]);
+      .then((result) => result.at(0));
   }
 
   export async function getByCmcId(cmcId: number) {
@@ -50,11 +58,7 @@ export namespace Exchange {
       .select()
       .from(exchangeTable)
       .where(eq(exchangeTable.cmcId, cmcId))
-      .then((result) => result[0]);
-  }
-
-  export async function add(exchange: typeof exchangeTable.$inferInsert) {
-    return await database.insert(exchangeTable).values(exchange);
+      .then((result) => result.at(0));
   }
 
   export async function update(
@@ -72,6 +76,6 @@ export namespace Exchange {
       .delete(exchangeTable)
       .where(eq(exchangeTable.id, id))
       .returning()
-      .then((result) => result[0]);
+      .then((result) => result.at(0));
   }
 }

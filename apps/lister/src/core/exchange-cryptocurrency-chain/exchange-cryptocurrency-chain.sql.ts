@@ -22,6 +22,7 @@ export const exchangeCryptocurrencyChainTable = pg.pgTable(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
+    exchangeChainName: pg.varchar({ length: 255 }),
     withdrawEnabled: pg.boolean().notNull().default(true),
     depositEnabled: pg.boolean().notNull().default(true),
     ...addDefaultTimestampFields(),

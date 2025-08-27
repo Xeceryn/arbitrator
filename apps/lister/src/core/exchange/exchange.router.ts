@@ -1,13 +1,33 @@
 import { ORPCError, os } from "@orpc/server";
 import { Exchange } from "./exchange";
-import { z } from "zod/v4";
+import { z } from "zod";
 import {
   exchangeInsertSchema,
   exchangeSelectSchema,
   exchangeUpdateSchema,
 } from "./exchange.schema";
 
-const findAll = os
+const add = os
+  .input(exchangeInsertSchema)
+  .output(exchangeSelectSchema)
+  .handler(async ({ input }) => {
+    if (await Exchange.cmcIdExists(input.cmcId)) {
+      throw new ORPCError("CONFLICT", {
+        message: "exchange with this cmcId already exists",
+      });
+    }
+    const result = await Exchange.add(input);
+    if (!result) {
+      throw new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "something wrong when adding exchange",
+      });
+    }
+    console.log(result);
+
+    return result;
+  });
+
+const list = os
   .input(
     z
       .object({
@@ -25,6 +45,7 @@ const findById = os
   .input(z.number())
   .output(exchangeSelectSchema)
   .handler(async ({ input }) => {
+    console.log(input);
     const result = await Exchange.getById(input);
     if (!result) {
       throw new ORPCError("NOT_FOUND", {
@@ -35,23 +56,11 @@ const findById = os
     return result;
   });
 
-const add = os
-  .input(exchangeInsertSchema)
-  .output(exchangeSelectSchema)
-  .handler(async ({ input }) => {
-    if (await Exchange.cmcIdExists(input.cmcId)) {
-      throw new ORPCError("CONFLICT", {
-        message: "exchange with this cmcId already exists",
-      });
-    }
-    return await Exchange.add(input);
-  });
-
 const update = os
   .input(
     z.object({
       id: z.number(),
-      payload: exchangeUpdateSchema.omit({ createdAt: true, updatedAt: true }),
+      payload: exchangeUpdateSchema,
     }),
   )
   .output(exchangeSelectSchema)
@@ -90,9 +99,9 @@ const remove = os
   });
 
 export const exchangeRouter = {
-  findAll,
-  findById,
   add,
+  list,
+  findById,
   update,
   remove,
 };

@@ -23,7 +23,8 @@
       "tools": {
         "axios": "^1.11.0",
         "winston": "^3.17.0",
-        "drizzle-kit": "^0.31.4"
+        "drizzle-kit": "^0.31.4",
+        "drizzle-seed": "^0.3.1"
       },
       "sdk": {
         "binance": "^2.15.14",

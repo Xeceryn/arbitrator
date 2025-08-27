@@ -1,4 +1,11 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "ui"
+  "name": "ui",
+  "scripts": {
+    "dev": "bun run --watch src/index.tsx",
+    "start": "bun run src/index.tsx"
+  },
+  "dependencies": {
+    "@orpc/client": "catalog:core"
+  }
 }

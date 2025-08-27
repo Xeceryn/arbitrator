@@ -5,6 +5,12 @@ import {
 } from "drizzle-zod";
 import { exchangeTable } from "./exchange.sql";
 
-export const exchangeInsertSchema = createInsertSchema(exchangeTable);
-export const exchangeUpdateSchema = createUpdateSchema(exchangeTable);
+export const exchangeInsertSchema = createInsertSchema(exchangeTable).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+export const exchangeUpdateSchema = createUpdateSchema(exchangeTable).omit({
+  createdAt: true,
+  updatedAt: true,
+});
 export const exchangeSelectSchema = createSelectSchema(exchangeTable);

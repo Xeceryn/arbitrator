@@ -1,14 +1,19 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { cryptocurrencyTable } from "./cryptocurrency.sql";
 import { exchangeCryptocurrencyTable } from "../exchange-cryptocurrency/exchange-cryptocurrency.sql";
 import { database } from "../../database/connection";
+import type z from "zod";
+import {
+  cryptocurrencyInsertSchema,
+  cryptocurrencyUpdateSchema,
+} from "./cryptocurrency.schema";
 
 export namespace Cryptocurrency {
   export type FindAllFilter = {
     id?: number;
     hasExchangeWithId?: number;
   };
-  export async function getAll(filter: FindAllFilter) {
+  export async function getAll(filter?: FindAllFilter) {
     const conditions = [];
     if (filter?.id) {
       conditions.push(eq(cryptocurrencyTable.cmcId, filter.id));
@@ -17,7 +22,6 @@ export namespace Cryptocurrency {
       conditions.push(
         eq(exchangeCryptocurrencyTable.exchangeId, filter.hasExchangeWithId),
       );
-    } else {
     }
 
     return await database
@@ -31,7 +35,7 @@ export namespace Cryptocurrency {
       .select()
       .from(cryptocurrencyTable)
       .where(eq(cryptocurrencyTable.id, id))
-      .then((result) => result[0]);
+      .then((result) => result.at(0));
   }
 
   export async function getByCmcId(cmcId: number) {
@@ -42,16 +46,28 @@ export namespace Cryptocurrency {
       .then((result) => result[0]);
   }
 
+  export async function cmcIdExists(cmcId: number) {
+    return await database
+      .select({ count: count() })
+      .from(cryptocurrencyTable)
+      .where(eq(cryptocurrencyTable.cmcId, cmcId))
+      .then((result) => !!result.at(0)?.count);
+  }
+
   export async function add(
-    cryptocurrency: typeof cryptocurrencyTable.$inferInsert,
+    cryptocurrency: z.infer<typeof cryptocurrencyInsertSchema>,
   ) {
     return await database.insert(cryptocurrencyTable).values(cryptocurrency);
   }
 
   export async function update(
-    cryptocurrency: typeof cryptocurrencyTable.$inferSelect,
+    id: number,
+    cryptocurrency: z.infer<typeof cryptocurrencyUpdateSchema>,
   ) {
-    return await database.update(cryptocurrencyTable).set(cryptocurrency);
+    return await database
+      .update(cryptocurrencyTable)
+      .set(cryptocurrency)
+      .where(eq(cryptocurrencyTable.id, id));
   }
 
   export async function remove(id: number) {

@@ -1,0 +1,1 @@
+ALTER TABLE "exchange" ADD COLUMN "logo" varchar(255) NOT NULL;

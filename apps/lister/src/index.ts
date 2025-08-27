@@ -1,29 +1,26 @@
-import { CompressionPlugin, RPCHandler } from "@orpc/server/fetch";
+import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin } from "@orpc/server/plugins";
 import { createLogger } from "@arbitrator/logger";
-import { exchangeRouter } from "./core/exchange/exchange.router";
+import { router } from "./router";
 
 const logger = createLogger("arbitrator/lister");
-const router = {
-  exchange: exchangeRouter,
-};
 
 const handler = new RPCHandler(router, {
-  plugins: [new CORSPlugin({ origin: "*" }), new CompressionPlugin()],
+  plugins: [new CORSPlugin({ origin: "*" })],
 });
 
 Bun.serve({
   async fetch(request: Request) {
-    const { matched, response } = await handler.handle(request, {
-      prefix: "/rpc",
+    const { response } = await handler.handle(request, {
       context: {}, // Provide initial context if needed
     });
-
-    if (matched) {
-      return response;
+    if (!response) {
+      return new Response("NOT FOUND", {
+        status: 404,
+      });
     }
 
-    return new Response("Not found", { status: 404 });
+    return response;
   },
   port: 3000,
 });
