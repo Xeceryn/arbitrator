@@ -59,9 +59,7 @@
         "chain_code_unique": {
           "name": "chain_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -135,16 +133,12 @@
         "cryptocurrency_slug_unique": {
           "name": "cryptocurrency_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         },
         "cryptocurrency_cmcId_unique": {
           "name": "cryptocurrency_cmcId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "cmcId"
-          ]
+          "columns": ["cmcId"]
         }
       },
       "policies": {},
@@ -231,12 +225,8 @@
           "name": "exchange_cryptocurrency_chain_exchangeCryptocurrencyId_exchange_cryptocurrency_id_fk",
           "tableFrom": "exchange_cryptocurrency_chain",
           "tableTo": "exchange_cryptocurrency",
-          "columnsFrom": [
-            "exchangeCryptocurrencyId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exchangeCryptocurrencyId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -244,12 +234,8 @@
           "name": "exchange_cryptocurrency_chain_chainId_chain_id_fk",
           "tableFrom": "exchange_cryptocurrency_chain",
           "tableTo": "chain",
-          "columnsFrom": [
-            "chainId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["chainId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -320,12 +306,8 @@
           "name": "exchange_cryptocurrency_exchangeId_exchange_id_fk",
           "tableFrom": "exchange_cryptocurrency",
           "tableTo": "exchange",
-          "columnsFrom": [
-            "exchangeId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["exchangeId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -333,12 +315,8 @@
           "name": "exchange_cryptocurrency_cryptocurrencyId_cryptocurrency_id_fk",
           "tableFrom": "exchange_cryptocurrency",
           "tableTo": "cryptocurrency",
-          "columnsFrom": [
-            "cryptocurrencyId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["cryptocurrencyId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -430,16 +408,12 @@
         "exchange_cmcId_unique": {
           "name": "exchange_cmcId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "cmcId"
-          ]
+          "columns": ["cmcId"]
         },
         "exchange_slug_unique": {
           "name": "exchange_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -451,10 +425,7 @@
     "public.exchangeBaseCurrency": {
       "name": "exchangeBaseCurrency",
       "schema": "public",
-      "values": [
-        "usdt",
-        "idr"
-      ]
+      "values": ["usdt", "idr"]
     }
   },
   "schemas": {},

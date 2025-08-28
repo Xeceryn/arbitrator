@@ -70,5 +70,7 @@ export type OldActiveCoinData = {
     gateioAlternateSymbol: string;
     bitmart: boolean;
     bitmartAlternateSymbol: string;
+    pintu: boolean;
+    pintuAlternateSymbol: string;
   }>;
 };

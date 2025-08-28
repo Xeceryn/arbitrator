@@ -19,7 +19,7 @@ export enum CoinMarketCapExchange {
   Bittime = "bittime",
   Binance = "binance",
   Kucoin = "kucoin",
-  GateIO = "gate-io",
+  GateIO = "gate",
   Okx = "okx",
   Bitmart = "bitmart",
   Htx = "htx",
@@ -52,7 +52,8 @@ export async function get_exchange_cmc_details(): Promise<CmcExchangeDetail> {
 
 export async function get_old_data() {
   const requestFromOldServices = await fetch(
-    "http://192.168.1.79:4000/api/v1/active-coin",
+    // "http://192.168.1.79:4000/api/v1/active-coin",
+    "http://localhost:12345/active-coin.json",
   );
 
   const { data } = (await requestFromOldServices.json()) as OldActiveCoinData;

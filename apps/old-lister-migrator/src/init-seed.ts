@@ -28,8 +28,10 @@ raw_markets.forEach(async (market) => {
   if (error) {
     if (error instanceof ORPCError) {
       console.error(`Error adding ${market.name} because ${error.message}`);
+    } else {
+      console.error("something wrong when adding exchange");
+      process.exit(1);
     }
-    process.exit(1);
   }
   if (result) {
     console.log(`Added ${result.name}`);
@@ -52,236 +54,202 @@ if (getExchangeError) {
   process.exit(1);
 }
 
+// add all old data coins
+
+for (const coin of old_data) {
+  await listerClient.cryptocurrency.add({
+    cmcId: coin.cmcId,
+    slug: coin.slug,
+    name: coin.name,
+    logo: coin.logo,
+    symbol: coin.symbol,
+  });
+}
+
+// get all current cryptocurrencies
 const [error, coins] = await listerClient.cryptocurrency.list();
 if (error) {
   console.error(error);
   process.exit(1);
 }
 
-// const coins = await db.query.coinSchema.findMany();
-// const markets = await db.query.marketSchema.findMany();
-
 // manage assignment from old data fields into coins and markets inserted as assignment
-// for (const coin of old_data) {
-//   if (coin.indodaxAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Indodax,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("indodax")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.indodaxAlternateSymbol,
-//         active: coin.indodax,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.bittimeAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Bittime,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("bittime")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.bittimeAlternateSymbol,
-//         active: coin.bittime,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.binanceAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Binance,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("binance")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.binanceAlternateSymbol,
-//         active: coin.binance,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.kucoinAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Kucoin,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("kucoin")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.kucoinAlternateSymbol,
-//         active: coin.kucoin,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.gateioAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.GateIO,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("gateio")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.gateioAlternateSymbol,
-//         active: coin.gateio,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.okxAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Okx,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("okx")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.okxAlternateSymbol,
-//         active: coin.okx,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.bitmartAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Bitmart,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("bitmart")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.bitmartAlternateSymbol,
-//         active: coin.bitmart,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.huobiAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Htx,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("huobi")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.huobiAlternateSymbol,
-//         active: coin.huobi,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.mexcAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.MEXC,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("mexc")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.mexcAlternateSymbol,
-//         active: coin.mexc,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-//
-//   if (coin.bitgetAlternateSymbol !== "") {
-//     const coinId = coins.find((c) => c.slug === coin.slug)!.id;
-//     const marketId = markets.find(
-//       (m) => m.slug === CoinMarketCapExchange.Bitget,
-//     )!.id;
-//     let notes = "";
-//     if (coin.reason.toLowerCase().includes("bitget")) {
-//       notes += coin.reason;
-//     }
-//     await db
-//       .insert(coinToMarketAssignment)
-//       .values({
-//         coinId,
-//         marketId,
-//         marketSymbol: coin.bitgetAlternateSymbol,
-//         active: coin.bitget,
-//         notes: notes === "" ? null : notes,
-//       })
-//       .onConflictDoNothing()
-//       .execute();
-//   }
-// }
-// console.info("Data seeding completed");
+for (const coin of old_data) {
+  if (coin.indodaxAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Indodax,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("indodax")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.indodaxAlternateSymbol,
+    });
+  }
+
+  if (coin.bittimeAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Bittime,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("bittime")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.bittimeAlternateSymbol,
+    });
+  }
+
+  if (coin.binanceAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Binance,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("binance")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.binanceAlternateSymbol,
+    });
+  }
+
+  if (coin.kucoinAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Kucoin,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("kucoin")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.kucoinAlternateSymbol,
+    });
+  }
+
+  if (coin.gateioAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.GateIO,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("gateio")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.gateioAlternateSymbol,
+    });
+  }
+
+  if (coin.okxAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Okx,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("okx")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.okxAlternateSymbol,
+    });
+  }
+
+  if (coin.bitmartAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Bitmart,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("bitmart")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.bitmartAlternateSymbol,
+    });
+  }
+
+  if (coin.huobiAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Htx,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("huobi")) {
+      notes += coin.reason;
+    }
+
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.huobiAlternateSymbol,
+    });
+  }
+
+  if (coin.mexcAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.MEXC,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("mexc")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.mexcAlternateSymbol,
+    });
+  }
+
+  if (coin.bitgetAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find(
+      (m) => m.slug === CoinMarketCapExchange.Bitget,
+    )!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("bitget")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.bitgetAlternateSymbol,
+    });
+  }
+
+  if (coin.pintuAlternateSymbol !== "") {
+    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const marketId = markets.find((m) => m.slug === "pintu")!.id;
+    let notes = "";
+    if (coin.reason.toLowerCase().includes("pintu")) {
+      notes += coin.reason;
+    }
+    await listerClient.exchangeCryptocurrency.assign({
+      exchangeId: marketId,
+      cryptocurrencyId: coinId,
+      exchangeSymbol: coin.pintuAlternateSymbol,
+    });
+  }
+}
+console.info("Data seeding completed");
 
 process.exit(0);

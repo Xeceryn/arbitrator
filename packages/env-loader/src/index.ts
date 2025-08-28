@@ -76,5 +76,4 @@ function validateEnv(): EnvConfig {
 
 // Export validated environment variables
 export const EnvLoader = validateEnv();
-
 // Optional: Create a function to validate specific subsets

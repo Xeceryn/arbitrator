@@ -3,7 +3,11 @@ function resolveMaybeOptionalOptions(rest) {
   return rest[0] ?? {};
 }
 function toArray(value) {
-  return Array.isArray(value) ? value : value === undefined || value === null ? [] : [value];
+  return Array.isArray(value)
+    ? value
+    : value === undefined || value === null
+      ? []
+      : [value];
 }
 var ORPC_NAME = "orpc";
 var ORPC_SHARED_PACKAGE_NAME = "@orpc/shared";
@@ -22,9 +26,11 @@ function once(fn) {
 function sequential(fn) {
   let lastOperationPromise = Promise.resolve();
   return (...args) => {
-    return lastOperationPromise = lastOperationPromise.catch(() => {}).then(() => {
-      return fn(...args);
-    });
+    return (lastOperationPromise = lastOperationPromise
+      .catch(() => {})
+      .then(() => {
+        return fn(...args);
+      }));
   };
 }
 var SPAN_ERROR_STATUS = 2;
@@ -45,7 +51,7 @@ function setSpanError(span, error, options = {}) {
   if (!options.signal?.aborted || options.signal.reason !== error) {
     span.setStatus({
       code: SPAN_ERROR_STATUS,
-      message: exception.message
+      message: exception.message,
     });
   }
 }
@@ -54,9 +60,12 @@ function toOtelException(error) {
     const exception = {
       message: error.message,
       name: error.name,
-      stack: error.stack
+      stack: error.stack,
     };
-    if ("code" in error && (typeof error.code === "string" || typeof error.code === "number")) {
+    if (
+      "code" in error &&
+      (typeof error.code === "string" || typeof error.code === "number")
+    ) {
       exception.code = error.code;
     }
     return exception;
@@ -96,7 +105,12 @@ function isAsyncIteratorObject(maybe) {
   if (!maybe || typeof maybe !== "object") {
     return false;
   }
-  return "next" in maybe && typeof maybe.next === "function" && Symbol.asyncIterator in maybe && typeof maybe[Symbol.asyncIterator] === "function";
+  return (
+    "next" in maybe &&
+    typeof maybe.next === "function" &&
+    Symbol.asyncIterator in maybe &&
+    typeof maybe[Symbol.asyncIterator] === "function"
+  );
 }
 var fallbackAsyncDisposeSymbol = Symbol.for("asyncDispose");
 var asyncDisposeSymbol = Symbol.asyncDispose ?? fallbackAsyncDisposeSymbol;
@@ -148,7 +162,7 @@ class AsyncIteratorClass {
     }
     throw err;
   }
-  async[asyncDisposeSymbol]() {
+  async [asyncDisposeSymbol]() {
     this.#isDone = true;
     if (!this.#isExecuteComplete) {
       this.#isExecuteComplete = true;
@@ -161,32 +175,35 @@ class AsyncIteratorClass {
 }
 function asyncIteratorWithSpan({ name, ...options }, iterator) {
   let span;
-  return new AsyncIteratorClass(async () => {
-    span ??= startSpan(name);
-    try {
-      const result = await runInSpanContext(span, () => iterator.next());
-      span?.addEvent(result.done ? "completed" : "yielded");
-      return result;
-    } catch (err) {
-      setSpanError(span, err, options);
-      throw err;
-    }
-  }, async (reason) => {
-    try {
-      if (reason !== "next") {
-        await runInSpanContext(span, () => iterator.return?.());
+  return new AsyncIteratorClass(
+    async () => {
+      span ??= startSpan(name);
+      try {
+        const result = await runInSpanContext(span, () => iterator.next());
+        span?.addEvent(result.done ? "completed" : "yielded");
+        return result;
+      } catch (err) {
+        setSpanError(span, err, options);
+        throw err;
       }
-    } catch (err) {
-      setSpanError(span, err, options);
-      throw err;
-    } finally {
-      span?.end();
-    }
-  });
+    },
+    async (reason) => {
+      try {
+        if (reason !== "next") {
+          await runInSpanContext(span, () => iterator.return?.());
+        }
+      } catch (err) {
+        setSpanError(span, err, options);
+        throw err;
+      } finally {
+        span?.end();
+      }
+    },
+  );
 }
 
 class EventPublisher {
-  #listenersMap = /* @__PURE__ */ new Map;
+  #listenersMap = /* @__PURE__ */ new Map();
   #maxBufferedEvents;
   constructor(options = {}) {
     this.#maxBufferedEvents = options.maxBufferedEvents ?? 100;
@@ -207,7 +224,7 @@ class EventPublisher {
     if (typeof listenerOrOptions === "function") {
       let listeners = this.#listenersMap.get(event);
       if (!listeners) {
-        this.#listenersMap.set(event, listeners = /* @__PURE__ */ new Set);
+        this.#listenersMap.set(event, (listeners = /* @__PURE__ */ new Set()));
       }
       listeners.add(listenerOrOptions);
       return () => {
@@ -218,7 +235,8 @@ class EventPublisher {
       };
     }
     const signal = listenerOrOptions?.signal;
-    const maxBufferedEvents = listenerOrOptions?.maxBufferedEvents ?? this.#maxBufferedEvents;
+    const maxBufferedEvents =
+      listenerOrOptions?.maxBufferedEvents ?? this.#maxBufferedEvents;
     signal?.throwIfAborted();
     const bufferedEvents = [];
     const pullResolvers = [];
@@ -240,23 +258,28 @@ class EventPublisher {
       bufferedEvents.length = 0;
     };
     signal?.addEventListener("abort", abortListener, { once: true });
-    return new AsyncIteratorClass(async () => {
-      if (signal?.aborted) {
-        throw signal.reason;
-      }
-      if (bufferedEvents.length > 0) {
-        return { done: false, value: bufferedEvents.shift() };
-      }
-      return new Promise((resolve, reject) => {
-        pullResolvers.push([resolve, reject]);
-      });
-    }, async () => {
-      unsubscribe();
-      signal?.removeEventListener("abort", abortListener);
-      pullResolvers.forEach((resolver) => resolver[0]({ done: true, value: undefined }));
-      pullResolvers.length = 0;
-      bufferedEvents.length = 0;
-    });
+    return new AsyncIteratorClass(
+      async () => {
+        if (signal?.aborted) {
+          throw signal.reason;
+        }
+        if (bufferedEvents.length > 0) {
+          return { done: false, value: bufferedEvents.shift() };
+        }
+        return new Promise((resolve, reject) => {
+          pullResolvers.push([resolve, reject]);
+        });
+      },
+      async () => {
+        unsubscribe();
+        signal?.removeEventListener("abort", abortListener);
+        pullResolvers.forEach((resolver) =>
+          resolver[0]({ done: true, value: undefined }),
+        );
+        pullResolvers.length = 0;
+        bufferedEvents.length = 0;
+      },
+    );
   }
 }
 
@@ -276,7 +299,7 @@ function intercept(interceptors, options, main) {
     }
     return interceptor({
       ...options2,
-      next: (newOptions = options2) => next(newOptions, index + 1)
+      next: (newOptions = options2) => next(newOptions, index + 1),
     });
   };
   return next(options, 0);
@@ -313,21 +336,27 @@ function preventNativeAwait(target) {
             return Reflect.apply(targetFn, thisArg, args);
           }
           let shouldOmit = true;
-          args[0].call(thisArg, preventNativeAwait(new Proxy(target2, {
-            get: (target3, prop2, receiver2) => {
-              if (shouldOmit && prop2 === "then") {
-                shouldOmit = false;
-                return;
-              }
-              return Reflect.get(target3, prop2, receiver2);
-            }
-          })));
-        }
+          args[0].call(
+            thisArg,
+            preventNativeAwait(
+              new Proxy(target2, {
+                get: (target3, prop2, receiver2) => {
+                  if (shouldOmit && prop2 === "then") {
+                    shouldOmit = false;
+                    return;
+                  }
+                  return Reflect.get(target3, prop2, receiver2);
+                },
+              }),
+            ),
+          );
+        },
       });
-    }
+    },
   });
 }
-var NATIVE_FUNCTION_REGEX = /^\s*function\s*\(\)\s*\{\s*\[native code\]\s*\}\s*$/;
+var NATIVE_FUNCTION_REGEX =
+  /^\s*function\s*\(\)\s*\{\s*\[native code\]\s*\}\s*$/;
 function isNativeFunction(fn) {
   return typeof fn === "function" && NATIVE_FUNCTION_REGEX.test(fn.toString());
 }
@@ -345,11 +374,9 @@ function value(value2, ...args) {
   return value2;
 }
 // ../../node_modules/@orpc/standard-server/dist/index.mjs
-class EventEncoderError extends TypeError {
-}
+class EventEncoderError extends TypeError {}
 
-class EventDecoderError extends TypeError {
-}
+class EventDecoderError extends TypeError {}
 
 class ErrorEvent extends Error {
   data;
@@ -365,7 +392,7 @@ function decodeEventMessage(encoded) {
     event: undefined,
     id: undefined,
     retry: undefined,
-    comments: []
+    comments: [],
   };
   for (const line of lines) {
     const index = line.indexOf(":");
@@ -383,7 +410,11 @@ function decodeEventMessage(encoded) {
       message.id = value2;
     } else if (key === "retry") {
       const maybeInteger = Number.parseInt(value2);
-      if (Number.isInteger(maybeInteger) && maybeInteger >= 0 && maybeInteger.toString() === value2) {
+      if (
+        Number.isInteger(maybeInteger) &&
+        maybeInteger >= 0 &&
+        maybeInteger.toString() === value2
+      ) {
         message.retry = maybeInteger;
       }
     }
@@ -432,7 +463,7 @@ class EventDecoderStream extends TransformStream {
         decoder = new EventDecoder({
           onEvent: (event) => {
             controller.enqueue(event);
-          }
+          },
         });
       },
       transform(chunk) {
@@ -440,20 +471,28 @@ class EventDecoderStream extends TransformStream {
       },
       flush() {
         decoder.end();
-      }
+      },
     });
   }
 }
 function assertEventId(id) {
-  if (id.includes(`
-`)) {
-    throw new EventEncoderError("Event's id must not contain a newline character");
+  if (
+    id.includes(`
+`)
+  ) {
+    throw new EventEncoderError(
+      "Event's id must not contain a newline character",
+    );
   }
 }
 function assertEventName(event) {
-  if (event.includes(`
-`)) {
-    throw new EventEncoderError("Event's event must not contain a newline character");
+  if (
+    event.includes(`
+`)
+  ) {
+    throw new EventEncoderError(
+      "Event's event must not contain a newline character",
+    );
   }
 }
 function assertEventRetry(retry) {
@@ -462,9 +501,13 @@ function assertEventRetry(retry) {
   }
 }
 function assertEventComment(comment) {
-  if (comment.includes(`
-`)) {
-    throw new EventEncoderError("Event's comment must not contain a newline character");
+  if (
+    comment.includes(`
+`)
+  ) {
+    throw new EventEncoderError(
+      "Event's comment must not contain a newline character",
+    );
   }
 }
 function encodeEventData(data) {
@@ -527,23 +570,36 @@ function withEventMeta(container, meta) {
         return meta;
       }
       return Reflect.get(target, prop, receiver);
-    }
+    },
   });
 }
 function getEventMeta(container) {
-  return isTypescriptObject(container) ? Reflect.get(container, EVENT_SOURCE_META_SYMBOL) : undefined;
+  return isTypescriptObject(container)
+    ? Reflect.get(container, EVENT_SOURCE_META_SYMBOL)
+    : undefined;
 }
 function generateContentDisposition(filename) {
-  const escapedFileName = filename.replace(/"/g, "\\\"");
-  const encodedFilenameStar = encodeURIComponent(filename).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`).replace(/%(7C|60|5E)/g, (str, hex) => String.fromCharCode(Number.parseInt(hex, 16)));
+  const escapedFileName = filename.replace(/"/g, '\\"');
+  const encodedFilenameStar = encodeURIComponent(filename)
+    .replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
+    .replace(/%(7C|60|5E)/g, (str, hex) =>
+      String.fromCharCode(Number.parseInt(hex, 16)),
+    );
   return `inline; filename="${escapedFileName}"; filename*=utf-8''${encodedFilenameStar}`;
 }
 function getFilenameFromContentDisposition(contentDisposition) {
-  const encodedFilenameStarMatch = contentDisposition.match(/filename\*=(UTF-8'')?([^;]*)/i);
-  if (encodedFilenameStarMatch && typeof encodedFilenameStarMatch[2] === "string") {
+  const encodedFilenameStarMatch = contentDisposition.match(
+    /filename\*=(UTF-8'')?([^;]*)/i,
+  );
+  if (
+    encodedFilenameStarMatch &&
+    typeof encodedFilenameStarMatch[2] === "string"
+  ) {
     return tryDecodeURIComponent(encodedFilenameStarMatch[2]);
   }
-  const encodedFilenameMatch = contentDisposition.match(/filename="((?:\\"|[^"])*)"/i);
+  const encodedFilenameMatch = contentDisposition.match(
+    /filename="((?:\\"|[^"])*)"/i,
+  );
   if (encodedFilenameMatch && typeof encodedFilenameMatch[1] === "string") {
     return encodedFilenameMatch[1].replace(/\\"/g, '"');
   }
@@ -570,80 +626,80 @@ function mergeStandardHeaders(a, b) {
 var COMMON_ORPC_ERROR_DEFS = {
   BAD_REQUEST: {
     status: 400,
-    message: "Bad Request"
+    message: "Bad Request",
   },
   UNAUTHORIZED: {
     status: 401,
-    message: "Unauthorized"
+    message: "Unauthorized",
   },
   FORBIDDEN: {
     status: 403,
-    message: "Forbidden"
+    message: "Forbidden",
   },
   NOT_FOUND: {
     status: 404,
-    message: "Not Found"
+    message: "Not Found",
   },
   METHOD_NOT_SUPPORTED: {
     status: 405,
-    message: "Method Not Supported"
+    message: "Method Not Supported",
   },
   NOT_ACCEPTABLE: {
     status: 406,
-    message: "Not Acceptable"
+    message: "Not Acceptable",
   },
   TIMEOUT: {
     status: 408,
-    message: "Request Timeout"
+    message: "Request Timeout",
   },
   CONFLICT: {
     status: 409,
-    message: "Conflict"
+    message: "Conflict",
   },
   PRECONDITION_FAILED: {
     status: 412,
-    message: "Precondition Failed"
+    message: "Precondition Failed",
   },
   PAYLOAD_TOO_LARGE: {
     status: 413,
-    message: "Payload Too Large"
+    message: "Payload Too Large",
   },
   UNSUPPORTED_MEDIA_TYPE: {
     status: 415,
-    message: "Unsupported Media Type"
+    message: "Unsupported Media Type",
   },
   UNPROCESSABLE_CONTENT: {
     status: 422,
-    message: "Unprocessable Content"
+    message: "Unprocessable Content",
   },
   TOO_MANY_REQUESTS: {
     status: 429,
-    message: "Too Many Requests"
+    message: "Too Many Requests",
   },
   CLIENT_CLOSED_REQUEST: {
     status: 499,
-    message: "Client Closed Request"
+    message: "Client Closed Request",
   },
   INTERNAL_SERVER_ERROR: {
     status: 500,
-    message: "Internal Server Error"
+    message: "Internal Server Error",
   },
   NOT_IMPLEMENTED: {
     status: 501,
-    message: "Not Implemented"
+    message: "Not Implemented",
   },
   BAD_GATEWAY: {
     status: 502,
-    message: "Bad Gateway"
+    message: "Bad Gateway",
   },
   SERVICE_UNAVAILABLE: {
     status: 503,
-    message: "Service Unavailable"
+    message: "Service Unavailable",
   },
   GATEWAY_TIMEOUT: {
     status: 504,
-    message: "Gateway Timeout"
-  }
+    message: "Gateway Timeout",
+  },
 };
 function fallbackORPCErrorStatus(code, status) {
   return status ?? COMMON_ORPC_ERROR_DEFS[code]?.status ?? 500;
@@ -675,7 +731,7 @@ class ORPCError extends Error {
       code: this.code,
       status: this.status,
       message: this.message,
-      data: this.data
+      data: this.data,
     };
   }
 }
@@ -683,10 +739,12 @@ function isDefinedError(error) {
   return error instanceof ORPCError && error.defined;
 }
 function toORPCError(error) {
-  return error instanceof ORPCError ? error : new ORPCError("INTERNAL_SERVER_ERROR", {
-    message: "Internal server error",
-    cause: error
-  });
+  return error instanceof ORPCError
+    ? error
+    : new ORPCError("INTERNAL_SERVER_ERROR", {
+        message: "Internal server error",
+        cause: error,
+      });
 }
 function isORPCErrorStatus(status) {
   return status < 200 || status >= 400;
@@ -699,12 +757,22 @@ function isORPCErrorJson(json) {
   if (Object.keys(json).some((k) => !validKeys.includes(k))) {
     return false;
   }
-  return "defined" in json && typeof json.defined === "boolean" && "code" in json && typeof json.code === "string" && "status" in json && typeof json.status === "number" && isORPCErrorStatus(json.status) && "message" in json && typeof json.message === "string";
+  return (
+    "defined" in json &&
+    typeof json.defined === "boolean" &&
+    "code" in json &&
+    typeof json.code === "string" &&
+    "status" in json &&
+    typeof json.status === "number" &&
+    isORPCErrorStatus(json.status) &&
+    "message" in json &&
+    typeof json.message === "string"
+  );
 }
 function createORPCErrorFromJson(json, options = {}) {
   return new ORPCError(json.code, {
     ...options,
-    ...json
+    ...json,
   });
 }
 function mapEventIterator(iterator, maps) {
@@ -718,48 +786,66 @@ function mapEventIterator(iterator, maps) {
     }
     return mappedError;
   };
-  return new AsyncIteratorClass(async () => {
-    const { done, value: value2 } = await (async () => {
+  return new AsyncIteratorClass(
+    async () => {
+      const { done, value: value2 } = await (async () => {
+        try {
+          return await iterator.next();
+        } catch (error) {
+          throw await mapError(error);
+        }
+      })();
+      let mappedValue = await maps.value(value2, done);
+      if (mappedValue !== value2) {
+        const meta = getEventMeta(value2);
+        if (meta && isTypescriptObject(mappedValue)) {
+          mappedValue = withEventMeta(mappedValue, meta);
+        }
+      }
+      return { done, value: mappedValue };
+    },
+    async () => {
       try {
-        return await iterator.next();
+        await iterator.return?.();
       } catch (error) {
         throw await mapError(error);
       }
-    })();
-    let mappedValue = await maps.value(value2, done);
-    if (mappedValue !== value2) {
-      const meta = getEventMeta(value2);
-      if (meta && isTypescriptObject(mappedValue)) {
-        mappedValue = withEventMeta(mappedValue, meta);
-      }
-    }
-    return { done, value: mappedValue };
-  }, async () => {
-    try {
-      await iterator.return?.();
-    } catch (error) {
-      throw await mapError(error);
-    }
-  });
+    },
+  );
 }
 
 // ../../node_modules/@orpc/client/dist/index.mjs
 async function safe(promise) {
   try {
     const output = await promise;
-    return Object.assign([null, output, false, true], { error: null, data: output, isDefined: false, isSuccess: true });
+    return Object.assign([null, output, false, true], {
+      error: null,
+      data: output,
+      isDefined: false,
+      isSuccess: true,
+    });
   } catch (e) {
     const error = e;
     if (isDefinedError(error)) {
-      return Object.assign([error, undefined, true, false], { error, data: undefined, isDefined: true, isSuccess: false });
+      return Object.assign([error, undefined, true, false], {
+        error,
+        data: undefined,
+        isDefined: true,
+        isSuccess: false,
+      });
     }
-    return Object.assign([error, undefined, false, false], { error, data: undefined, isDefined: false, isSuccess: false });
+    return Object.assign([error, undefined, false, false], {
+      error,
+      data: undefined,
+      isDefined: false,
+      isSuccess: false,
+    });
   }
 }
 function resolveFriendlyClientOptions(options) {
   return {
     ...options,
-    context: options.context ?? {}
+    context: options.context ?? {},
   };
 }
 function createORPCClient(link, options = {}) {
@@ -774,9 +860,9 @@ function createORPCClient(link, options = {}) {
       }
       return createORPCClient(link, {
         ...options,
-        path: [...path, key]
+        path: [...path, key],
       });
-    }
+    },
   });
   return preventNativeAwait(recursive);
 }
@@ -791,76 +877,83 @@ function createSafeClient(client) {
         return value2;
       }
       return createSafeClient(value2);
-    }
+    },
   });
   return proxy;
 }
 
 // ../../node_modules/@orpc/standard-server-fetch/dist/index.mjs
 function toEventIterator(stream, options = {}) {
-  const eventStream = stream?.pipeThrough(new TextDecoderStream).pipeThrough(new EventDecoderStream);
+  const eventStream = stream
+    ?.pipeThrough(new TextDecoderStream())
+    .pipeThrough(new EventDecoderStream());
   const reader = eventStream?.getReader();
   let span;
-  return new AsyncIteratorClass(async () => {
-    span ??= startSpan("consume_event_iterator_stream");
-    try {
-      while (true) {
-        if (reader === undefined) {
-          return { done: true, value: undefined };
-        }
-        const { done, value: value2 } = await runInSpanContext(span, () => reader.read());
-        if (done) {
-          return { done: true, value: undefined };
-        }
-        switch (value2.event) {
-          case "message": {
-            let message = parseEmptyableJSON(value2.data);
-            if (isTypescriptObject(message)) {
-              message = withEventMeta(message, value2);
+  return new AsyncIteratorClass(
+    async () => {
+      span ??= startSpan("consume_event_iterator_stream");
+      try {
+        while (true) {
+          if (reader === undefined) {
+            return { done: true, value: undefined };
+          }
+          const { done, value: value2 } = await runInSpanContext(span, () =>
+            reader.read(),
+          );
+          if (done) {
+            return { done: true, value: undefined };
+          }
+          switch (value2.event) {
+            case "message": {
+              let message = parseEmptyableJSON(value2.data);
+              if (isTypescriptObject(message)) {
+                message = withEventMeta(message, value2);
+              }
+              span?.addEvent("message");
+              return { done: false, value: message };
             }
-            span?.addEvent("message");
-            return { done: false, value: message };
-          }
-          case "error": {
-            let error = new ErrorEvent({
-              data: parseEmptyableJSON(value2.data)
-            });
-            error = withEventMeta(error, value2);
-            span?.addEvent("error");
-            throw error;
-          }
-          case "done": {
-            let done2 = parseEmptyableJSON(value2.data);
-            if (isTypescriptObject(done2)) {
-              done2 = withEventMeta(done2, value2);
+            case "error": {
+              let error = new ErrorEvent({
+                data: parseEmptyableJSON(value2.data),
+              });
+              error = withEventMeta(error, value2);
+              span?.addEvent("error");
+              throw error;
             }
-            span?.addEvent("done");
-            return { done: true, value: done2 };
-          }
-          default: {
-            span?.addEvent("maybe_keepalive");
+            case "done": {
+              let done2 = parseEmptyableJSON(value2.data);
+              if (isTypescriptObject(done2)) {
+                done2 = withEventMeta(done2, value2);
+              }
+              span?.addEvent("done");
+              return { done: true, value: done2 };
+            }
+            default: {
+              span?.addEvent("maybe_keepalive");
+            }
           }
         }
+      } catch (e) {
+        if (!(e instanceof ErrorEvent)) {
+          setSpanError(span, e, options);
+        }
+        throw e;
       }
-    } catch (e) {
-      if (!(e instanceof ErrorEvent)) {
+    },
+    async (reason) => {
+      try {
+        if (reason !== "next") {
+          span?.addEvent("cancelled");
+        }
+        await runInSpanContext(span, () => reader?.cancel());
+      } catch (e) {
         setSpanError(span, e, options);
+        throw e;
+      } finally {
+        span?.end();
       }
-      throw e;
-    }
-  }, async (reason) => {
-    try {
-      if (reason !== "next") {
-        span?.addEvent("cancelled");
-      }
-      await runInSpanContext(span, () => reader?.cancel());
-    } catch (e) {
-      setSpanError(span, e, options);
-      throw e;
-    } finally {
-      span?.end();
-    }
-  });
+    },
+  );
 }
 function toEventStream(iterator, options = {}) {
   const keepAliveEnabled = options.eventIteratorKeepAliveEnabled ?? true;
@@ -877,9 +970,11 @@ function toEventStream(iterator, options = {}) {
       try {
         if (keepAliveEnabled) {
           timeout = setInterval(() => {
-            controller.enqueue(encodeEventMessage({
-              comments: [keepAliveComment]
-            }));
+            controller.enqueue(
+              encodeEventMessage({
+                comments: [keepAliveComment],
+              }),
+            );
             span?.addEvent("keepalive");
           }, keepAliveInterval);
         }
@@ -891,11 +986,13 @@ function toEventStream(iterator, options = {}) {
         const meta = getEventMeta(value2.value);
         if (!value2.done || value2.value !== undefined || meta !== undefined) {
           const event = value2.done ? "done" : "message";
-          controller.enqueue(encodeEventMessage({
-            ...meta,
-            event,
-            data: stringifyJSON(value2.value)
-          }));
+          controller.enqueue(
+            encodeEventMessage({
+              ...meta,
+              event,
+              data: stringifyJSON(value2.value),
+            }),
+          );
           span?.addEvent(event);
         }
         if (value2.done) {
@@ -908,11 +1005,13 @@ function toEventStream(iterator, options = {}) {
           return;
         }
         if (err instanceof ErrorEvent) {
-          controller.enqueue(encodeEventMessage({
-            ...getEventMeta(err),
-            event: "error",
-            data: stringifyJSON(err.data)
-          }));
+          controller.enqueue(
+            encodeEventMessage({
+              ...getEventMeta(err),
+              event: "error",
+              data: stringifyJSON(err.data),
+            }),
+          );
           span?.addEvent("error");
           controller.close();
         } else {
@@ -934,43 +1033,47 @@ function toEventStream(iterator, options = {}) {
       } finally {
         span?.end();
       }
-    }
-  }).pipeThrough(new TextEncoderStream);
+    },
+  }).pipeThrough(new TextEncoderStream());
   return stream;
 }
 function toStandardBody(re, options = {}) {
-  return runWithSpan({ name: "parse_standard_body", signal: options.signal }, async () => {
-    const contentDisposition = re.headers.get("content-disposition");
-    if (typeof contentDisposition === "string") {
-      const fileName = getFilenameFromContentDisposition(contentDisposition) ?? "blob";
-      const blob2 = await re.blob();
-      return new File([blob2], fileName, {
-        type: blob2.type
+  return runWithSpan(
+    { name: "parse_standard_body", signal: options.signal },
+    async () => {
+      const contentDisposition = re.headers.get("content-disposition");
+      if (typeof contentDisposition === "string") {
+        const fileName =
+          getFilenameFromContentDisposition(contentDisposition) ?? "blob";
+        const blob2 = await re.blob();
+        return new File([blob2], fileName, {
+          type: blob2.type,
+        });
+      }
+      const contentType = re.headers.get("content-type");
+      if (!contentType || contentType.startsWith("application/json")) {
+        const text = await re.text();
+        return parseEmptyableJSON(text);
+      }
+      if (contentType.startsWith("multipart/form-data")) {
+        return await re.formData();
+      }
+      if (contentType.startsWith("application/x-www-form-urlencoded")) {
+        const text = await re.text();
+        return new URLSearchParams(text);
+      }
+      if (contentType.startsWith("text/event-stream")) {
+        return toEventIterator(re.body, options);
+      }
+      if (contentType.startsWith("text/plain")) {
+        return await re.text();
+      }
+      const blob = await re.blob();
+      return new File([blob], "blob", {
+        type: blob.type,
       });
-    }
-    const contentType = re.headers.get("content-type");
-    if (!contentType || contentType.startsWith("application/json")) {
-      const text = await re.text();
-      return parseEmptyableJSON(text);
-    }
-    if (contentType.startsWith("multipart/form-data")) {
-      return await re.formData();
-    }
-    if (contentType.startsWith("application/x-www-form-urlencoded")) {
-      const text = await re.text();
-      return new URLSearchParams(text);
-    }
-    if (contentType.startsWith("text/event-stream")) {
-      return toEventIterator(re.body, options);
-    }
-    if (contentType.startsWith("text/plain")) {
-      return await re.text();
-    }
-    const blob = await re.blob();
-    return new File([blob], "blob", {
-      type: blob.type
-    });
-  });
+    },
+  );
 }
 function toFetchBody(body, headers, options = {}) {
   const currentContentDisposition = headers.get("content-disposition");
@@ -982,7 +1085,11 @@ function toFetchBody(body, headers, options = {}) {
   if (body instanceof Blob) {
     headers.set("content-type", body.type);
     headers.set("content-length", body.size.toString());
-    headers.set("content-disposition", currentContentDisposition ?? generateContentDisposition(body instanceof File ? body.name : "blob"));
+    headers.set(
+      "content-disposition",
+      currentContentDisposition ??
+        generateContentDisposition(body instanceof File ? body.name : "blob"),
+    );
     return body;
   }
   if (body instanceof FormData) {
@@ -1010,7 +1117,7 @@ function toStandardHeaders(headers, standardHeaders = {}) {
   }
   return standardHeaders;
 }
-function toFetchHeaders(headers, fetchHeaders = new Headers) {
+function toFetchHeaders(headers, fetchHeaders = new Headers()) {
   for (const [key, value2] of Object.entries(headers)) {
     if (Array.isArray(value2)) {
       for (const v of value2) {
@@ -1029,7 +1136,7 @@ function toFetchRequest(request, options = {}) {
     signal: request.signal,
     method: request.method,
     headers,
-    body
+    body,
   });
 }
 function toStandardLazyResponse(response, options = {}) {
@@ -1038,12 +1145,15 @@ function toStandardLazyResponse(response, options = {}) {
     status: response.status,
     get headers() {
       const headers = toStandardHeaders(response.headers);
-      Object.defineProperty(this, "headers", { value: headers, writable: true });
+      Object.defineProperty(this, "headers", {
+        value: headers,
+        writable: true,
+      });
       return headers;
     },
     set headers(value2) {
       Object.defineProperty(this, "headers", { value: value2, writable: true });
-    }
+    },
   };
 }
 
@@ -1072,30 +1182,71 @@ class StandardLink {
   interceptors;
   clientInterceptors;
   call(path, input, options) {
-    return runWithSpan({ name: `${ORPC_NAME}.${path.join("/")}`, signal: options.signal }, (span) => {
-      span?.setAttribute("rpc.system", ORPC_NAME);
-      span?.setAttribute("rpc.method", path.join("."));
-      if (isAsyncIteratorObject(input)) {
-        input = asyncIteratorWithSpan({ name: "consume_event_iterator_input", signal: options.signal }, input);
-      }
-      return intercept(this.interceptors, { ...options, path, input }, async ({ path: path2, input: input2, ...options2 }) => {
-        const otelConfig = getGlobalOtelConfig();
-        let otelContext;
-        const currentSpan = otelConfig?.trace.getActiveSpan() ?? span;
-        if (currentSpan && otelConfig) {
-          otelContext = otelConfig?.trace.setSpan(otelConfig.context.active(), currentSpan);
+    return runWithSpan(
+      { name: `${ORPC_NAME}.${path.join("/")}`, signal: options.signal },
+      (span) => {
+        span?.setAttribute("rpc.system", ORPC_NAME);
+        span?.setAttribute("rpc.method", path.join("."));
+        if (isAsyncIteratorObject(input)) {
+          input = asyncIteratorWithSpan(
+            { name: "consume_event_iterator_input", signal: options.signal },
+            input,
+          );
         }
-        const request = await runWithSpan({ name: "encode_request", context: otelContext }, () => this.codec.encode(path2, input2, options2));
-        const response = await intercept(this.clientInterceptors, { ...options2, input: input2, path: path2, request }, ({ input: input3, path: path3, request: request2, ...options3 }) => {
-          return runWithSpan({ name: "send_request", signal: options3.signal, context: otelContext }, () => this.sender.call(request2, options3, path3, input3));
-        });
-        const output = await runWithSpan({ name: "decode_response", context: otelContext }, () => this.codec.decode(response, options2, path2, input2));
-        if (isAsyncIteratorObject(output)) {
-          return asyncIteratorWithSpan({ name: "consume_event_iterator_output", signal: options2.signal }, output);
-        }
-        return output;
-      });
-    });
+        return intercept(
+          this.interceptors,
+          { ...options, path, input },
+          async ({ path: path2, input: input2, ...options2 }) => {
+            const otelConfig = getGlobalOtelConfig();
+            let otelContext;
+            const currentSpan = otelConfig?.trace.getActiveSpan() ?? span;
+            if (currentSpan && otelConfig) {
+              otelContext = otelConfig?.trace.setSpan(
+                otelConfig.context.active(),
+                currentSpan,
+              );
+            }
+            const request = await runWithSpan(
+              { name: "encode_request", context: otelContext },
+              () => this.codec.encode(path2, input2, options2),
+            );
+            const response = await intercept(
+              this.clientInterceptors,
+              { ...options2, input: input2, path: path2, request },
+              ({
+                input: input3,
+                path: path3,
+                request: request2,
+                ...options3
+              }) => {
+                return runWithSpan(
+                  {
+                    name: "send_request",
+                    signal: options3.signal,
+                    context: otelContext,
+                  },
+                  () => this.sender.call(request2, options3, path3, input3),
+                );
+              },
+            );
+            const output = await runWithSpan(
+              { name: "decode_response", context: otelContext },
+              () => this.codec.decode(response, options2, path2, input2),
+            );
+            if (isAsyncIteratorObject(output)) {
+              return asyncIteratorWithSpan(
+                {
+                  name: "consume_event_iterator_output",
+                  signal: options2.signal,
+                },
+                output,
+              );
+            }
+            return output;
+          },
+        );
+      },
+    );
   }
 }
 var STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES = {
@@ -1106,21 +1257,30 @@ var STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES = {
   URL: 4,
   REGEXP: 5,
   SET: 6,
-  MAP: 7
+  MAP: 7,
 };
 
 class StandardRPCJsonSerializer {
   customSerializers;
   constructor(options = {}) {
     this.customSerializers = options.customJsonSerializers ?? [];
-    if (this.customSerializers.length !== new Set(this.customSerializers.map((custom) => custom.type)).size) {
+    if (
+      this.customSerializers.length !==
+      new Set(this.customSerializers.map((custom) => custom.type)).size
+    ) {
       throw new Error("Custom serializer type must be unique.");
     }
   }
   serialize(data, segments = [], meta = [], maps = [], blobs = []) {
     for (const custom of this.customSerializers) {
       if (custom.condition(data)) {
-        const result = this.serialize(custom.serialize(data), segments, meta, maps, blobs);
+        const result = this.serialize(
+          custom.serialize(data),
+          segments,
+          meta,
+          maps,
+          blobs,
+        );
         meta.push([custom.type, ...segments]);
         return result;
       }
@@ -1131,11 +1291,17 @@ class StandardRPCJsonSerializer {
       return [data, meta, maps, blobs];
     }
     if (typeof data === "bigint") {
-      meta.push([STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.BIGINT, ...segments]);
+      meta.push([
+        STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.BIGINT,
+        ...segments,
+      ]);
       return [data.toString(), meta, maps, blobs];
     }
     if (data instanceof Date) {
-      meta.push([STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.DATE, ...segments]);
+      meta.push([
+        STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.DATE,
+        ...segments,
+      ]);
       if (Number.isNaN(data.getTime())) {
         return [null, meta, maps, blobs];
       }
@@ -1150,23 +1316,42 @@ class StandardRPCJsonSerializer {
       return [data.toString(), meta, maps, blobs];
     }
     if (data instanceof RegExp) {
-      meta.push([STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.REGEXP, ...segments]);
+      meta.push([
+        STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.REGEXP,
+        ...segments,
+      ]);
       return [data.toString(), meta, maps, blobs];
     }
     if (data instanceof Set) {
-      const result = this.serialize(Array.from(data), segments, meta, maps, blobs);
+      const result = this.serialize(
+        Array.from(data),
+        segments,
+        meta,
+        maps,
+        blobs,
+      );
       meta.push([STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.SET, ...segments]);
       return result;
     }
     if (data instanceof Map) {
-      const result = this.serialize(Array.from(data.entries()), segments, meta, maps, blobs);
+      const result = this.serialize(
+        Array.from(data.entries()),
+        segments,
+        meta,
+        maps,
+        blobs,
+      );
       meta.push([STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.MAP, ...segments]);
       return result;
     }
     if (Array.isArray(data)) {
       const json = data.map((v, i) => {
         if (v === undefined) {
-          meta.push([STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.UNDEFINED, ...segments, i]);
+          meta.push([
+            STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.UNDEFINED,
+            ...segments,
+            i,
+          ]);
           return v;
         }
         return this.serialize(v, [...segments, i], meta, maps, blobs)[0];
@@ -1179,7 +1364,13 @@ class StandardRPCJsonSerializer {
         if (k === "toJSON" && typeof data[k] === "function") {
           continue;
         }
-        json[k] = this.serialize(data[k], [...segments, k], meta, maps, blobs)[0];
+        json[k] = this.serialize(
+          data[k],
+          [...segments, k],
+          meta,
+          maps,
+          blobs,
+        )[0];
       }
       return [json, meta, maps, blobs];
     }
@@ -1202,7 +1393,7 @@ class StandardRPCJsonSerializer {
       const type = item[0];
       let currentRef = ref;
       let preSegment = "data";
-      for (let i = 1;i < item.length; i++) {
+      for (let i = 1; i < item.length; i++) {
         currentRef = currentRef[preSegment];
         preSegment = item[i];
       }
@@ -1217,7 +1408,9 @@ class StandardRPCJsonSerializer {
           currentRef[preSegment] = BigInt(currentRef[preSegment]);
           break;
         case STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.DATE:
-          currentRef[preSegment] = new Date(currentRef[preSegment] ?? "Invalid Date");
+          currentRef[preSegment] = new Date(
+            currentRef[preSegment] ?? "Invalid Date",
+          );
           break;
         case STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.NAN:
           currentRef[preSegment] = Number.NaN;
@@ -1229,7 +1422,8 @@ class StandardRPCJsonSerializer {
           currentRef[preSegment] = new URL(currentRef[preSegment]);
           break;
         case STANDARD_RPC_JSON_SERIALIZER_BUILT_IN_TYPES.REGEXP: {
-          const [, pattern, flags] = currentRef[preSegment].match(/^\/(.*)\/([a-z]*)$/);
+          const [, pattern, flags] =
+            currentRef[preSegment].match(/^\/(.*)\/([a-z]*)$/);
           currentRef[preSegment] = new RegExp(pattern, flags);
           break;
         }
@@ -1248,7 +1442,11 @@ function toHttpPath(path) {
   return `/${path.map(encodeURIComponent).join("/")}`;
 }
 function getMalformedResponseErrorCode(status) {
-  return Object.entries(COMMON_ORPC_ERROR_DEFS).find(([, def]) => def.status === status)?.[0] ?? "MALFORMED_ORPC_ERROR_RESPONSE";
+  return (
+    Object.entries(COMMON_ORPC_ERROR_DEFS).find(
+      ([, def]) => def.status === status,
+    )?.[0] ?? "MALFORMED_ORPC_ERROR_RESPONSE"
+  );
 }
 
 class StandardRPCLinkCodec {
@@ -1266,16 +1464,27 @@ class StandardRPCLinkCodec {
   expectedMethod;
   headers;
   async encode(path, input, options) {
-    const expectedMethod = await value(this.expectedMethod, options, path, input);
+    const expectedMethod = await value(
+      this.expectedMethod,
+      options,
+      path,
+      input,
+    );
     let headers = await value(this.headers, options, path, input);
     const baseUrl = await value(this.baseUrl, options, path, input);
     const url = new URL(baseUrl);
     url.pathname = `${url.pathname.replace(/\/$/, "")}${toHttpPath(path)}`;
     if (options.lastEventId !== undefined) {
-      headers = mergeStandardHeaders(headers, { "last-event-id": options.lastEventId });
+      headers = mergeStandardHeaders(headers, {
+        "last-event-id": options.lastEventId,
+      });
     }
     const serialized = this.serializer.serialize(input);
-    if (expectedMethod === "GET" && !(serialized instanceof FormData) && !isAsyncIteratorObject(serialized)) {
+    if (
+      expectedMethod === "GET" &&
+      !(serialized instanceof FormData) &&
+      !isAsyncIteratorObject(serialized)
+    ) {
       const maxUrlLength = await value(this.maxUrlLength, options, path, input);
       const getUrl = new URL(url);
       getUrl.searchParams.append("data", stringifyJSON(serialized));
@@ -1285,7 +1494,7 @@ class StandardRPCLinkCodec {
           method: expectedMethod,
           headers,
           url: getUrl,
-          signal: options.signal
+          signal: options.signal,
         };
       }
     }
@@ -1294,7 +1503,7 @@ class StandardRPCLinkCodec {
       method: expectedMethod === "GET" ? this.fallbackMethod : expectedMethod,
       headers,
       body: serialized,
-      signal: options.signal
+      signal: options.signal,
     };
   }
   async decode(response) {
@@ -1307,12 +1516,15 @@ class StandardRPCLinkCodec {
         return this.serializer.deserialize(body);
       } catch (error) {
         if (!isBodyOk) {
-          throw new Error("Cannot parse response body, please check the response body and content-type.", {
-            cause: error
-          });
+          throw new Error(
+            "Cannot parse response body, please check the response body and content-type.",
+            {
+              cause: error,
+            },
+          );
         }
         throw new Error("Invalid RPC response format.", {
-          cause: error
+          cause: error,
         });
       }
     })();
@@ -1322,7 +1534,7 @@ class StandardRPCLinkCodec {
       }
       throw new ORPCError(getMalformedResponseErrorCode(response.status), {
         status: response.status,
-        data: { ...response, body: deserialized }
+        data: { ...response, body: deserialized },
       });
     }
     return deserialized;
@@ -1340,9 +1552,9 @@ class StandardRPCSerializer {
         error: async (e) => {
           return new ErrorEvent({
             data: this.#serialize(toORPCError(e).toJSON(), false),
-            cause: e
+            cause: e,
           });
-        }
+        },
       });
     }
     return this.#serialize(data, true);
@@ -1353,10 +1565,10 @@ class StandardRPCSerializer {
     if (!enableFormData || blobs.length === 0) {
       return {
         json,
-        meta
+        meta,
       };
     }
-    const form = new FormData;
+    const form = new FormData();
     form.set("data", stringifyJSON({ json, meta, maps }));
     blobs.forEach((blob, i) => {
       form.set(i.toString(), blob);
@@ -1377,9 +1589,9 @@ class StandardRPCSerializer {
           }
           return new ErrorEvent({
             data: deserialized,
-            cause: e
+            cause: e,
           });
-        }
+        },
       });
     }
     return this.#deserialize(data);
@@ -1392,7 +1604,12 @@ class StandardRPCSerializer {
       return this.jsonSerializer.deserialize(data.json, data.meta ?? []);
     }
     const serialized = JSON.parse(data.get("data"));
-    return this.jsonSerializer.deserialize(serialized.json, serialized.meta ?? [], serialized.maps, (i) => data.get(i.toString()));
+    return this.jsonSerializer.deserialize(
+      serialized.json,
+      serialized.meta ?? [],
+      serialized.maps,
+      (i) => data.get(i.toString()),
+    );
   }
 }
 
@@ -1427,8 +1644,15 @@ class LinkFetchClient {
   }
   async call(standardRequest, options, path, input) {
     const request = toFetchRequest(standardRequest, this.toFetchRequestOptions);
-    const fetchResponse = await intercept(this.adapterInterceptors, { ...options, request, path, input, init: { redirect: "manual" } }, ({ request: request2, path: path2, input: input2, init, ...options2 }) => this.fetch(request2, init, options2, path2, input2));
-    const lazyResponse = toStandardLazyResponse(fetchResponse, { signal: request.signal });
+    const fetchResponse = await intercept(
+      this.adapterInterceptors,
+      { ...options, request, path, input, init: { redirect: "manual" } },
+      ({ request: request2, path: path2, input: input2, init, ...options2 }) =>
+        this.fetch(request2, init, options2, path2, input2),
+    );
+    const lazyResponse = toStandardLazyResponse(fetchResponse, {
+      signal: request.signal,
+    });
     return lazyResponse;
   }
 }
@@ -1442,7 +1666,7 @@ class RPCLink extends StandardRPCLink {
 
 // assets/lister.ts
 var link = new RPCLink({
-  url: "http://localhost:3000"
+  url: "http://localhost:3000",
 });
 var listerUnsafeClient = createORPCClient(link);
 var listerClient = createSafeClient(listerUnsafeClient);
@@ -1451,6 +1675,4 @@ idButton?.addEventListener("click", async () => {
   const result = await listerClient.exchange.list();
   console.log(result);
 });
-export {
-  listerClient
-};
+export { listerClient };

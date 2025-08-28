@@ -6,6 +6,9 @@
     "start": "bun run src/index.tsx"
   },
   "dependencies": {
-    "@orpc/client": "catalog:core"
+    "@kitajs/html": "^4.2.9",
+    "@kitajs/ts-html-plugin": "^4.1.2",
+    "@orpc/client": "catalog:core",
+    "@arbitrator/env-loader": "workspace:*"
   }
 }
