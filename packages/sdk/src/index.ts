@@ -4,7 +4,7 @@ import { type RouterClient } from "@orpc/server";
 import { router } from "@arbitrator/lister";
 
 const link = new RPCLink({
-  url: "http://localhost:3000",
+  url: "http://localhost:3001",
   fetch: fetch,
 });
 

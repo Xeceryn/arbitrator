@@ -22,7 +22,7 @@ Bun.serve({
 
     return response;
   },
-  port: 3000,
+  port: 3001,
 });
 
-logger.info(`listening on port 3000`);
+logger.info(`listening on port 3001`);

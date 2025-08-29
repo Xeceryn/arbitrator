@@ -5,7 +5,9 @@ import {
   cryptocurrencyInsertSchema,
   cryptocurrencySelectSchema,
   cryptocurrencyUpdateSchema,
+  paginatedCryptocurrencySelectSchema,
 } from "./cryptocurrency.schema";
+import { paginationInputSchema } from "../../common/pagination.schema";
 import z from "zod";
 
 export const cryptocurrencyRouter = {
@@ -30,16 +32,18 @@ export const cryptocurrencyRouter = {
 
   list: os
     .input(
-      z
-        .object({
-          cmcid: z.number().optional(),
-          hasExchangeWithId: z.number().optional(),
-        })
-        .optional(),
+      z.object({
+        ...paginationInputSchema.shape,
+        cmcid: z.number().optional(),
+        hasExchangeWithId: z.number().optional(),
+      }),
     )
-    .output(z.array(cryptocurrencySelectSchema))
+    .output(paginatedCryptocurrencySelectSchema)
     .handler(async ({ input }) => {
-      return await Cryptocurrency.getAll(input);
+      // const { page = 1, limit = 20, ...filters } = input;
+      const { page, limit, ...filters } = input;
+      const result = await Cryptocurrency.getAll({ page, limit }, filters);
+      return result;
     }),
   findById: os
     .input(z.number())

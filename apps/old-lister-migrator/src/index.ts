@@ -4,7 +4,7 @@ import { type RouterClient } from "@orpc/server";
 import { router } from "@arbitrator/lister";
 
 const link = new RPCLink({
-  url: "http://localhost:3000",
+  url: "http://localhost:3001",
 });
 
 const a = createORPCClient<RouterClient<typeof router>>(link);
@@ -12,8 +12,7 @@ const a = createORPCClient<RouterClient<typeof router>>(link);
 const client = createSafeClient(
   createORPCClient<RouterClient<typeof router>>(link),
 );
-
-const [error, result] = await client.exchange.list();
+const [error, result] = await client.cryptocurrency.list({ limit: -1 });
 if (error) {
   console.log(error.message);
 }

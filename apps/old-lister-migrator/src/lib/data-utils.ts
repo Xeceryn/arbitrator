@@ -6,7 +6,7 @@ const cmc_exchange_slugs = [
 
   "binance",
   "kucoin",
-  "gate-io",
+  "gate",
   "okx",
   "bitmart",
   "htx",

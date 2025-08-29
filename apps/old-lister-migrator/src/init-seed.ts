@@ -67,16 +67,19 @@ for (const coin of old_data) {
 }
 
 // get all current cryptocurrencies
-const [error, coins] = await listerClient.cryptocurrency.list();
-if (error) {
-  console.error(error);
+const [cryptoCurrencyListError, coins] = await listerClient.cryptocurrency.list(
+  { limit: -1 },
+);
+if (cryptoCurrencyListError) {
+  console.error("cryptoCurrencyListError", cryptoCurrencyListError);
   process.exit(1);
 }
+console.log(`total coin in database ${coins.data.length}`);
 
 // manage assignment from old data fields into coins and markets inserted as assignment
 for (const coin of old_data) {
   if (coin.indodaxAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Indodax,
     )!.id;
@@ -84,7 +87,8 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("indodax")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.indodaxAlternateSymbol,
@@ -92,7 +96,7 @@ for (const coin of old_data) {
   }
 
   if (coin.bittimeAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Bittime,
     )!.id;
@@ -100,7 +104,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("bittime")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.bittimeAlternateSymbol,
@@ -108,7 +112,7 @@ for (const coin of old_data) {
   }
 
   if (coin.binanceAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Binance,
     )!.id;
@@ -116,7 +120,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("binance")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.binanceAlternateSymbol,
@@ -124,7 +128,7 @@ for (const coin of old_data) {
   }
 
   if (coin.kucoinAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Kucoin,
     )!.id;
@@ -132,7 +136,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("kucoin")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.kucoinAlternateSymbol,
@@ -140,7 +144,7 @@ for (const coin of old_data) {
   }
 
   if (coin.gateioAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.GateIO,
     )!.id;
@@ -148,7 +152,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("gateio")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.gateioAlternateSymbol,
@@ -156,7 +160,7 @@ for (const coin of old_data) {
   }
 
   if (coin.okxAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Okx,
     )!.id;
@@ -164,7 +168,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("okx")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.okxAlternateSymbol,
@@ -172,7 +176,7 @@ for (const coin of old_data) {
   }
 
   if (coin.bitmartAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Bitmart,
     )!.id;
@@ -180,7 +184,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("bitmart")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.bitmartAlternateSymbol,
@@ -188,7 +192,7 @@ for (const coin of old_data) {
   }
 
   if (coin.huobiAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Htx,
     )!.id;
@@ -197,7 +201,7 @@ for (const coin of old_data) {
       notes += coin.reason;
     }
 
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.huobiAlternateSymbol,
@@ -205,7 +209,7 @@ for (const coin of old_data) {
   }
 
   if (coin.mexcAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.MEXC,
     )!.id;
@@ -213,7 +217,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("mexc")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.mexcAlternateSymbol,
@@ -221,7 +225,7 @@ for (const coin of old_data) {
   }
 
   if (coin.bitgetAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find(
       (m) => m.slug === CoinMarketCapExchange.Bitget,
     )!.id;
@@ -229,7 +233,7 @@ for (const coin of old_data) {
     if (coin.reason.toLowerCase().includes("bitget")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.bitgetAlternateSymbol,
@@ -237,13 +241,13 @@ for (const coin of old_data) {
   }
 
   if (coin.pintuAlternateSymbol !== "") {
-    const coinId = coins.find((c) => c.slug === coin.slug)!.id;
+    const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.find((m) => m.slug === "pintu")!.id;
     let notes = "";
     if (coin.reason.toLowerCase().includes("pintu")) {
       notes += coin.reason;
     }
-    await listerClient.exchangeCryptocurrency.assign({
+    const [error, result] = await listerClient.exchangeCryptocurrency.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.pintuAlternateSymbol,

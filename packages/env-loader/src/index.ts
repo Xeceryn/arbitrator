@@ -14,7 +14,7 @@ const envSchema = z.object({
     .string()
     .transform((val) => parseInt(val, 10))
     .pipe(z.number().min(1).max(65535))
-    .default(3000),
+    .default(3001),
   LISTER_HOST_FROM_CLIENT: z.string().default("localhost"),
   LISTER_HOST_FROM_SERVER: z.string().default("localhost"),
   LISTER_POSTGRES_HOST: z.string().default("localhost"),

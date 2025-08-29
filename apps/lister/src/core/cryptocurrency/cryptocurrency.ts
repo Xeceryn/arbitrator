@@ -2,10 +2,15 @@ import { and, count, eq } from "drizzle-orm";
 import { cryptocurrencyTable } from "./cryptocurrency.sql";
 import { exchangeCryptocurrencyTable } from "../exchange-cryptocurrency/exchange-cryptocurrency.sql";
 import { database } from "../../database/connection";
+import type {
+  PaginationInput,
+  PaginationOutput,
+} from "../../common/pagination.schema";
 import type z from "zod";
 import {
   cryptocurrencyInsertSchema,
   cryptocurrencyUpdateSchema,
+  type PaginatedCryptocurrencySelect,
 } from "./cryptocurrency.schema";
 
 export namespace Cryptocurrency {
@@ -13,7 +18,10 @@ export namespace Cryptocurrency {
     id?: number;
     hasExchangeWithId?: number;
   };
-  export async function getAll(filter?: FindAllFilter) {
+  export async function getAll(
+    pagination: PaginationInput,
+    filter?: FindAllFilter,
+  ): Promise<PaginatedCryptocurrencySelect> {
     const conditions = [];
     if (filter?.id) {
       conditions.push(eq(cryptocurrencyTable.cmcId, filter.id));
@@ -24,10 +32,66 @@ export namespace Cryptocurrency {
       );
     }
 
-    return await database
-      .select()
+    const { page, limit } = pagination;
+    console.log("page", page);
+    console.log("limit", limit);
+    if (limit === -1) {
+      // if it's -1, no limit but still return the pagination info
+      const totalResult = await database
+        .select({ count: count() })
+        .from(cryptocurrencyTable)
+        .where(conditions?.length ? and(...conditions) : undefined);
+
+      const total = totalResult[0]?.count || 0;
+      const totalPages = 1;
+
+      return {
+        data: await database
+          .select()
+          .from(cryptocurrencyTable)
+          .where(conditions?.length ? and(...conditions) : undefined),
+        pagination: {
+          total,
+          totalPages,
+          currentPage: page,
+          limit,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
+      };
+    }
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const totalResult = await database
+      .select({ count: count() })
       .from(cryptocurrencyTable)
       .where(conditions?.length ? and(...conditions) : undefined);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    // Get paginated data
+    const data = await database
+      .select()
+      .from(cryptocurrencyTable)
+      .where(conditions?.length ? and(...conditions) : undefined)
+      .limit(limit)
+      .offset(offset);
+
+    const paginationInfo: PaginationOutput = {
+      total,
+      totalPages,
+      currentPage: page,
+      limit,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
+    };
+
+    return {
+      data,
+      pagination: paginationInfo,
+    };
   }
 
   export async function getById(id: number) {

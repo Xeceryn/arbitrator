@@ -7,6 +7,7 @@ import { database } from "../../database/connection";
 import { exchangeCryptocurrencyTable } from "./exchange-cryptocurrency.sql";
 import { and, eq } from "drizzle-orm";
 import { ExchangeCryptocurrency } from "./exchange-cryptocurrency";
+import z from "zod";
 
 const assign = os
   .input(exchangeCryptocurrencyInsertSchema)
@@ -15,14 +16,18 @@ const assign = os
     if (await ExchangeCryptocurrency.exists(input)) {
       throw new ORPCError("CONFLICT", {
         message: "exchange with cryptocurrency already exists",
+        status: 409,
         defined: true,
       });
     }
+    console.log("input", input);
     const result = await database
       .insert(exchangeCryptocurrencyTable)
       .values(input)
       .returning()
+      .onConflictDoNothing()
       .then((result) => result.at(0));
+    console.log("result", result);
 
     if (!result) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -72,7 +77,7 @@ const update = os
     return result;
   });
 
-const unsassign = os
+const unassign = os
   .input(
     exchangeCryptocurrencySelectSchema.pick({
       exchangeId: true,
@@ -103,8 +108,38 @@ const unsassign = os
     return result;
   });
 
+const list = os
+  .input(
+    z
+      .object({
+        exchangeId: z.number().optional(),
+        cryptocurrencyId: z.number().optional(),
+      })
+      .optional(),
+  )
+  .output(z.array(exchangeCryptocurrencySelectSchema))
+  .handler(async ({ input }) => {
+    return await ExchangeCryptocurrency.getAll(input);
+  });
+
+const findById = os
+  .input(z.number())
+  .output(exchangeCryptocurrencySelectSchema)
+  .handler(async ({ input }) => {
+    const result = await ExchangeCryptocurrency.getById(input);
+    if (!result) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "exchange-cryptocurrency assignment not found",
+      });
+    }
+
+    return result;
+  });
+
 export const exchangeCryptocurrencyRouter = os.router({
   assign,
-  unsassign,
+  unassign,
   update,
+  list,
+  findById,
 });
