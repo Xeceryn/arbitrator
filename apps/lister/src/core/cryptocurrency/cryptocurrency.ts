@@ -33,8 +33,6 @@ export namespace Cryptocurrency {
     }
 
     const { page, limit } = pagination;
-    console.log("page", page);
-    console.log("limit", limit);
     if (limit === -1) {
       // if it's -1, no limit but still return the pagination info
       const totalResult = await database
@@ -77,6 +75,7 @@ export namespace Cryptocurrency {
       .from(cryptocurrencyTable)
       .where(conditions?.length ? and(...conditions) : undefined)
       .limit(limit)
+      .orderBy(cryptocurrencyTable.cmcId)
       .offset(offset);
 
     const paginationInfo: PaginationOutput = {

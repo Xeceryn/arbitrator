@@ -17,23 +17,23 @@ function EditExchange() {
 	const queryClient = useQueryClient()
 
 	const { data: exchange } = useSuspenseQuery(
-		(orpc as any).exchange.findById.queryOptions({
+		orpc.exchange.findById.queryOptions({
 			input: parseInt(id)
 		})
 	)
 
 	const updateMutation = useMutation(
-		(orpc as any).exchange.update.mutationOptions({
-			onSuccess: (data: any) => {
+		orpc.exchange.update.mutationOptions({
+			onSuccess: (data) => {
 				queryClient.invalidateQueries({
-					queryKey: (orpc as any).exchange.key()
+					queryKey: orpc.exchange.key()
 				})
 				router.navigate({
 					to: '/exchanges/$id',
 					params: { id: data.id.toString() }
 				})
 			},
-			onError: (error: any) => {
+			onError: (error) => {
 				console.error('Failed to update exchange:', error)
 			}
 		})
@@ -41,18 +41,18 @@ function EditExchange() {
 
 	const form = useForm({
 		defaultValues: {
-			name: (exchange as any).name,
-			slug: (exchange as any).slug,
-			logo: (exchange as any).logo,
-			cmcId: (exchange as any).cmcId,
-			registeredOnCmc: (exchange as any).registeredOnCmc || false,
-			baseCurrency: (exchange as any).baseCurrency
+			name: exchange.name,
+			slug: exchange.slug,
+			logo: exchange.logo,
+			cmcId: exchange.cmcId,
+			registeredOnCmc: exchange.registeredOnCmc || false,
+			baseCurrency: exchange.baseCurrency
 		},
 		onSubmit: async ({ value }) => {
-			updateMutation.mutate({ 
-				id: (exchange as any).id,
-				payload: value as any
-			} as any)
+			updateMutation.mutate({
+				id: exchange.id,
+				payload: value
+			})
 		},
 	})
 
@@ -68,7 +68,7 @@ function EditExchange() {
 						<svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
 							<path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
 						</svg>
-						Back to {(exchange as any).name}
+						Back to {exchange.name}
 					</Link>
 				</div>
 
@@ -173,7 +173,7 @@ function EditExchange() {
 											name={field.name}
 											value={field.state.value}
 											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
+											onChange={(e) => field.handleChange(e.target.value as 'usdt' | 'idr')}
 											placeholder="USDT"
 											className="mt-1"
 										/>

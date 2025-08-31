@@ -26,7 +26,7 @@ function AssignmentDetail() {
 				})
 				router.navigate({ to: '/assignments' })
 			},
-			onError: (error: any) => {
+			onError: (error) => {
 				console.error('Failed to delete assignment:', error)
 			}
 		})
@@ -34,7 +34,7 @@ function AssignmentDetail() {
 
 	const handleDelete = () => {
 		if (window.confirm('Are you sure you want to unassign this cryptocurrency from the exchange? This action cannot be undone.')) {
-			deleteMutation.mutate((assignment).id)
+			deleteMutation.mutate({ exchangeId: assignment.exchangeId, cryptocurrencyId: assignment.cryptocurrencyId })
 		}
 	}
 
@@ -77,35 +77,35 @@ function AssignmentDetail() {
 						<dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Assignment ID</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(assignment).id}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{assignment.id}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Exchange Symbol</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(assignment).exchangeSymbol}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{assignment.exchangeSymbol}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Exchange ID</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(assignment).exchangeId}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{assignment.exchangeId}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Cryptocurrency ID</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(assignment).cryptocurrencyId}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{assignment.cryptocurrencyId}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Created</dt>
 								<dd className="mt-1 text-sm text-gray-900">
-									{new Date((assignment).createdAt).toLocaleDateString()}
+									{new Date(assignment.createdAt).toLocaleDateString()}
 								</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Last Updated</dt>
 								<dd className="mt-1 text-sm text-gray-900">
-									{new Date((assignment).updatedAt).toLocaleDateString()}
+									{new Date(assignment.updatedAt).toLocaleDateString()}
 								</dd>
 							</div>
 						</dl>

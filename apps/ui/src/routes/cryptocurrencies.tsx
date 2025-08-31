@@ -13,7 +13,7 @@ function CryptocurrencyList() {
 	)
 	const [searchTerm, setSearchTerm] = useState('')
 
-	const filteredCryptos = ((cryptocurrencies)?.data || (cryptocurrencies) || []).filter((crypto: any) =>
+	const filteredCryptos = ((cryptocurrencies)?.data || (cryptocurrencies) || []).filter((crypto) =>
 		crypto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
 		crypto.symbol.toLowerCase().includes(searchTerm.toLowerCase())
 	)
@@ -82,7 +82,7 @@ function CryptocurrencyList() {
 							</div>
 						) : (
 							<ul className="divide-y divide-gray-200">
-								{filteredCryptos.map((crypto: any) => (
+								{filteredCryptos.map((crypto) => (
 									<li key={crypto.id}>
 										<Link
 											to="/cryptocurrencies/$id"

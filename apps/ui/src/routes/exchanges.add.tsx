@@ -16,17 +16,17 @@ function AddExchange() {
 	const queryClient = useQueryClient()
 
 	const createMutation = useMutation(
-		(orpc as any).exchange.add.mutationOptions({
-			onSuccess: (data: any) => {
+		(orpc).exchange.add.mutationOptions({
+			onSuccess: (data) => {
 				queryClient.invalidateQueries({
-					queryKey: (orpc as any).exchange.key()
+					queryKey: (orpc).exchange.key()
 				})
 				router.navigate({
 					to: '/exchanges/$id',
 					params: { id: data.id.toString() }
 				})
 			},
-			onError: (error: any) => {
+			onError: (error) => {
 				console.error('Failed to create exchange:', error)
 			}
 		})
@@ -39,10 +39,10 @@ function AddExchange() {
 			logo: '',
 			cmcId: 0,
 			registeredOnCmc: false,
-			baseCurrency: 'USDT'
+			baseCurrency: 'usdt' as 'usdt' | 'idr'
 		},
 		onSubmit: async ({ value }) => {
-			createMutation.mutate(value as any)
+			createMutation.mutate(value)
 		},
 	})
 
@@ -162,8 +162,8 @@ function AddExchange() {
 											name={field.name}
 											value={field.state.value}
 											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value.toUpperCase())}
-											placeholder="USDT"
+											onChange={(e) => field.handleChange(e.target.value as 'usdt' | 'idr')}
+											placeholder="usdt"
 											className="mt-1"
 										/>
 										{field.state.meta.errors.length > 0 && (

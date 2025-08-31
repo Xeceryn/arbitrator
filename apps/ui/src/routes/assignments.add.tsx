@@ -15,25 +15,25 @@ function AddAssignment() {
 	const queryClient = useQueryClient()
 
 	const { data: cryptocurrencies } = useSuspenseQuery(
-		(orpc as any).cryptocurrency.list.queryOptions()
+		(orpc).cryptocurrency.list.queryOptions({ input: {} })
 	)
 
 	const { data: exchanges } = useSuspenseQuery(
-		(orpc as any).exchange.list.queryOptions()
+		(orpc).exchange.list.queryOptions()
 	)
 
 	const createMutation = useMutation(
-		(orpc as any).exchangeCryptocurrency.assign.mutationOptions({
-			onSuccess: (data: any) => {
+		(orpc).exchangeCryptocurrency.assign.mutationOptions({
+			onSuccess: (data) => {
 				queryClient.invalidateQueries({
-					queryKey: (orpc as any).exchangeCryptocurrency.key()
+					queryKey: (orpc).exchangeCryptocurrency.key()
 				})
 				router.navigate({
 					to: '/assignments/$id',
 					params: { id: data.id.toString() }
 				})
 			},
-			onError: (error: any) => {
+			onError: (error) => {
 				console.error('Failed to create assignment:', error)
 			}
 		})
@@ -46,7 +46,7 @@ function AddAssignment() {
 			exchangeSymbol: ''
 		},
 		onSubmit: async ({ value }) => {
-			createMutation.mutate(value as any)
+			createMutation.mutate(value)
 		},
 	})
 
@@ -96,9 +96,9 @@ function AddAssignment() {
 										className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
 									>
 										<option value={0}>Select an exchange</option>
-										{((exchanges as any)?.data || (exchanges as any) || []).map((exchange: any) => (
-											<option key={(exchange as any).id} value={(exchange as any).id}>
-												{(exchange as any).name}
+										{exchanges.map((exchange) => (
+											<option key={exchange.id} value={exchange.id}>
+												{(exchange).name}
 											</option>
 										))}
 									</select>
@@ -126,7 +126,7 @@ function AddAssignment() {
 										className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
 									>
 										<option value={0}>Select a cryptocurrency</option>
-										{((cryptocurrencies as any)?.data || (cryptocurrencies as any) || []).map((crypto: any) => (
+										{cryptocurrencies.data.map((crypto) => (
 											<option key={crypto.id} value={crypto.id}>
 												{crypto.name} ({crypto.symbol})
 											</option>

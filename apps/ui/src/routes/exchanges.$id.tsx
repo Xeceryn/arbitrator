@@ -13,28 +13,28 @@ function ExchangeDetail() {
 	const queryClient = useQueryClient()
 
 	const { data: exchange } = useSuspenseQuery(
-		(orpc as any).exchange.findById.queryOptions({
+		orpc.exchange.findById.queryOptions({
 			input: parseInt(id)
 		})
 	)
 
 	const deleteMutation = useMutation(
-		(orpc as any).exchange.remove.mutationOptions({
+		orpc.exchange.remove.mutationOptions({
 			onSuccess: () => {
 				queryClient.invalidateQueries({
-					queryKey: (orpc as any).exchange.key()
+					queryKey: orpc.exchange.key()
 				})
 				router.navigate({ to: '/exchanges' })
 			},
-			onError: (error: any) => {
+			onError: (error) => {
 				console.error('Failed to delete exchange:', error)
 			}
 		})
 	)
 
 	const handleDelete = () => {
-		if (window.confirm(`Are you sure you want to delete ${(exchange as any).name}? This action cannot be undone.`)) {
-			deleteMutation.mutate((exchange as any).id)
+		if (window.confirm(`Are you sure you want to delete ${exchange.name}? This action cannot be undone.`)) {
+			deleteMutation.mutate(exchange.id)
 		}
 	}
 
@@ -59,12 +59,12 @@ function ExchangeDetail() {
 							<div className="flex items-center space-x-4">
 								<div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
 									<span className="text-lg font-bold text-gray-600">
-										{(exchange as any).name.substring(0, 2).toUpperCase()}
+										{exchange.name.substring(0, 2).toUpperCase()}
 									</span>
 								</div>
 								<div>
-									<h1 className="text-2xl font-bold text-gray-900">{(exchange as any).name}</h1>
-									<p className="text-gray-600">{(exchange as any).slug}</p>
+									<h1 className="text-2xl font-bold text-gray-900">{exchange.name}</h1>
+									<p className="text-gray-600">{exchange.slug}</p>
 								</div>
 							</div>
 							<div className="flex space-x-3">
@@ -91,42 +91,42 @@ function ExchangeDetail() {
 						<dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Exchange Name</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(exchange as any).name}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{exchange.name}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Slug</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(exchange as any).slug}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{exchange.slug}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">CoinMarketCap ID</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(exchange as any).cmcId}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{exchange.cmcId}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Base Currency</dt>
-								<dd className="mt-1 text-sm text-gray-900">{(exchange as any).baseCurrency}</dd>
+								<dd className="mt-1 text-sm text-gray-900">{exchange.baseCurrency}</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Registered on CMC</dt>
 								<dd className="mt-1 text-sm text-gray-900">
-									{(exchange as any).registeredOnCmc ? 'Yes' : 'No'}
+									{exchange.registeredOnCmc ? 'Yes' : 'No'}
 								</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Created</dt>
 								<dd className="mt-1 text-sm text-gray-900">
-									{new Date((exchange as any).createdAt).toLocaleDateString()}
+									{new Date(exchange.createdAt).toLocaleDateString()}
 								</dd>
 							</div>
 
 							<div>
 								<dt className="text-sm font-medium text-gray-500">Last Updated</dt>
 								<dd className="mt-1 text-sm text-gray-900">
-									{new Date((exchange as any).updatedAt).toLocaleDateString()}
+									{new Date(exchange.updatedAt).toLocaleDateString()}
 								</dd>
 							</div>
 						</dl>

@@ -17,23 +17,23 @@ function EditCryptocurrency() {
 	const queryClient = useQueryClient()
 
 	const { data: cryptocurrency } = useSuspenseQuery(
-		(orpc as any).cryptocurrency.findById.queryOptions({
+		orpc.cryptocurrency.findById.queryOptions({
 			input: parseInt(id)
 		})
 	)
 
 	const updateMutation = useMutation(
-		(orpc as any).cryptocurrency.update.mutationOptions({
-			onSuccess: (data: any) => {
+		orpc.cryptocurrency.update.mutationOptions({
+			onSuccess: (data) => {
 				queryClient.invalidateQueries({
-					queryKey: (orpc as any).cryptocurrency.key()
+					queryKey: orpc.cryptocurrency.key()
 				})
 				router.navigate({
 					to: '/cryptocurrencies/$id',
 					params: { id: data.id.toString() }
 				})
 			},
-			onError: (error: any) => {
+			onError: (error) => {
 				console.error('Failed to update cryptocurrency:', error)
 			}
 		})
@@ -41,17 +41,17 @@ function EditCryptocurrency() {
 
 	const form = useForm({
 		defaultValues: {
-			name: (cryptocurrency as any).name,
-			symbol: (cryptocurrency as any).symbol,
-			slug: (cryptocurrency as any).slug,
-			logo: (cryptocurrency as any).logo,
-			cmcId: (cryptocurrency as any).cmcId
+			name: (cryptocurrency).name,
+			symbol: (cryptocurrency).symbol,
+			slug: (cryptocurrency).slug,
+			logo: (cryptocurrency).logo,
+			cmcId: (cryptocurrency).cmcId
 		},
 		onSubmit: async ({ value }) => {
-			updateMutation.mutate({ 
-				id: (cryptocurrency as any).id,
-				payload: value as any
-			} as any)
+			updateMutation.mutate({
+				id: (cryptocurrency).id,
+				payload: value
+			})
 		},
 	})
 
@@ -67,7 +67,7 @@ function EditCryptocurrency() {
 						<svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
 							<path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
 						</svg>
-						Back to {(cryptocurrency as any).name}
+						Back to {(cryptocurrency).name}
 					</Link>
 				</div>
 
