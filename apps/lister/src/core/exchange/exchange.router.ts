@@ -22,7 +22,6 @@ const add = os
         message: "something wrong when adding exchange",
       });
     }
-    console.log(result);
 
     return result;
   });

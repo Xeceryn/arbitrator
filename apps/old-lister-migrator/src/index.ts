@@ -1,4 +1,4 @@
-import { createORPCClient, createSafeClient, onError } from "@orpc/client";
+import { createORPCClient, createSafeClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { type RouterClient } from "@orpc/server";
 import { router } from "@arbitrator/lister";
@@ -12,7 +12,7 @@ const a = createORPCClient<RouterClient<typeof router>>(link);
 const client = createSafeClient(
   createORPCClient<RouterClient<typeof router>>(link),
 );
-const [error, result] = await client.cryptocurrency.list({ limit: -1 });
+const [error, result] = await client.cryptocurrency.list({ limit: 10 });
 if (error) {
   console.log(error.message);
 }

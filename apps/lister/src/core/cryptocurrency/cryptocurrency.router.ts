@@ -1,14 +1,14 @@
 import { ORPCError, os } from "@orpc/server";
+import z from "zod";
 
 import { Cryptocurrency } from "./cryptocurrency";
 import {
   cryptocurrencyInsertSchema,
   cryptocurrencySelectSchema,
   cryptocurrencyUpdateSchema,
+  listCryptocurrencySelectSchema,
   paginatedCryptocurrencySelectSchema,
 } from "./cryptocurrency.schema";
-import { paginationInputSchema } from "../../common/pagination.schema";
-import z from "zod";
 
 export const cryptocurrencyRouter = {
   add: os
@@ -31,22 +31,15 @@ export const cryptocurrencyRouter = {
     }),
 
   list: os
-    .input(
-      z.object({
-        ...paginationInputSchema.shape,
-        cmcid: z.number().optional(),
-        hasExchangeWithId: z.number().optional(),
-      }),
-    )
+    .input(listCryptocurrencySelectSchema)
     .output(paginatedCryptocurrencySelectSchema)
     .handler(async ({ input }) => {
-      // const { page = 1, limit = 20, ...filters } = input;
-      const { page, limit, ...filters } = input;
-      const result = await Cryptocurrency.getAll({ page, limit }, filters);
+      const result = await Cryptocurrency.list(input);
       return result;
     }),
+
   findById: os
-    .input(z.number())
+    .input(z.coerce.number())
     .output(cryptocurrencySelectSchema)
     .handler(async ({ input }) => {
       const result = await Cryptocurrency.getById(input);
@@ -58,6 +51,7 @@ export const cryptocurrencyRouter = {
 
       return result;
     }),
+
   update: os
     .input(
       z.object({
@@ -84,6 +78,7 @@ export const cryptocurrencyRouter = {
 
       return await Cryptocurrency.update(input.id, input.payload);
     }),
+
   remove: os
     .input(z.number())
     .output(cryptocurrencySelectSchema)
