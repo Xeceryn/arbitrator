@@ -13,7 +13,7 @@ import z from "zod";
 export const CoinController = new Elysia()
 	.use(html())
 	.use(htmx())
-	.get("/coins", ({ query, hx }) => {
+	.get("/coins", ({ query, hx, }) => {
 		hx.pushURL('/coins?' + Object.entries(query).map(([key, value]) => `${key}=${value}`).join("&"));
 		if (!hx.isHTMX) {
 			return (

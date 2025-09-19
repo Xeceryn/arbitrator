@@ -6,7 +6,7 @@
 //     console.log(args);
 //   },
 // };
-declare var self: Worker;
+declare let self: Worker;
 
 import { WebsocketClient } from "bitmart-api";
 const SymbolStore = new Map<string, number>();

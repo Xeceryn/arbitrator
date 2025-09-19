@@ -10,7 +10,8 @@
   "exports": {
     ".": "./src/router.ts",
     "./types": "./src/core/types.ts",
-    "./schemas": "./src/core/schemas.ts"
+    "./schemas": "./src/core/schemas.ts",
+    "./constants": "./src/core/constants.ts"
   },
   "dependencies": {
     "@orpc/server": "catalog:core",

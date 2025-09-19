@@ -1,31 +1,21 @@
-import { and, desc, asc, count, eq, like, or, ilike } from "drizzle-orm";
+import { and, desc, asc, count, eq, or, ilike } from "drizzle-orm";
 import { cryptocurrencyTable } from "./cryptocurrency.sql";
 import { database } from "../../database/connection";
 import type z from "zod";
 import {
   cryptocurrencyInsertSchema,
   cryptocurrencyUpdateSchema,
-  type ListCryptocurrencyInput,
-  type PaginatedCryptocurrencyList,
 } from "./cryptocurrency.schema";
+import type {
+  ListCryptocurrencyInput,
+  PaginatedCryptocurrencyList,
+} from "./cryptocurrency.type";
 
 export namespace Cryptocurrency {
-  export type FindAllFilter = {
-    id?: number;
-    hasExchangeWithId?: number;
-  };
   export async function list(
     input: ListCryptocurrencyInput,
   ): Promise<PaginatedCryptocurrencyList> {
     const conditions = [];
-    // if (filter?.id) {
-    //   conditions.push(eq(cryptocurrencyTable.cmcId, filter.id));
-    // }
-    // if (filter?.hasExchangeWithId) {
-    //   conditions.push(
-    //     eq(exchangeCryptocurrencyTable.exchangeId, filter.hasExchangeWithId),
-    //   );
-    // }
     if (input?.search) {
       conditions.push(
         or(
@@ -37,15 +27,14 @@ export namespace Cryptocurrency {
       );
     }
 
-    const { page: currentPage, limit } = input;
+    const { page, limit } = input;
     if (limit === -1) {
-      // if it's -1, no limit but still return the pagination info
-      const totalResult = await database
+      const items = await database
         .select({ count: count() })
         .from(cryptocurrencyTable)
-        .where(conditions?.length ? and(...conditions) : undefined);
+        .where(conditions?.length ? and(...conditions) : undefined)
+        .then((result) => result?.at(0)?.count || 0);
 
-      const items = totalResult[0]?.count || 0;
       const pages = 1;
       const from = 1;
       const to = items;
@@ -64,14 +53,13 @@ export namespace Cryptocurrency {
           to,
           items,
           pages,
-          currentPage,
+          page,
           limit,
-          hasNextPage: currentPage < pages,
-          hasPreviousPage: currentPage > 1,
+          hasNextPage: page < pages,
+          hasPreviousPage: page > 1,
         },
       };
     }
-    const offset = (currentPage - 1) * limit;
 
     // Get total count
     const totalResult = await database
@@ -79,10 +67,11 @@ export namespace Cryptocurrency {
       .from(cryptocurrencyTable)
       .where(conditions?.length ? and(...conditions) : undefined);
 
+    const offset = (page - 1) * limit;
     const total = totalResult[0]?.count || 0;
     const pages = Math.ceil(total / limit);
-    const from = (currentPage - 1) * limit + 1;
-    const to = currentPage * limit;
+    const from = (page - 1) * limit + 1;
+    const to = page * limit;
 
     // Get paginated data
     const data = await database
@@ -102,12 +91,12 @@ export namespace Cryptocurrency {
       meta: {
         items: total,
         pages: pages,
-        currentPage: currentPage,
+        page: page,
         limit,
         from,
         to,
-        hasNextPage: currentPage < pages,
-        hasPreviousPage: currentPage > 1,
+        hasNextPage: page < pages,
+        hasPreviousPage: page > 1,
         order: input.order,
         orderBy: input.orderBy,
         search: input.search,

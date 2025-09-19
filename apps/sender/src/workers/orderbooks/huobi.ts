@@ -7,7 +7,7 @@
 //   },
 // };
 
-declare var self: Worker;
+declare let self: Worker;
 
 import { threadId as processId } from "worker_threads";
 
@@ -51,8 +51,8 @@ async function stream(coins: Array<{ symbol: string; cmcId: number }>) {
   });
 
   socket.on("message", async (message: pako.Data) => {
-    let text = pako.inflate(message, { to: "string" });
-    let msg = JSON.parse(text);
+    const text = pako.inflate(message, { to: "string" });
+    const msg = JSON.parse(text);
 
     if ("tick" in msg) {
       const cmcId = SymbolStore.get(msg.ch);

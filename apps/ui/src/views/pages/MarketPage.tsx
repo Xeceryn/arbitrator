@@ -1,13 +1,11 @@
-import { LolocoClient } from '@e9crypt/loloco';
-
-import { dateFormatter } from "../utils";
+// import { listerClient } from "@arbitrator/sdk";
+// import type { ListExchangeInput } from "@arbitrator/lister/types";
 
 export async function MarketPage() {
-	// @ts-ignore
-	const { data, error } = await LolocoClient.markets.get({});
-	if (error) {
-		return <div>Failed to fetch coins</div>;
-	}
+	// const [error, data] = await listerClient.exchange.list(props);
+	// if (error) {
+	// 	return <div>Failed to fetch coins</div>;
+	// }
 
 	return (
 		<main class="flex-1 overflow-y-auto md:pt-4 pt-4 px-12  bg-base-200">
@@ -16,7 +14,7 @@ export async function MarketPage() {
 				<div class="text-xl font-semibold inline-block">Exchange List
 					<div class="inline-block float-right">
 						<div class="inline-block float-right">
-							<button class="btn px-6 btn-sm normal-case btn-primary"> Add New</button>
+							<button class="btn px-6 btn-sm normal-case btn-primary">Add New</button>
 						</div>
 					</div>
 				</div>

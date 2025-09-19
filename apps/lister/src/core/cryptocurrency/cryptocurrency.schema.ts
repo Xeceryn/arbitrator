@@ -19,47 +19,30 @@ export const cryptocurrencyInsertSchema = createInsertSchema(
   createdAt: true,
   updatedAt: true,
 });
-
 export const cryptocurrencyUpdateSchema = createUpdateSchema(
   cryptocurrencyTable,
 ).omit({
   createdAt: true,
   updatedAt: true,
 });
-
-const searchByKeys = z.keyof(
+export const cryptocurrencySearchByKeysSchema = z.keyof(
   cryptocurrencySelectSchema.omit({
     createdAt: true,
     updatedAt: true,
     logo: true,
   }),
 );
-const orderByKeys = z.keyof(
+export const cryptocurrencyOrderByKeysSchema = z.keyof(
   cryptocurrencySelectSchema.omit({
     logo: true,
   }),
 );
-
 export const listCryptocurrencySelectSchema = createPaginationInputSchema({
-  searchByKeys,
-  orderByKeys,
+  searchByKeys: cryptocurrencySearchByKeysSchema,
+  orderByKeys: cryptocurrencyOrderByKeysSchema,
   defaultSearchBy: "symbol",
   defaultOrderBy: "cmcId",
 });
-
 export const paginatedCryptocurrencySelectSchema = createPaginatedOutputSchema(
   cryptocurrencySelectSchema,
 );
-
-export type CryptocurrencySelect = z.infer<typeof cryptocurrencySelectSchema>;
-export type CryptocurrencyInsert = z.infer<typeof cryptocurrencyInsertSchema>;
-export type CryptocurrencyUpdate = z.infer<typeof cryptocurrencyUpdateSchema>;
-export type ListCryptocurrencyInput = z.infer<
-  typeof listCryptocurrencySelectSchema
->;
-export type PaginatedCryptocurrencyList = z.infer<
-  typeof paginatedCryptocurrencySelectSchema
->;
-
-export const cryptocurrencySearchByOptions = searchByKeys.options;
-export const cryptocurrencyOrderByOptions = orderByKeys.options;

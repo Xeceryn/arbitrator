@@ -1,4 +1,4 @@
-declare var self: Worker;
+declare let self: Worker;
 import { threadId as processId } from "worker_threads";
 
 import WebSocket, { type RawData } from "ws";

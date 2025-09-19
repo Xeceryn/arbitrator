@@ -1,10 +1,16 @@
-import { and, eq, count } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+
 import { database } from "../../database/connection";
 import { exchangeTable } from "./exchange.sql";
-import { exchangeCryptocurrencyTable } from "../exchange-cryptocurrency/exchange-cryptocurrency.sql";
+import type {
+  ExchangeInsert,
+  ListExchangeInput,
+  PaginatedExchangeList,
+} from "./exchange.type";
+import { paginate } from "../../common/pagination.schema";
 
 export namespace Exchange {
-  export async function add(exchange: typeof exchangeTable.$inferInsert) {
+  export async function add(exchange: ExchangeInsert) {
     return await database
       .insert(exchangeTable)
       .values(exchange)
@@ -12,29 +18,35 @@ export namespace Exchange {
       .then((result) => result.at(0));
   }
 
-  export type FindAllFilter = {
-    cmcid?: number;
-    hasCryptocurrencyWithId?: number;
-  };
-  export async function getAll(filter?: FindAllFilter) {
-    const conditions = [];
+  export async function list(
+    input: ListExchangeInput,
+  ): Promise<PaginatedExchangeList> {
+    const conditions = [
+      and(
+        or(ilike(exchangeTable.name, "%" + input.search.toLowerCase() + "%")),
+      ),
+    ];
 
-    if (filter?.cmcid) {
-      conditions.push(eq(exchangeTable.cmcId, filter.cmcid));
-    }
-    if (filter?.hasCryptocurrencyWithId) {
-      conditions.push(
-        eq(
-          exchangeCryptocurrencyTable.cryptocurrencyId,
-          filter.hasCryptocurrencyWithId,
-        ),
-      );
-    }
+    const items = await database
+      .select({ count: count() })
+      .from(exchangeTable)
+      .where(conditions?.length ? and(...conditions) : undefined)
+      .then((result) => result?.at(0)?.count || 0);
 
-    return await database
+    const data = await database
       .select()
       .from(exchangeTable)
-      .where(conditions?.length ? and(...conditions) : undefined);
+      .where(conditions?.length ? and(...conditions) : undefined)
+      .limit(input.limit)
+      .orderBy(
+        input.order === "asc"
+          ? asc(exchangeTable[input.orderBy])
+          : desc(exchangeTable[input.orderBy]),
+      )
+      .offset(input.page);
+
+    const result = paginate(data, items, input);
+    return result;
   }
 
   export async function cmcIdExists(cmcId: number) {

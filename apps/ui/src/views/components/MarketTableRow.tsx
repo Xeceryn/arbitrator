@@ -1,14 +1,15 @@
-import { dateFormatter, getElapsedTime } from "../../utils";
-import { Market } from "@e9crypt/loloco";
+import type { ExchangeSelect } from "@arbitrator/lister/types";
 
-export function MarketTableRow(props: Market) {
+import { dateFormatter, getElapsedTime } from "../../utils";
+
+export function MarketTableRow(props: ExchangeSelect) {
 	return (
 		<tr id={`market-table-row-${props.id}`} class="">
 			<td>
 				<div class="flex items-center space-x-3">
 					<div class="avatar">
 						<div class="mask mask-squircle w-12 h-12">
-							<img src={props.logoUrl} alt="market logo" />
+							<img src={props.logo} alt="market logo" />
 						</div>
 					</div>
 					<div>

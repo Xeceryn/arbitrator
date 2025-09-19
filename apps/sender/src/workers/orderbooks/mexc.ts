@@ -1,6 +1,6 @@
 export const MEXC_ORDERBOOK_WORKER_PATH = __filename;
 
-declare var self: Worker;
+declare let self: Worker;
 // NOTE: for debugging purposes when not running as a worker
 // const self = {
 //   postMessage(...args: any[]) {

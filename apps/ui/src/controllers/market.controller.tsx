@@ -31,13 +31,10 @@ export const MarketController = new Elysia()
 		}))
 	})
 
-	.get("markets/list", async ({ headers, query, set, hx }) => {
+	.get("markets/list", async ({ query, set, hx }) => {
 		if (!hx.isHTMX) {
 			return redirect("/markets");
 		}
-		// TODO: remove later, stupid typebox and elysiajs integration
-		// the problem is the eden make the fields that has default to be required.
-		// @ts-ignore
 		const { data, error } = await LolocoClient.markets.get({});
 
 		if (error) {

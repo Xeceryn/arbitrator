@@ -1,10 +1,13 @@
 import { ORPCError, os } from "@orpc/server";
-import { Exchange } from "./exchange";
 import { z } from "zod";
+
+import { Exchange } from "./exchange";
 import {
   exchangeInsertSchema,
   exchangeSelectSchema,
   exchangeUpdateSchema,
+  listExchangeSelectSchema,
+  paginatedExchangeSelectSchema,
 } from "./exchange.schema";
 
 const add = os
@@ -27,17 +30,10 @@ const add = os
   });
 
 const list = os
-  .input(
-    z
-      .object({
-        cmcid: z.number().optional(),
-        hasCryptocurrencyWithId: z.number().optional(),
-      })
-      .optional(),
-  )
-  .output(z.array(exchangeSelectSchema))
+  .input(listExchangeSelectSchema)
+  .output(paginatedExchangeSelectSchema)
   .handler(async ({ input }) => {
-    return await Exchange.getAll(input);
+    return await Exchange.list(input);
   });
 
 const findById = os

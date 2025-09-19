@@ -11,6 +11,7 @@ const handler = new RPCHandler(router, {
 
 Bun.serve({
   async fetch(request: Request) {
+    console.log(request.method, request.url, request.destination);
     const { response } = await handler.handle(request, {
       context: {}, // Provide initial context if needed
     });

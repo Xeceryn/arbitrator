@@ -3,13 +3,14 @@ import staticPlugin from "@elysiajs/static";
 import { faker } from "@faker-js/faker";
 
 import { CoinController } from "./controllers/coin.controller";
-import { SignalController } from "./controllers/signal.controller";
+// import { SignalController } from "./controllers/signal.controller";
+// import { MarketController } from "./controllers/market.controller";
 import { ErrorPageController } from "./controllers/error-page.controller";
 import { HomeController } from "./controllers/home.controller";
-import { MarketController } from "./controllers/market.controller";
 import { serverTiming } from "@elysiajs/server-timing";
 
 import { bundleClientSideResources } from "./bundler";
+import { htmx } from "@gtramontina.com/elysia-htmx";
 
 if (!process.argv.includes("--cluster")) {
   await bundleClientSideResources();
@@ -27,10 +28,11 @@ new Elysia()
       return redirect("/internal-server-error");
     }
   })
-  .onBeforeHandle(({ set }) => {
+  .use(htmx())
+  .onBeforeHandle(({ set, request }) => {
+    console.log(request.url);
     set.headers["content-type"] = "text/html; charset=utf-8";
   })
-
   .use(serverTiming())
   .use(ErrorPageController)
   .use(HomeController)

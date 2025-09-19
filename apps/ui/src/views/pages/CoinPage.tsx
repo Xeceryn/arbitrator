@@ -1,15 +1,22 @@
-import { capitalizeFirstLetter } from "../../utils";
-import { CoinTableRow } from "../components/CoinTableRow";
-import { AddCoinModal } from "../components/AddCoinModal";
+import type { ListCryptocurrencyInput } from "@arbitrator/lister/types";
+import { CryptocurrencySearchByOptions } from "@arbitrator/lister/constants";
 import { listerClient } from "@arbitrator/sdk";
-import type { ListCryptocurrencyInput } from "@arbitrator/lister/schemas";
 
-export const CoinPageFilterItem = (props: { option: string, value: string, active: boolean }) => {
+import { capitalizeFirstLetter } from "../../utils";
+import { AddCoinModal } from "../components/AddCoinModal";
+import { CoinTableRow } from "../components/CoinTableRow";
+
+export const CoinPageFilterItem = (props: {
+	option: string,
+	value: string,
+	active: boolean
+}) => {
 	return (
 		<option
+			class={"capitalize"}
 			value={props.value}
 			selected={props.active}
-			safe>{capitalizeFirstLetter(props.option)}</option>
+			safe>{props.option}</option>
 	);
 }
 
@@ -26,7 +33,6 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 	];
 	const active = searchBy_options.find((option) => option.value === props.searchBy);
 	const limit_options = [10, 20, 50, 100];
-	const active_limit = limit_options.find((option) => option === props.limit);
 
 	return (
 		<>
@@ -41,9 +47,10 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 							Showing {data.meta.from} to {data.meta.to} of {data.meta.items} entries
 							<select
 								name="limit"
-								hx-get={`/coins?limit=${props.limit}`}
+								hx-get={`/coins`}
 								hx-trigger="change"
 								hx-swap="outerHTML"
+								hx-params="*"
 								hx-target="closest main"
 								class="select select-bordered join-item"
 							>
@@ -52,7 +59,7 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 									limit_options.map((option) => (
 										<option
 											value={option.toString()}
-											{...(active_limit === option ? { selected: true } : {})}
+											{...(props.limit === option ? { selected: true } : {})}
 										>{option}</option>
 									))
 								}
@@ -69,23 +76,23 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 								hx-swap="outerHTML"
 							>
 								<button
-									{...data.meta.currentPage === 1 ? { disabled: true } : {}}
+									disabled={data.meta.page === 1}
 									class="join-item btn btn-outline"
 									hx-get={`/coins?page=${1}`}
 								>First</button>
 								<button
-									{...data.meta.hasPreviousPage ? {} : { disabled: true }}
+									disabled={data.meta.hasPreviousPage}
 									class="join-item btn btn-outline"
-									hx-get={`/coins?page=${data.meta.currentPage - 1}`}
+									hx-get={`/coins?page=${data.meta.page - 1}`}
 								>Previous</button>
-								<button name="page" class="join-item btn btn-outline">Page {data.meta.currentPage}</button>
+								<button name="page" class="join-item btn btn-outline">Page {data.meta.page}</button>
 								<button
 									{...data.meta.hasNextPage ? {} : { disabled: true }}
 									class="join-item btn btn-outline"
-									hx-get={`/coins?page=${data.meta.currentPage + 1}`}
+									hx-get={`/coins?page=${data.meta.page + 1}`}
 								>Next</button>
 								<button
-									{...data.meta.currentPage === data.meta.pages ? { disabled: true } : {}}
+									{...data.meta.page === data.meta.pages ? { disabled: true } : {}}
 									hx-get={`/coins?page=${data.meta.pages}`}
 									hx-trigger="click"
 									hx-include="[name=searchBy], [name=search]"
@@ -104,8 +111,8 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 									<input
 										name="search"
 										class="input input-bordered join-item"
-										placeholder={props.search ? props.search : "Search"}
-										value={props.search ? props.search : ""}
+										placeholder="Search"
+										value={props.search}
 										hx-get="/coins/list?page=1"
 										hx-include="[name=searchBy]"
 										hx-trigger="keyup changed delay:10ms"
@@ -125,12 +132,12 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 								class="select select-bordered join-item"
 							>
 								<option disabled value="">Search By</option>
-								{searchBy_options.map((option) => (
+								{CryptocurrencySearchByOptions.map((option) => (
 									<option
 										safe
-										value={option.value}
-										{...(active?.value === option.value ? { selected: true } : {})}
-									>{capitalizeFirstLetter(option.name)}</option>
+										value={option}
+										{...(active?.value === option ? { selected: true } : {})}
+									>{capitalizeFirstLetter(option)}</option>
 								))}
 							</select>
 						</div>

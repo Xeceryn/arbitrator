@@ -1,7 +1,8 @@
-import { dateFormatter } from "../../utils";
-import { type Cryptocurrency } from "@arbitrator/lister/types";
+import type { CryptocurrencySelect } from "@arbitrator/lister/types";
 
-export const CoinTableRow = (props: Cryptocurrency) => {
+import { dateFormatter } from "../../utils";
+
+export const CoinTableRow = (props: CryptocurrencySelect) => {
 	const logoUrl = `https://s2.coinmarketcap.com/static/img/coins/64x64/${props.cmcId}.png`;
 	return (
 		<tr id={`coin-table-row-${props.id}`} class="">

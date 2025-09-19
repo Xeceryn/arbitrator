@@ -19,36 +19,87 @@ export function createPaginationInputSchema<
   });
 }
 
+const paginatedMetadataSchema = z.object({
+  items: z.number(),
+  pages: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  from: z.number(),
+  to: z.number(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean(),
+  search: z.string(),
+  searchBy: z.string(),
+  order: z.string(),
+  orderBy: z.string(),
+});
+
 export function createPaginatedOutputSchema<T extends z.ZodTypeAny>(
   itemSchema: T,
 ) {
   return z.object({
     data: z.array(itemSchema),
-    meta: z.object({
-      items: z.number(),
-      pages: z.number(),
-      currentPage: z.number(),
-      limit: z.number(),
-      from: z.number(),
-      to: z.number(),
-      hasNextPage: z.boolean(),
-      hasPreviousPage: z.boolean(),
-      orderBy: z.string(),
-      order: z.string(),
-      search: z.string(),
-      searchBy: z.string(),
-    }),
+    meta: paginatedMetadataSchema,
   });
 }
 
-export const paginationOutputSchema = z.object({
-  total: z.number(),
-  totalPages: z.number(),
-  currentPage: z.number(),
-  limit: z.number(),
-  hasNextPage: z.boolean(),
-  hasPrevPage: z.boolean(),
-});
+type PaginatedOutput<T> = {
+  data: T;
+  meta: z.infer<typeof paginatedMetadataSchema>;
+};
+
+type PaginateParam = z.infer<
+  ReturnType<typeof createPaginationInputSchema<z.ZodEnum, z.ZodEnum>>
+>;
+
+export function paginate<T>(
+  data: Array<T>,
+  count: number,
+  meta: PaginateParam,
+): PaginatedOutput<T[]> {
+  const { page, limit, search, searchBy, order, orderBy } = meta;
+  if (meta.limit === -1) {
+    return {
+      data,
+      meta: {
+        items: data.length,
+        pages: 1,
+        page: meta.page,
+        limit: meta.limit,
+        from: data.length > 0 ? 1 : 0,
+        to: data.length,
+        hasNextPage: false,
+        hasPreviousPage: false,
+        search: meta.search,
+        searchBy: meta.searchBy as string,
+        order: meta.order,
+        orderBy: meta.orderBy as string,
+      },
+    };
+  }
+
+  const pages = Math.ceil(count / limit);
+  const from = count === 0 ? 0 : (page - 1) * limit + 1;
+  const to = Math.min(page * limit, count);
+
+  return {
+    data,
+    meta: {
+      items: count,
+      pages,
+      page,
+      limit,
+      from,
+      to,
+      hasNextPage: page < pages,
+      hasPreviousPage: page > 1,
+      search,
+      searchBy: searchBy as string,
+      order,
+      orderBy: orderBy as string,
+    },
+  };
+}
 
 export type PaginationInput<T extends z.ZodEnum> = z.infer<
   ReturnType<typeof createPaginationInputSchema<T, T>>

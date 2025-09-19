@@ -30,5 +30,8 @@
 }
 
 .htmx-request.progress {
-  display: block;
+  position: absolute;
+	display: block;
+	z-index: 1000;
+	top: 0;
 }

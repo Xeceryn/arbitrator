@@ -6,7 +6,7 @@
 //     console.log(args);
 //   },
 // };
-declare var self: Worker;
+declare let self: Worker;
 
 import { threadId as processId } from "worker_threads";
 

@@ -40,7 +40,7 @@ export const BaseLayout = async ({ title = 'E9 - Arbitmage', children }: Props) 
 				</head>
 				<body hx-indicator='.progress'>
 					<Sidebar>
-						<progress class="progress w-full z-auto"></progress>
+						<progress class="progress w-full"></progress>
 						<Navbar>
 							<div id="toast-container" class=" z-100 toast toast-bottom toast-end">
 								<NotificationToast message="testing notification" level="info" />

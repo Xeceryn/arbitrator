@@ -1,4 +1,3 @@
-import { Html } from "@elysiajs/html"
 import { listerClient } from '@arbitrator/sdk';
 
 type CoinAssignmentTableRowProps = {

@@ -35,9 +35,6 @@ export const Sidebar = ({ children }: PropsWithChildren) => {
 					<SideBarItem title='Chain Management' path='chain' />
 					<SideBarItem title='Assignment' path='assignment' />
 				</ul>
-				<div class={""}>
-					build with love by <a href="https://sulthonuladib.dev">Sulthonul Adib</a>
-				</div>
 			</div>
 			<div class="drawer-content flex flex-col">
 				{children}
