@@ -1,14 +1,10 @@
-import { type Children, Html, type PropsWithChildren } from '@kitajs/html';
+import { type PropsWithChildren } from '@kitajs/html';
 
 export enum ActiveNav {
 	Home = 'Home',
 	Features = 'Features',
 	Docs = 'Docs',
 }
-
-type NavbarProps = PropsWithChildren<{
-	activeNav?: ActiveNav;
-}>
 
 const themes =
 	[
@@ -43,6 +39,9 @@ const themes =
 		"dim",
 		"nord",
 		"sunset",
+		"caramellatte",
+		"abyss",
+		"silk",
 	];
 
 
@@ -81,12 +80,14 @@ export function Navbar(props?: PropsWithChildren) {
 		<div class="navbar sticky top-0 bg-base-100  z-10 shadow-lg" >
 			{props?.children}
 			<div class="flex-1">
-				<label for="left-sidebar-drawer" class="btn btn-primary drawer-button lg:hidden">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="h-5 inline-block w-5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5">
-						</path>
-					</svg>
-				</label>
+				{
+					// <label for="left-sidebar-drawer" class="btn btn-primary drawer-button lg:hidden">
+					// 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="h-5 inline-block w-5">
+					// 		<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5">
+					// 		</path>
+					// 	</svg>
+					// </label>
+				}
 				<h1 class="text-2xl font-semibold ml-2">Cryptocurrencies</h1>
 			</div>
 

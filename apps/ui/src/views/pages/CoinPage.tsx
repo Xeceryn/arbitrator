@@ -71,7 +71,7 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 						<div id="coin-page-filter">
 							<div class="join"
 								hx-trigger="click"
-								hx-include="[name=searchBy], [name=search]"
+								hx-include="[name=searchBy], [name=search], [name=limit]"
 								hx-target="closest main"
 								hx-swap="outerHTML"
 							>
@@ -81,21 +81,20 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 									hx-get={`/coins?page=${1}`}
 								>First</button>
 								<button
-									disabled={data.meta.hasPreviousPage}
+									disabled={!data.meta.hasPreviousPage}
 									class="join-item btn btn-outline"
 									hx-get={`/coins?page=${data.meta.page - 1}`}
 								>Previous</button>
 								<button name="page" class="join-item btn btn-outline">Page {data.meta.page}</button>
 								<button
-									{...data.meta.hasNextPage ? {} : { disabled: true }}
+									disabled={!data.meta.hasNextPage}
 									class="join-item btn btn-outline"
 									hx-get={`/coins?page=${data.meta.page + 1}`}
 								>Next</button>
 								<button
-									{...data.meta.page === data.meta.pages ? { disabled: true } : {}}
+									disabled={data.meta.page === data.meta.pages}
 									hx-get={`/coins?page=${data.meta.pages}`}
 									hx-trigger="click"
-									hx-include="[name=searchBy], [name=search]"
 									hx-target="closest main"
 									hx-swap="outerHTML"
 									class="join-item btn btn-outline"
@@ -114,8 +113,8 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 										placeholder="Search"
 										value={props.search}
 										hx-get="/coins/list?page=1"
-										hx-include="[name=searchBy]"
-										hx-trigger="keyup changed delay:10ms"
+										hx-include="[name=searchBy], [name=limit]"
+										hx-trigger="keyup changed delay:100ms"
 										hx-swap="innerHTML"
 										hx-target="#coin-table-body"
 									/>
@@ -124,8 +123,8 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 
 							<select
 								name="searchBy"
-								hx-get="/coins/list?page=1"
-								hx-include="[name=search]"
+								hx-get="/coins?page=1"
+								hx-include="[name=search], [name=limit]"
 								hx-trigger="change"
 								hx-swap="innerHTML"
 								hx-target="#coin-table-body"

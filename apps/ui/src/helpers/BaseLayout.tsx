@@ -53,7 +53,7 @@ export const BaseLayout = async ({ title = 'E9 - Arbitmage', children }: Props) 
 
 					<footer class="footer justify-center sm:footer-horizontal footer-center bg-base-300 text-base-content p-4">
 						<aside>
-							<p>Copyright © {new Date().getFullYear()} - Built with Love by <a class={"font-bold"} href="https://sulthonuladib.dev">Sulthonul Adib</a></p>
+							<p>Copyright © BedokCorp {new Date().getFullYear()} - Built with Love by <a class={"font-bold"} href="https://sulthonuladib.dev">Sulthonul Adib</a></p>
 						</aside>
 					</footer>
 				</body>

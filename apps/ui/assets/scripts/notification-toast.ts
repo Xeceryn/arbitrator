@@ -46,11 +46,12 @@ type ToastEvent = CustomEvent<{
 function onMakeToast(event: ToastEvent) {
   const toast = new Toast(event.detail.level, event.detail.message);
   const showedToast = toast.show();
+  showedToast.onclick = () => showedToast.remove();
 
   setTimeout(() => {
     showedToast.remove();
   }, 4000);
 }
 
-// @ts-ignore
+// @ts-expect-error idk
 document.addEventListener("make-toast", onMakeToast);
