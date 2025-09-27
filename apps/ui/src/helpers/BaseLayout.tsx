@@ -11,7 +11,9 @@ type Props = PropsWithChildren<{
 export const BaseLayout = async ({ title = 'E9 - Arbitmage', children }: Props) => {
 	return (
 		<>
-			{`<!DOCTYPE html>`}
+			{
+				`<!DOCTYPE html>`
+			}
 			<html lang="en" data-theme="dark"
 			>
 				<head>

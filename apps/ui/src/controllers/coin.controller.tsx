@@ -1,20 +1,20 @@
-import { Elysia, redirect } from "elysia";
-import { html } from "@elysiajs/html";
-import { BaseLayout } from "../helpers/BaseLayout";
-import { CoinPage } from "../views/pages/CoinPage";
-import { CoinTableRow } from "../views/components/CoinTableRow";
-import { createPushURL, dateFormatter } from "../utils";
-import { htmx } from "@gtramontina.com/elysia-htmx";
-import { listCryptocurrencySelectSchema } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { listerClient } from "@arbitrator/sdk";
+import { html } from "@elysiajs/html";
+import { htmx } from "@gtramontina.com/elysia-htmx";
 import { ORPCError } from "@orpc/client";
+import { Elysia, redirect } from "elysia";
 import z from "zod";
+import { listCryptocurrencySelectSchema } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
+import { BaseLayout } from "../helpers/BaseLayout";
+import { createPushURL, dateFormatter } from "../utils";
+import { CoinTableRow } from "../views/components/CoinTableRow";
+import { CoinPage } from "../views/pages/CoinPage";
 
-export const CoinController = new Elysia()
+export const CryptocurrencyController = new Elysia()
 	.use(html())
 	.use(htmx())
 	.get("/coins", ({ query, hx, }) => {
-		hx.pushURL('/coins?' + Object.entries(query).map(([key, value]) => `${key}=${value}`).join("&"));
+		hx.pushURL(createPushURL('/coins', query));
 		if (!hx.isHTMX) {
 			return (
 				<BaseLayout title="arbitmage - Cryptocurrencies">

@@ -1,17 +1,16 @@
+import { listerClient } from "@arbitrator/sdk";
 import { Elysia, redirect, t } from "elysia";
-import { html } from "@elysiajs/html";
-import { LolocoClient } from "@e9crypt/loloco";
 import { BaseLayout } from "../helpers/BaseLayout";
 import { MarketPage } from "../views/pages/MarketPage";
 import { MarketTableRow } from "../views/components/MarketTableRow";
 import { dateFormatter } from "../utils";
 import { htmx } from "@gtramontina.com/elysia-htmx";
+import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
 
-export const MarketController = new Elysia()
-	.use(html())
+export const ExchangeController = new Elysia()
 	.use(htmx())
 
-	.get("/markets", ({ query, hx }) => {
+	.get("/markets", ({ hx }) => {
 		if (hx.isHTMX) {
 			return (
 				<>
@@ -35,7 +34,7 @@ export const MarketController = new Elysia()
 		if (!hx.isHTMX) {
 			return redirect("/markets");
 		}
-		const { data, error } = await LolocoClient.markets.get({});
+		const { data, error } = await listerClient.exchange.list(query);
 
 		if (error) {
 			console.log(error);
@@ -54,13 +53,11 @@ export const MarketController = new Elysia()
 			</>
 		)
 	}, {
-		query: t.Optional(t.Object({
-			search: t.Optional(t.String({ default: "" })),
-		}))
+		query: listExchangeSelectSchema
 	})
 
 	.get("markets/:id", async ({ params }) => {
-		const { data, error } = await LolocoClient.markets[params.id].get();
+		const { data, error } = await listerClient.exchange.findById(params.id);
 		if (error !== null) {
 			console.log(error);
 			return <div>Failed to fetch markets</div>;
@@ -95,9 +92,8 @@ export const MarketController = new Elysia()
 	// })
 
 	.get("/markets/:id/edit", async ({ params }) => {
-		const { data, error } = await LolocoClient.markets[params.id].get();
+		const [error, data] = await listerClient.exchange.findById(params.id);
 		if (error !== null) {
-			console.log(error);
 			return <div>Failed to fetch markets</div>;
 		}
 		return (
@@ -110,7 +106,7 @@ export const MarketController = new Elysia()
 						type="text"
 						name="symbol"
 						class="px-6 py-4 block mb-2 text-sm font-medium dark:text-white"
-						value={data.symbol}
+						value={data.slug}
 					/>
 				</th>
 				<td class="px-6 py-4">
@@ -149,29 +145,4 @@ export const MarketController = new Elysia()
 		params: t.Object({
 			id: t.String(),
 		}),
-	})
-
-	.post("markets/search", async ({ set, headers, body }) => {
-		if (!headers["hx-request"]) {
-			return redirect("/markets");
-		}
-		// @ts-ignore
-		const { data, error } = await LolocoClient.markets.get({});
-		if (error !== null) {
-			console.log(error);
-			return <div>Failed to fetch markets</div>;
-		}
-		set.headers = {
-			"hx-push-url": `?search=${body?.search}`
-		}
-		return <>
-			{data.data.map(x => (
-				<MarketTableRow {...x} />
-			))}
-		</>
-	}, {
-		type: "application/x-www-form-urlencoded",
-		body: t.Optional(t.Object({
-			search: t.Optional(t.String({ default: "" })),
-		})),
 	})

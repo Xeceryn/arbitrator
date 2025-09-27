@@ -10,93 +10,80 @@ import {
   paginatedExchangeSelectSchema,
 } from "./exchange.schema";
 
-const add = os
-  .input(exchangeInsertSchema)
-  .output(exchangeSelectSchema)
-  .handler(async ({ input }) => {
-    if (await Exchange.cmcIdExists(input.cmcId)) {
-      throw new ORPCError("CONFLICT", {
-        message: "exchange with this cmcId already exists",
-      });
-    }
-    const result = await Exchange.add(input);
-    if (!result) {
-      throw new ORPCError("INTERNAL_SERVER_ERROR", {
-        message: "something wrong when adding exchange",
-      });
-    }
-
-    return result;
-  });
-
-const list = os
-  .input(listExchangeSelectSchema)
-  .output(paginatedExchangeSelectSchema)
-  .handler(async ({ input }) => {
-    return await Exchange.list(input);
-  });
-
-const findById = os
-  .input(z.number())
-  .output(exchangeSelectSchema)
-  .handler(async ({ input }) => {
-    console.log(input);
-    const result = await Exchange.getById(input);
-    if (!result) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "exchange not found",
-      });
-    }
-
-    return result;
-  });
-
-const update = os
-  .input(
-    z.object({
-      id: z.number(),
-      payload: exchangeUpdateSchema,
-    }),
-  )
-  .output(exchangeSelectSchema)
-  .handler(async ({ input }) => {
-    const target = await Exchange.getById(input.id);
-    if (!target) {
-      throw new ORPCError("NOT_FOUND", {
-        message: "exchange not found",
-      });
-    }
-
-    // validate if cmcId is about to be updated
-    // but the upcoming cmcId is already in use
-    if (input?.payload?.cmcId) {
-      const byCmcId = await Exchange.getByCmcId(input.payload.cmcId);
-      if (byCmcId && byCmcId.id !== input.id) {
+export const exchangeRouter = {
+  add: os
+    .input(exchangeInsertSchema)
+    .output(exchangeSelectSchema)
+    .handler(async ({ input }) => {
+      if (await Exchange.cmcIdExists(input.cmcId)) {
         throw new ORPCError("CONFLICT", {
-          message: "cmcId is already in use",
+          message: "exchange with this cmcId already exists",
         });
       }
-    }
+      const result = await Exchange.add(input);
+      if (!result) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: "something wrong when adding exchange",
+        });
+      }
+      return result;
+    }),
 
-    return await Exchange.update(input.id, input.payload);
-  });
+  list: os
+    .input(listExchangeSelectSchema)
+    .output(paginatedExchangeSelectSchema)
+    .handler(async ({ input }) => {
+      return await Exchange.list(input);
+    }),
 
-const remove = os
-  .input(z.number())
-  .output(exchangeSelectSchema)
-  .handler(async ({ input }) => {
-    const result = await Exchange.remove(input);
-    if (!result) {
-      throw new ORPCError("NOT_FOUND");
-    }
+  findById: os
+    .input(z.coerce.number())
+    .output(exchangeSelectSchema)
+    .handler(async ({ input }) => {
+      const result = await Exchange.getById(input);
+      if (!result) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "exchange not found",
+        });
+      }
+      return result;
+    }),
 
-    return result;
-  });
+  update: os
+    .input(
+      z.object({
+        id: z.coerce.number(),
+        payload: exchangeUpdateSchema,
+      }),
+    )
+    .output(exchangeSelectSchema)
+    .handler(async ({ input }) => {
+      const target = await Exchange.getById(input.id);
+      if (!target) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "exchange not found",
+        });
+      }
+      if (input?.payload?.cmcId) {
+        const byCmcId = await Exchange.getByCmcId(input.payload.cmcId);
+        if (byCmcId && byCmcId.id !== input.id) {
+          throw new ORPCError("CONFLICT", {
+            message: "cmcId is already in use",
+          });
+        }
+      }
+      return await Exchange.update(input.id, input.payload);
+    }),
 
-export const exchangeRouter = {
-  add,
-  list,
-  findById,
-  update,
-  remove,
+  remove: os
+    .input(z.number())
+    .output(exchangeSelectSchema)
+    .handler(async ({ input }) => {
+      const result = await Exchange.remove(input);
+      if (!result) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
+      return result;
+    }),
 };

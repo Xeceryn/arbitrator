@@ -55,7 +55,7 @@ export const cryptocurrencyRouter = {
   update: os
     .input(
       z.object({
-        id: z.number(),
+        id: z.coerce.number(),
         payload: cryptocurrencyUpdateSchema,
       }),
     )

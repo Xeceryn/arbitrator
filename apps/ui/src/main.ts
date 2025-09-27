@@ -2,7 +2,7 @@ import { Elysia, redirect } from "elysia";
 import staticPlugin from "@elysiajs/static";
 import { faker } from "@faker-js/faker";
 
-import { CoinController } from "./controllers/coin.controller";
+import { CryptocurrencyController } from "./controllers/coin.controller";
 // import { SignalController } from "./controllers/signal.controller";
 // import { MarketController } from "./controllers/market.controller";
 import { ErrorPageController } from "./controllers/error-page.controller";
@@ -11,6 +11,7 @@ import { serverTiming } from "@elysiajs/server-timing";
 
 import { bundleClientSideResources } from "./bundler";
 import { htmx } from "@gtramontina.com/elysia-htmx";
+import { ExchangeController as ExchangeController } from "./controllers";
 
 if (!process.argv.includes("--cluster")) {
   await bundleClientSideResources();
@@ -36,8 +37,8 @@ new Elysia()
   .use(serverTiming())
   .use(ErrorPageController)
   .use(HomeController)
-  .use(CoinController)
-  // .use(MarketController)
+  .use(CryptocurrencyController)
+  .use(ExchangeController)
   // .use(SignalController)
   .use(staticPlugin({ prefix: "/public", assets: "./public" }))
   .get("/", () => {
