@@ -2,13 +2,14 @@ import { listerClient } from "@arbitrator/sdk";
 import { html } from "@elysiajs/html";
 import { htmx } from "@gtramontina.com/elysia-htmx";
 import { ORPCError } from "@orpc/client";
-import { Elysia, redirect } from "elysia";
+import { Elysia, redirect, status } from "elysia";
 import z from "zod";
-import { listCryptocurrencySelectSchema } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
+import { cryptocurrencyUpdateSchema, listCryptocurrencySelectSchema } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
-import { createPushURL, dateFormatter } from "../utils";
+import { createPushURL } from "../utils";
 import { CoinTableRow } from "../views/components/CoinTableRow";
-import { CoinPage } from "../views/pages/CoinPage";
+import { CoinPage } from "../views/pages/CryptocurrencyPage";
+import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
 
 export const CryptocurrencyController = new Elysia()
 	.use(html())
@@ -69,79 +70,66 @@ export const CryptocurrencyController = new Elysia()
 		})
 	})
 
-	// .put("coins/:id", async ({ params, body, set }) => {
-	// 	const { data, error } = await LolocoClient.coins({ id: params.id }).put(body);
-	// 	if (error !== null) {
-	// 		console.log("error", error);
-	// 		set.status = error.status;
-	// 		return error.value
-	// 	}
-	// 	return (
-	// 		<CoinTableRow {...data} />
-	// 	)
-	// }, {
-	// 	params: t.Object({
-	// 		id: t.String(),
-	// 	}),
-	// 	body: t.Object({
-	// 		name: t.String(),
-	// 		symbol: t.String(),
-	// 	}),
-	// })
+	.patch("/coins/:id/edit", async ({ params, body, hx }) => {
+		console.log(
+			'/coins/:id/edit',
+			params,
+			body
+		);
 
-	.get("/coins/:id/edit", async ({ params }) => {
+		hx.triggerEvent({
+			"make-toast": {
+				level: "info",
+				message: "Coin Updated",
+			},
+			"update_coin_success":  null,
+		});
+
 		const [error, data] = await listerClient.cryptocurrency.findById(params.id);
-		if (error !== null) {
-			return <div>Failed to fetch coins</div>;
+		if (error !== null || !data) {
+			hx.reswap("none");
+			hx.triggerEvent({
+				"make-toast": {
+					level: "error",
+					message: "failed to update coin",
+				}
+			});
+			return status("No Content");
 		}
-		return (
-			<tr
-				id={`edit-coin-${params.id}`}
-				class="odd:bg-white dark:odd:bg-gray-900 even:bg-gray-50 dark:even:bg-gray-800 border-b dark:border-gray-700"
-			>
-				<th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-					<input
-						type="text"
-						name="symbol"
-						class="px-6 py-4 block mb-2 text-sm font-medium dark:text-white"
-						value={data.symbol}
-					/>
-				</th>
-				<td class="px-6 py-4">
-					<input
-						class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-						type="text"
-						name="name"
-						value={data.name}
-					/>
-				</td>
-				<td class="px-6 py-4">
-					{dateFormatter.format(new Date(data.createdAt)) as 'safe'}
-				</td>
-				<td class="px-6 py-4">
-					{data.updatedAt ? dateFormatter.format(new Date(data.updatedAt)) as 'safe' : "Not Updated Yet"}
-				</td>
-				<td class="px-6 py-4">
-					<button
-						hx-put={`/coins/${params.id}`}
-						hx-target={`#edit-coin-${params.id}`}
-						hx-swap="outerHTML"
-						hx-include="closest tr"
-						hx-trigger="click"
-						class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-					>Save</button>
-					<button
-						hx-get={`/coins/${params.id}`}
-						hx-swap="outerHTML"
-						hx-target={`#edit-coin-${params.id}`}
-						class="ml-5 font-medium text-blue-600 dark:text-blue-500 hover:underline"
-					>Cancel</button>
-				</td>
-			</tr>
-		)
+		if (body?.name) data.name = body.name;
+		if (body?.slug) data.slug = body.slug;
+		if (body?.symbol) data.symbol = body.symbol;
+		if (body?.cmcId) data.cmcId = body.cmcId;
+
+		return <CoinTableRow
+			{...data}
+		/>;
 	}, {
 		params: z.object({
 			id: z.coerce.string(),
+		}),
+		body: cryptocurrencyUpdateSchema
+	})
+
+	.get("/coins/:id/edit-modal", async ({ params, hx }) => {
+		if (!hx.isHTMX) {
+			return redirect("/coins");
+		}
+		const [error, data] = await listerClient.cryptocurrency.findById(params.id);
+		if (!data || error) {
+			hx.reswap("none");
+			hx.triggerEvent({
+				"make-toast": {
+					level: "error",
+					message: "coin not found",
+				}
+			});
+		}
+
+		return <CryptocurrencyEditModalContent coinId={params.id}  {...data} />;
+	}, {
+		params: z.object({
+			id: z.coerce.number(),
 		})
 	})
 

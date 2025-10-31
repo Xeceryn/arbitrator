@@ -1,4 +1,4 @@
-import { and, desc, asc, count, eq, or, ilike } from "drizzle-orm";
+import { and, desc, asc, count, eq, or, ilike, sql } from "drizzle-orm";
 import { cryptocurrencyTable } from "./cryptocurrency.sql";
 import { database } from "../../database/connection";
 import type z from "zod";
@@ -16,15 +16,29 @@ export namespace Cryptocurrency {
     input: ListCryptocurrencyInput,
   ): Promise<PaginatedCryptocurrencyList> {
     const conditions = [];
+
     if (input?.search) {
-      conditions.push(
-        or(
-          ilike(
-            cryptocurrencyTable[input.searchBy],
-            "%" + input.search.toLowerCase() + "%",
+      // handle number type search, we need to cast this
+      if (input.searchBy === "id" || input.searchBy === "cmcId") {
+        conditions.push(
+          or(
+            ilike(
+              sql`${cryptocurrencyTable[input.searchBy]}::varchar`,
+              "%" + input.search.toString() + "%",
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // if it's string we just do normal ilike
+        conditions.push(
+          or(
+            ilike(
+              cryptocurrencyTable[input.searchBy],
+              "%" + input.search.toLowerCase() + "%",
+            ),
+          ),
+        );
+      }
     }
 
     const { page, limit } = input;

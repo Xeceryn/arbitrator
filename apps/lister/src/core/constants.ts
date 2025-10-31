@@ -1,2 +1,3 @@
-export * from "./cryptocurrency/cryptocurrency.constant.ts";
-export * from "./exchange/exchange.constant.ts";
+export * from "./cryptocurrency/cryptocurrency.constant";
+export * from "./exchange/exchange.constant";
+export * from "./chain/chain.constant";

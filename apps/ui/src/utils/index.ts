@@ -45,3 +45,22 @@ export function createPushURL<
 
   return `${url}?${params}`;
 }
+
+export function timeAgo(date: Date) {
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const seconds = (date.getTime() - new Date().getTime()) / 1000;
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ["year", 60 * 60 * 24 * 365],
+    ["month", 60 * 60 * 24 * 30],
+    ["day", 60 * 60 * 24],
+    ["hour", 60 * 60],
+    ["minute", 60],
+    ["second", 1],
+  ];
+
+  for (const [unit, value] of units) {
+    if (Math.abs(seconds) >= value || unit === "second") {
+      return rtf.format(Math.round(seconds / value), unit);
+    }
+  }
+}

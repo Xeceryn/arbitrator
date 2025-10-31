@@ -11,7 +11,8 @@ export const WorkerState = {
   Disconnected: "disconnected",
   Error: "error",
 } as const;
-type WorkerState = (typeof WorkerState)[keyof typeof WorkerState];
+
+export type WorkerState = (typeof WorkerState)[keyof typeof WorkerState];
 
 export type WorkerStateChangeContent = {
   state: WorkerState;

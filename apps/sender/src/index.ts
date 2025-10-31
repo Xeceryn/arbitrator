@@ -1,7 +1,7 @@
 import { BaseCurrency, Exchange, ExchangeBaseCurrencyMap } from "./constants";
 import {
   WorkerMessageType,
-  WorkerState,
+  type WorkerState,
   type OrderbookWorkerMessage,
 } from "./types";
 import { split_symbols } from "./utils";
@@ -78,7 +78,7 @@ for (const {
 
     worker.onmessage = (event: Bun.MessageEvent<OrderbookWorkerMessage>) => {
       const data = event.data;
-      if (data.type === WorkerMessageType.Data) {
+      if (data.type === "state-change") {
         const base_currency = ExchangeBaseCurrencyMap.get(exchange)!;
         if (base_currency === BaseCurrency.IDR) {
           price_search_worker.postMessage(data);

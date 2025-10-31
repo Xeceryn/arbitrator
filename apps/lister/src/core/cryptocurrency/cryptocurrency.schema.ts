@@ -19,9 +19,14 @@ export const cryptocurrencyInsertSchema = createInsertSchema(
   createdAt: true,
   updatedAt: true,
 });
+
 export const cryptocurrencyUpdateSchema = createUpdateSchema(
   cryptocurrencyTable,
+  {
+    cmcId: z.coerce.number().optional(),
+  },
 ).omit({
+  logo: true,
   createdAt: true,
   updatedAt: true,
 });

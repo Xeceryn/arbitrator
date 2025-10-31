@@ -2329,9 +2329,6 @@
   .text-gray-900 {
     color: var(--color-gray-900);
   }
-  .capitalize {
-    text-transform: capitalize;
-  }
   .normal-case {
     text-transform: none;
   }
@@ -2432,6 +2429,10 @@
   .btn-error {
     --btn-color: var(--color-error);
     --btn-fg: var(--color-error-content);
+  }
+  .btn-neutral {
+    --btn-color: var(--color-neutral);
+    --btn-fg: var(--color-neutral-content);
   }
   .btn-primary {
     --btn-color: var(--color-primary);

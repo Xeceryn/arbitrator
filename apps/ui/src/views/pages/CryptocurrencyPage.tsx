@@ -5,39 +5,27 @@ import { listerClient } from "@arbitrator/sdk";
 import { capitalizeFirstLetter } from "../../utils";
 import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
-
-export const CoinPageFilterItem = (props: {
-	option: string,
-	value: string,
-	active: boolean
-}) => {
-	return (
-		<option
-			class={"capitalize"}
-			value={props.value}
-			selected={props.active}
-			safe>{props.option}</option>
-	);
-}
+import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
 
 export const CoinPage = async (props: ListCryptocurrencyInput) => {
 	const [error, data] = await listerClient.cryptocurrency.list(props);
 	if (!data || error) {
-		return <div>Failed to fetch coins</div>;
+		return (
+			<div>
+				<div>Failed to fetch coins</div>
+				<div safe>{error.message}</div>
+			</div>
+		);
 	}
 
-	const searchBy_options = [
-		{ name: "Name", value: "name" },
-		{ name: "Symbol", value: "symbol" },
-		{ name: "Slug", value: "slug" },
-	];
-	const active = searchBy_options.find((option) => option.value === props.searchBy);
+	const active = CryptocurrencySearchByOptions.find((option) => option === props.searchBy);
 	const limit_options = [10, 20, 50, 100];
 
 	return (
 		<>
 			<main class="flex-1 overflow-y-auto md:pt-4 pt-4 px-12  bg-base-200">
-				<AddCoinModal />
+				{ /*<AddCoinModal /> */}
+				<CryptocurrencyEditModal />
 				<div
 					class="card w-full p-6 bg-base-100 shadow-xl mt-2">
 
@@ -135,7 +123,7 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 									<option
 										safe
 										value={option}
-										{...(active?.value === option ? { selected: true } : {})}
+										{...(active === option ? { selected: true } : {})}
 									>{capitalizeFirstLetter(option)}</option>
 								))}
 							</select>
@@ -169,11 +157,6 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
 								</thead>
 								<tbody
 									id="coin-table-body"
-								// hx-target="this"
-								// hx-trigger="load"
-								// hx-get="/coins/list"
-								// hx-params="*"
-								// hx-swap="innerHTML transition:true"
 								>
 									{
 										data.data.map((coin) => (
