@@ -1,15 +1,18 @@
 # arbitrator
 
+a monorepo of microservices
+
 To install dependencies:
 
 ```bash
 bun install
 ```
 
+
 To run:
 
 ```bash
-bun run index.ts
+bun run dev
 ```
+on each project in the monorepo.
 
-This project was created using `bun init` in bun v1.2.20. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
