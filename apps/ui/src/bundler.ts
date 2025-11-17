@@ -10,8 +10,8 @@ async function bundle_external_scripts() {
   const files = await readdir(dirs);
   const result = await Bun.build({
     entrypoints: files.map((file) => `${dirs}/${file}`),
-    outdir: "public/js",
-    minify: true,
+    outdir: "public/dist",
+    target: "browser",
   });
   console.log(
     result.outputs

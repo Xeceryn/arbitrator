@@ -1,118 +1,29 @@
-import { BaseCurrency, Exchange, ExchangeBaseCurrencyMap } from "./constants";
-import {
-  WorkerMessageType,
-  type WorkerState,
-  type OrderbookWorkerMessage,
-} from "./types";
-import { split_symbols } from "./utils";
+import { RPCHandler } from "@orpc/server/fetch";
+import { CORSPlugin } from "@orpc/server/plugins";
+import { createLogger } from "@arbitrator/logger";
+import { router } from "./router";
 
-type CrawlerWorkerConfig = {
-  exchange: Exchange;
-  base_currency: BaseCurrency;
-  max_subscriptions_each_connection: number;
-};
-type CrawlerWorkerState = {
-  exchange: string;
-  threadId: string;
-  state: WorkerState;
-};
+const logger = createLogger("arbitrator/sender");
 
-// date processing worker
-const price_search_worker = new Worker("src/workers/price-search.ts");
-const converter_worker = new Worker("src/workers/converter.ts");
+const handler = new RPCHandler(router, {
+  plugins: [new CORSPlugin({ origin: "*" })],
+});
 
-const crawlerConfigState: CrawlerWorkerState[] = [];
-const crawlerWorkerPath = "src/workers/orderbooks";
-const crawlerWorkerConfigs: CrawlerWorkerConfig[] = [
-  {
-    exchange: Exchange.Indodax,
-    base_currency: BaseCurrency.IDR,
-    max_subscriptions_each_connection: 30,
-  },
-  {
-    exchange: Exchange.Binance,
-    base_currency: BaseCurrency.USDT,
-    max_subscriptions_each_connection: 100,
-  },
-  {
-    exchange: Exchange.GateIO,
-    base_currency: BaseCurrency.USDT,
-    max_subscriptions_each_connection: 100,
-  },
-  {
-    exchange: Exchange.Mexc,
-    base_currency: BaseCurrency.USDT,
-    max_subscriptions_each_connection: 20,
-  },
-];
-
-for (const {
-  exchange,
-  max_subscriptions_each_connection,
-} of crawlerWorkerConfigs) {
-  const coin_list_request = await fetch(
-    `http://localhost:3001/assignments/market/${exchange}/coin`,
-  );
-
-  const coin_list_response = (await coin_list_request.json()) as {
-    cmcId: number;
-    symbol: string;
-    marketSymbol: string;
-  }[];
-
-  const symbols_each_connection = split_symbols(
-    coin_list_response.map(({ cmcId, marketSymbol }) => ({
-      cmcId,
-      symbol: marketSymbol,
-    })),
-    max_subscriptions_each_connection,
-  );
-  for (const symbols of symbols_each_connection) {
-    const argv = symbols
-      .map(({ cmcId, symbol }) => `${cmcId}-${symbol}`)
-      .join(",");
-
-    const worker = new Worker(`${crawlerWorkerPath}/${exchange}.ts`, {
-      argv: [argv],
+Bun.serve({
+  async fetch(request: Request) {
+    console.log(request.method, request.url, request.destination);
+    const { response } = await handler.handle(request, {
+      context: {}, // Provide initial context if needed
     });
+    if (!response) {
+      return new Response("NOT FOUND", {
+        status: 404,
+      });
+    }
 
-    worker.onmessage = (event: Bun.MessageEvent<OrderbookWorkerMessage>) => {
-      const data = event.data;
-      if (data.type === "state-change") {
-        const base_currency = ExchangeBaseCurrencyMap.get(exchange)!;
-        if (base_currency === BaseCurrency.IDR) {
-          price_search_worker.postMessage(data);
-          return;
-        }
-        if (base_currency === BaseCurrency.USDT) {
-          converter_worker.postMessage(data);
-          return;
-        }
-        return;
-      }
-      if (data.type === WorkerMessageType.StateChange) {
-        const { exchange, content, threadId } = data;
-        const state = content.state;
-        const existing_worker = crawlerConfigState.find(
-          (x) => x.threadId === threadId,
-        );
-        if (existing_worker) {
-          existing_worker.state = state;
-        } else {
-          crawlerConfigState.push({
-            exchange,
-            threadId,
-            state,
-          });
-        }
-      }
-      return;
-    };
+    return response;
+  },
+  port: 3002,
+});
 
-    // crawler_worker_state.push({
-    //   exchange,
-    //   threadId: `${exchange}-${worker.threadId}`,
-    //   state: WorkerState.Closed,
-    // });
-  }
-}
+logger.info(`listening on port 3002`);

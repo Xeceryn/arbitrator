@@ -1,10 +1,9 @@
 export const Exchange = {
   Indodax: "indodax",
   Pintu: "pintu",
-
   Huobi: "huobi",
   Binance: "binance",
-  GateIO: "gate-io",
+  GateIO: "gate",
   Mexc: "mexc",
   Bitget: "bitget",
   Kucoin: "kucoin",

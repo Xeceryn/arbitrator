@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { createLogger } from "@arbitrator/logger";
-
-const logger = createLogger("env-loader");
 
 // Define the schema for your environment variables
 const envSchema = z.object({

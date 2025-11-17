@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, or, type SQL } from "drizzle-orm";
 
 import { database } from "../../database/connection";
 import { exchangeTable } from "./exchange.sql";
@@ -7,7 +7,6 @@ import type {
   ListExchangeInput,
   PaginatedExchangeList,
 } from "./exchange.type";
-import { paginate } from "../../common/pagination.schema";
 
 export namespace Exchange {
   export async function add(exchange: ExchangeInsert) {
@@ -21,32 +20,109 @@ export namespace Exchange {
   export async function list(
     input: ListExchangeInput,
   ): Promise<PaginatedExchangeList> {
-    const conditions = [
-      and(
-        or(ilike(exchangeTable.name, "%" + input.search.toLowerCase() + "%")),
-      ),
-    ];
+    const conditions: (SQL | undefined)[] = [];
 
-    const items = await database
+    if (input?.search) {
+      // handle number type search, we need to cast this
+      if (input.searchBy === "id" || input.searchBy === "cmcId") {
+        conditions.push(
+          or(
+            // ilike(
+            //   sql`${exchangeTable[input.searchBy]}::varchar`,
+            //   "%" + input.search.toString() + "%",
+            // ),
+            eq(exchangeTable[input.searchBy], Number(input.search)),
+          ),
+        );
+      } else {
+        // if it's string we just do normal ilike
+        conditions.push(
+          or(
+            ilike(
+              exchangeTable[input.searchBy],
+              "%" + input.search.toLowerCase() + "%",
+            ),
+          ),
+        );
+      }
+    }
+
+    const { page, limit } = input;
+    if (limit === -1) {
+      const items = await database
+        .select({ count: count() })
+        .from(exchangeTable)
+        .where(conditions?.length ? and(...conditions) : undefined)
+        .then((result) => result?.at(0)?.count || 0);
+
+      const pages = 1;
+      const from = 1;
+      const to = items;
+
+      return {
+        data: await database
+          .select()
+          .from(exchangeTable)
+          .where(conditions?.length ? and(...conditions) : undefined),
+        meta: {
+          order: input.order,
+          orderBy: input.orderBy,
+          search: input.search,
+          searchBy: input.searchBy,
+          from,
+          to,
+          items,
+          pages,
+          page,
+          limit,
+          hasNextPage: page < pages,
+          hasPreviousPage: page > 1,
+        },
+      };
+    }
+
+    // Get total count
+    const totalResult = await database
       .select({ count: count() })
       .from(exchangeTable)
-      .where(conditions?.length ? and(...conditions) : undefined)
-      .then((result) => result?.at(0)?.count || 0);
+      .where(conditions?.length ? and(...conditions) : undefined);
 
+    const offset = (page - 1) * limit;
+    const total = totalResult[0]?.count || 0;
+    const pages = Math.ceil(total / limit);
+    const from = (page - 1) * limit + 1;
+    const to = page * limit;
+
+    // Get paginated data
     const data = await database
       .select()
       .from(exchangeTable)
       .where(conditions?.length ? and(...conditions) : undefined)
-      .limit(input.limit)
+      .limit(limit)
       .orderBy(
         input.order === "asc"
           ? asc(exchangeTable[input.orderBy])
           : desc(exchangeTable[input.orderBy]),
       )
-      .offset(input.page);
+      .offset(offset);
 
-    const result = paginate(data, items, input);
-    return result;
+    return {
+      data,
+      meta: {
+        items: total,
+        pages: pages,
+        page: page,
+        limit,
+        from,
+        to,
+        hasNextPage: page < pages,
+        hasPreviousPage: page > 1,
+        order: input.order,
+        orderBy: input.orderBy,
+        search: input.search,
+        searchBy: input.searchBy,
+      },
+    };
   }
 
   export async function cmcIdExists(cmcId: number) {

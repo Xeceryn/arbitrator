@@ -1,4 +1,10 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "receiver"
+  "$schema": "https://schemastore.org/package.json",
+  "name": "receiver",
+  "scripts": {
+    "dev": "bun run src/main.ts"
+  },
+  "dependencies": {
+    "@nats-io/transport-node": "catalog:core"
+  }
 }

@@ -30,6 +30,7 @@ export const Sidebar = ({ children }: PropsWithChildren) => {
 					</li>
 					<SideBarItem title='Dashboard' path='dashboard' />
 					<SideBarItem title='Signal' path='signal' />
+					<SideBarItem title='Signal Settings' path='signal-settings' />
 					<SideBarItem title='Exchange Management' path='markets' />
 					<SideBarItem title='Cryptocurrency Management' path='coins' />
 					<SideBarItem title='Chain Management' path='chain' />

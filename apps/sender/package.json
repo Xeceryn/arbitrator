@@ -1,5 +1,9 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
   "name": "sender",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts"
+  },
   "dependencies": {
     "@bufbuild/buf": "^1.56.0",
     "@bufbuild/protobuf": "^2.7.0",
@@ -9,9 +13,13 @@
     "gateio-api": "^1.2.8",
     "kucoin-api": "^2.1.21",
     "okx-api": "^3.0.5",
-    "winston": "catalog:tools",
     "ws": "^8.18.3",
-    "amqplib": "catalog:core"
+    "winston": "catalog:tools",
+    "amqplib": "catalog:core",
+    "@nats-io/transport-node": "catalog:core",
+    "@orpc/server": "catalog:core",
+    "zod": "catalog:core",
+    "@arbitrator/logger": "workspace:*"
   },
   "devDependencies": {
     "@types/amqplib": "catalog:types",

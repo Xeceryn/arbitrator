@@ -34,7 +34,9 @@ export const cryptocurrencyRouter = {
     .input(listCryptocurrencySelectSchema)
     .output(paginatedCryptocurrencySelectSchema)
     .handler(async ({ input }) => {
+      console.log(input);
       const result = await Cryptocurrency.list(input);
+      console.log('result', result);
       return result;
     }),
 

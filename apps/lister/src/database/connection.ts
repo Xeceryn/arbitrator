@@ -18,3 +18,5 @@ export const database = drizzle(postgresConnection, {
     exchangeCryptocurrencyChainTables,
   },
 });
+
+export type DB = typeof database;

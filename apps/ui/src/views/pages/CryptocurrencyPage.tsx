@@ -3,13 +3,12 @@ import { CryptocurrencySearchByOptions } from "@arbitrator/lister/constants";
 import { listerClient } from "@arbitrator/sdk";
 
 import { capitalizeFirstLetter } from "../../utils";
-import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
 import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
 
 export const CoinPage = async (props: ListCryptocurrencyInput) => {
 	const [error, data] = await listerClient.cryptocurrency.list(props);
-	if (!data || error) {
+	if (error) {
 		return (
 			<div>
 				<div>Failed to fetch coins</div>

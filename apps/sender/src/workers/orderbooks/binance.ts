@@ -1,41 +1,48 @@
 // NOTE: for debugging purposes when not running as a worker
 // change the self to log instead of sending message to the parent
 
-// const self = {
-//   postMessage(...args: any[]) {
-//     console.log(args);
-//   },
-// };
-declare let self: Worker;
+const self = {
+  postMessage(...args: any[]) {
+    console.log(args);
+  },
+};
+// declare let self: Worker;
 
 import { threadId as processId } from "worker_threads";
 
+import { connect } from "@nats-io/transport-node";
 import {
   WebsocketClient,
   type WsMessagePartialBookDepthEventRaw,
 } from "binance";
 
-import {
-  type OrderbookWorkerMessage,
-  WorkerMessageType,
-  WorkerState,
-} from "../../types";
+import { WorkerState, type WorkerMessage } from "../../types";
+import type { OrderbookMessageContent } from "../../types/orderbook";
 
 const exchange = "binance";
 const threadId = exchange + "-orderbook-" + processId;
 
 const ChannelStore = new Map<string, number>();
 
-const arg = Bun.argv
-  .at(2)!
-  .split(",")
-  .map((s) => {
-    const [id, symbol] = s.split("-");
-    const cmcId = Number(id);
-    // spot_depth_btcusdt_
-    ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
-    return { cmcId, symbol };
-  });
+const nc = await connect();
+
+// const arg = Bun.argv
+//   .at(2)!
+//   .split(",")
+//   .map((s) => {
+//     const [id, symbol] = s.split("-");
+//     const cmcId = Number(id);
+//     // spot_depth_btcusdt_
+//     ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
+//     return { cmcId, symbol };
+//   });
+const arg = "1-btc".split(",").map((s) => {
+  const [id, symbol] = s.split("-");
+  const cmcId = Number(id);
+  // spot_depth_btcusdt_
+  ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
+  return { cmcId, symbol };
+});
 
 const socketClient = new WebsocketClient(
   {},
@@ -47,20 +54,17 @@ const socketClient = new WebsocketClient(
 );
 
 socketClient.on("open", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
+  const message: WorkerMessage = {
     threadId,
     exchange,
-    content: {
-      state: WorkerState.Connected,
-    },
+    state: WorkerState.Connected,
   };
   self.postMessage(message);
 });
 
 socketClient.on("message", (event) => {
   const data = event as WsMessagePartialBookDepthEventRaw;
-  const cmc_id = ChannelStore.get(data.wsKey)!;
+  const cmcId = ChannelStore.get(data.wsKey)!;
   const asks = data.asks.map(([price, volume]) => {
     return [Number(price), Number(volume)];
   });
@@ -68,63 +72,40 @@ socketClient.on("message", (event) => {
     return [Number(price), Number(volume)];
   });
 
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.Data,
-    threadId,
+  const message: OrderbookMessageContent = {
     exchange,
-    content: {
-      cmcId: cmc_id,
-      asks,
-      bids,
-    },
+    cmcId,
+    asks,
+    bids,
   };
-  self.postMessage(message);
+  console.log(message);
+
+  nc.publish("orderbook.binance.update", JSON.stringify(message));
 });
 
 socketClient.on("reconnecting", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
+  const message: WorkerMessage = {
     threadId,
     exchange,
-    content: {
-      state: WorkerState.Reconnecting,
-    },
+    state: WorkerState.Reconnecting,
   };
   self.postMessage(message);
 });
 
 socketClient.on("reconnected", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
-    exchange,
+  const message: WorkerMessage = {
     threadId,
-    content: {
-      state: WorkerState.Connected,
-    },
+    exchange,
+    state: WorkerState.Connected,
   };
   self.postMessage(message);
 });
 
 socketClient.on("close", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
+  const message: WorkerMessage = {
     exchange,
     threadId,
-    content: {
-      state: WorkerState.Closed,
-    },
-  };
-  self.postMessage(message);
-});
-
-socketClient.on("error", (_err) => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
-    threadId,
-    exchange,
-    content: {
-      state: WorkerState.Error,
-    },
+    state: WorkerState.Closed,
   };
   self.postMessage(message);
 });

@@ -1,4 +1,4 @@
-import { and, desc, asc, count, eq, or, ilike, sql } from "drizzle-orm";
+import { and, desc, asc, count, eq, or, ilike } from "drizzle-orm";
 import { cryptocurrencyTable } from "./cryptocurrency.sql";
 import { database } from "../../database/connection";
 import type z from "zod";
@@ -22,10 +22,11 @@ export namespace Cryptocurrency {
       if (input.searchBy === "id" || input.searchBy === "cmcId") {
         conditions.push(
           or(
-            ilike(
-              sql`${cryptocurrencyTable[input.searchBy]}::varchar`,
-              "%" + input.search.toString() + "%",
-            ),
+            // ilike(
+            //   sql`${cryptocurrencyTable[input.searchBy]}::varchar`,
+            //   "%" + input.search.toString() + "%",
+            // ),
+            eq(cryptocurrencyTable[input.searchBy], Number(input.search)),
           ),
         );
       } else {
