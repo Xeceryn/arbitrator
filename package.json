@@ -57,7 +57,9 @@
   },
   "dependencies": {},
   "trustedDependencies": [
+    "@bufbuild/buf",
     "@parcel/watcher",
-    "@tailwindcss/oxide"
+    "@tailwindcss/oxide",
+    "esbuild"
   ]
 }

@@ -136,6 +136,20 @@ const findById = os
     return result;
   });
 
+const countExchangeCryptocurrencies = os
+  .input(
+    z
+      .object({
+        exchangeId: z.number().optional(),
+        cryptocurrencyId: z.number().optional(),
+      })
+      .optional(),
+  )
+  .output(z.number())
+  .handler(async ({ input }) => {
+    return await ExchangeCryptocurrency.count(input);
+  });
+
 export const exchangeCryptocurrencyRouter = os.router({
   assign,
   unassign,

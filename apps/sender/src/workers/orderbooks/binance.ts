@@ -1,12 +1,12 @@
 // NOTE: for debugging purposes when not running as a worker
 // change the self to log instead of sending message to the parent
 
-const self = {
-  postMessage(...args: any[]) {
-    console.log(args);
-  },
-};
-// declare let self: Worker;
+// const self = {
+//   postMessage(...args: any[]) {
+//     console.log(args);
+//   },
+// };
+declare let self: Worker;
 
 import { threadId as processId } from "worker_threads";
 
@@ -36,7 +36,7 @@ const nc = await connect();
 //     ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
 //     return { cmcId, symbol };
 //   });
-const arg = "1-btc".split(",").map((s) => {
+const arg = "1-btc,2-eth,3-xrp,4-sol".split(",").map((s) => {
   const [id, symbol] = s.split("-");
   const cmcId = Number(id);
   // spot_depth_btcusdt_
@@ -78,7 +78,6 @@ socketClient.on("message", (event) => {
     asks,
     bids,
   };
-  console.log(message);
 
   nc.publish("orderbook.binance.update", JSON.stringify(message));
 });
@@ -113,6 +112,7 @@ socketClient.on("close", () => {
 for (const s of arg) {
   socketClient.subscribePartialBookDepths(
     s.symbol!.toUpperCase() + "USDT",
+    // s.symbol! + "usdt",
     20,
     1000,
     "spot",

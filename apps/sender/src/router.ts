@@ -5,23 +5,23 @@ import { BaseCurrency, Exchange } from "./constants";
 import { type WorkerState } from "./types";
 import { split_symbols } from "./utils";
 
-type CrawlerWorkerConfig = {
+type workerConfig = {
   exchange: Exchange;
   base_currency: BaseCurrency;
   max_subscriptions_each_connection: number;
 };
 
-type CrawlerWorkerState = {
+type workersState = {
   exchange: string;
   threadId: string;
   symbols: Array<{ symbol: string; cmcId: number }>;
   state: WorkerState;
 };
 
-const workerStore = new Map<string, Worker>();
-const crawlerConfigState: CrawlerWorkerState[] = [];
-const crawlerWorkerPath = "src/workers/orderbooks";
-const crawlerWorkerConfigs: CrawlerWorkerConfig[] = [
+const workersStore = new Map<string, Worker>();
+const workersState: workersState[] = [];
+const workersPath = "src/workers/orderbooks";
+const workersConfigs: workerConfig[] = [
   {
     exchange: Exchange.Indodax,
     base_currency: BaseCurrency.IDR,
@@ -58,4 +58,5 @@ export const router = os
   })
   .output(z.void())
   .handler(async ({ input, errors }) => {
+    const { exchange } = input;
   });

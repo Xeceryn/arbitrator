@@ -1,5 +1,3 @@
-import type { Exchange } from "../constants";
-
 export const WorkerMessageType = {
   StateChange: "state-change",
   Data: "data",
@@ -21,3 +19,6 @@ export type WorkerMessage = {
   exchange: string;
   state: WorkerState;
 };
+
+export * from "./metadata";
+export * from "./orderbook";

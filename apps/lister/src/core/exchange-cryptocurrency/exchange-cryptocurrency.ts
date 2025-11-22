@@ -70,4 +70,14 @@ export namespace ExchangeCryptocurrency {
 
     return result[0];
   }
+
+  export async function countExchangeCryptocurrencies(exchangeId: number) {
+    const result = await database
+      .select({ count: count() })
+      .from(exchangeCryptocurrencyTable)
+      .where(eq(exchangeCryptocurrencyTable.exchangeId, exchangeId))
+      .execute();
+
+    return result[0]!.count;
+  }
 }

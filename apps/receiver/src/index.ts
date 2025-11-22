@@ -1,5 +1,7 @@
 import { createLogger } from "@arbitrator/logger";
 import { connect } from "@nats-io/transport-node";
+import { type OrderbookMessageContent } from "@arbitrator/sender/";
+
 const logger = createLogger("arbitrator/receiver");
 
 const nc = await connect();
@@ -10,8 +12,7 @@ nc.subscribe("orderbook.*.update", {
     if (err) {
       console.error(err);
     }
-    console.log(`got message from thread ${process.pid}`);
-    console.log(msg.json());
+    const data = msg.json<OrderbookMessageContent>();
   },
 });
 
