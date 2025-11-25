@@ -8,11 +8,10 @@ To install dependencies:
 bun install
 ```
 
-
 To run:
 
 ```bash
 bun run dev
 ```
-on each project in the monorepo.
 
+on each project in the monorepo.

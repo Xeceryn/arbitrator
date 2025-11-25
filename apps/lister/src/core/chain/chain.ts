@@ -71,4 +71,3 @@ export namespace Chain {
       .then((result) => result.at(0));
   }
 }
-

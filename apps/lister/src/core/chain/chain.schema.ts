@@ -39,4 +39,3 @@ export const listChainSelectSchema = createPaginationInputSchema({
 
 export const paginatedChainSelectSChema =
   createPaginatedOutputSchema(chainSelectSchema);
-

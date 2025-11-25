@@ -36,7 +36,7 @@ export const cryptocurrencyRouter = {
     .handler(async ({ input }) => {
       console.log(input);
       const result = await Cryptocurrency.list(input);
-      console.log('result', result);
+      console.log("result", result);
       return result;
     }),
 

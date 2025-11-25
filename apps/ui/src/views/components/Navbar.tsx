@@ -1,129 +1,154 @@
-import { type PropsWithChildren } from '@kitajs/html';
+import { type PropsWithChildren } from "@kitajs/html";
 
 export enum ActiveNav {
-	Home = 'Home',
-	Features = 'Features',
-	Docs = 'Docs',
+  Home = "Home",
+  Features = "Features",
+  Docs = "Docs",
 }
 
-const themes =
-	[
-		"dark",
-		"cupcake",
-		"bumblebee",
-		"emerald",
-		"corporate",
-		"synthwave",
-		"retro",
-		"cyberpunk",
-		"valentine",
-		"halloween",
-		"garden",
-		"forest",
-		"aqua",
-		"lofi",
-		"pastel",
-		"fantasy",
-		"wireframe",
-		"black",
-		"luxury",
-		"dracula",
-		"cmyk",
-		"autumn",
-		"business",
-		"acid",
-		"lemonade",
-		"night",
-		"coffee",
-		"winter",
-		"dim",
-		"nord",
-		"sunset",
-		"caramellatte",
-		"abyss",
-		"silk",
-	];
-
+const themes = [
+  "dark",
+  "cupcake",
+  "bumblebee",
+  "emerald",
+  "corporate",
+  "synthwave",
+  "retro",
+  "cyberpunk",
+  "valentine",
+  "halloween",
+  "garden",
+  "forest",
+  "aqua",
+  "lofi",
+  "pastel",
+  "fantasy",
+  "wireframe",
+  "black",
+  "luxury",
+  "dracula",
+  "cmyk",
+  "autumn",
+  "business",
+  "acid",
+  "lemonade",
+  "night",
+  "coffee",
+  "winter",
+  "dim",
+  "nord",
+  "sunset",
+  "caramellatte",
+  "abyss",
+  "silk",
+];
 
 const ThemeItem = ({ name }: { name: string }) => {
-	return (
-
-		<button
-			class="outline-base-content text-start outline-offset-4 theme-changer"
-			data-act-class="[&amp;_svg]:visible"
-			data-set-theme={name}
-		>
-			<span class="bg-base-100 rounded-btn text-base-content block w-full cursor-pointer font-sans" data-theme={name}>
-				<span class="grid grid-cols-5 grid-rows-3">
-					<span class="col-span-5 row-span-3 row-start-1 flex items-center gap-2 px-4 py-3">
-						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="invisible h-3 w-3 shrink-0">
-							<path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"></path>
-						</svg>
-						<span class="flex-grow text-sm" safe>{name}</span>
-						<span class="flex h-full shrink-0 flex-wrap gap-1">
-							<span class="bg-primary rounded-badge w-2"></span>
-							<span class="bg-secondary rounded-badge w-2"></span>
-							<span class="bg-accent rounded-badge w-2"></span>
-							<span class="bg-neutral rounded-badge w-2">
-							</span>
-						</span>
-					</span>
-				</span>
-			</span>
-		</button>
-	)
-}
-
+  return (
+    <button
+      class="outline-base-content text-start outline-offset-4 theme-changer"
+      data-act-class="[&amp;_svg]:visible"
+      data-set-theme={name}
+    >
+      <span
+        class="bg-base-100 rounded-btn text-base-content block w-full cursor-pointer font-sans"
+        data-theme={name}
+      >
+        <span class="grid grid-cols-5 grid-rows-3">
+          <span class="col-span-5 row-span-3 row-start-1 flex items-center gap-2 px-4 py-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="invisible h-3 w-3 shrink-0"
+            >
+              <path d="M20.285 2l-11.285 11.567-5.286-5.011-3.714 3.716 9 8.728 15-15.285z"></path>
+            </svg>
+            <span class="flex-grow text-sm" safe>
+              {name}
+            </span>
+            <span class="flex h-full shrink-0 flex-wrap gap-1">
+              <span class="bg-primary rounded-badge w-2"></span>
+              <span class="bg-secondary rounded-badge w-2"></span>
+              <span class="bg-accent rounded-badge w-2"></span>
+              <span class="bg-neutral rounded-badge w-2"></span>
+            </span>
+          </span>
+        </span>
+      </span>
+    </button>
+  );
+};
 
 export function Navbar(props?: PropsWithChildren) {
-	return (
-		<div class="navbar sticky top-0 bg-base-100  z-10 shadow-lg" >
-			{props?.children}
-			<div class="flex-1">
-				{
-					// <label for="left-sidebar-drawer" class="btn btn-primary drawer-button lg:hidden">
-					// 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="h-5 inline-block w-5">
-					// 		<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5">
-					// 		</path>
-					// 	</svg>
-					// </label>
-				}
-				<h1 class="text-2xl font-semibold ml-2">Cryptocurrencies</h1>
-			</div>
+  return (
+    <div class="navbar sticky top-0 bg-base-100  z-10 shadow-lg">
+      {props?.children}
+      <div class="flex-1">
+        {
+          // <label for="left-sidebar-drawer" class="btn btn-primary drawer-button lg:hidden">
+          // 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true" class="h-5 inline-block w-5">
+          // 		<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5">
+          // 		</path>
+          // 	</svg>
+          // </label>
+        }
+        <h1 class="text-2xl font-semibold ml-2">Cryptocurrencies</h1>
+      </div>
 
-			<button
-				class="btn btn-error"
-				hx-get="/testing/notification-toast"
-				hx-trigger="click"
-				hx-swap="none"
-			>Test Notification Toast</button>
+      <button
+        class="btn btn-error"
+        hx-get="/testing/notification-toast"
+        hx-trigger="click"
+        hx-swap="none"
+      >
+        Test Notification Toast
+      </button>
 
-			<div title="Change Theme" class="dropdown dropdown-end hidden [@supports(color:oklch(0%_0_0))]:block ">
-				<div tabindex="0" role="button" class="btn btn-ghost">
-					<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="h-5 w-5 stroke-current md:hidden">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
-					</svg>
-					<span class="hidden font-normal md:inline">Theme</span>
-					<svg width="12px" height="12px" class="hidden h-2 w-2 fill-current opacity-60 sm:inline-block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2048 2048">
-						<path d="M1799 349l242 241-1017 1017L7 590l242-241 775 775 775-775z"></path>
-					</svg>
-				</div>
-				<div tabindex="0" class="dropdown-content bg-base-200 text-base-content rounded-box top-px h-[28.6rem] max-h-[calc(100vh-10rem)] w-56 overflow-y-auto border border-white/5 shadow-2xl outline-1 outline-black/5 mt-16" >
-					<div class="grid grid-cols-1 gap-3 p-3">
-
-						{
-							themes.map((theme) => {
-								return (
-									<ThemeItem name={theme} />
-								);
-							})
-						}
-
-					</div>
-				</div>
-			</div>
-		</div >
-
-	);
-
+      <div
+        title="Change Theme"
+        class="dropdown dropdown-end hidden [@supports(color:oklch(0%_0_0))]:block "
+      >
+        <div tabindex="0" role="button" class="btn btn-ghost">
+          <svg
+            width="20"
+            height="20"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            class="h-5 w-5 stroke-current md:hidden"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+            ></path>
+          </svg>
+          <span class="hidden font-normal md:inline">Theme</span>
+          <svg
+            width="12px"
+            height="12px"
+            class="hidden h-2 w-2 fill-current opacity-60 sm:inline-block"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 2048 2048"
+          >
+            <path d="M1799 349l242 241-1017 1017L7 590l242-241 775 775 775-775z"></path>
+          </svg>
+        </div>
+        <div
+          tabindex="0"
+          class="dropdown-content bg-base-200 text-base-content rounded-box top-px h-[28.6rem] max-h-[calc(100vh-10rem)] w-56 overflow-y-auto border border-white/5 shadow-2xl outline-1 outline-black/5 mt-16"
+        >
+          <div class="grid grid-cols-1 gap-3 p-3">
+            {themes.map((theme) => {
+              return <ThemeItem name={theme} />;
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

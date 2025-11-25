@@ -78,7 +78,8 @@ export const exchangeCryptocurrencyChainRouter = {
       );
       if (!result) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
-          message: "something wrong when updating exchange-cryptocurrency-chain",
+          message:
+            "something wrong when updating exchange-cryptocurrency-chain",
         });
       }
 
