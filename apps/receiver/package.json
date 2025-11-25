@@ -1,6 +1,6 @@
 {
   "$schema": "https://schemastore.org/package.json",
-  "name": "receiver",
+  "name": "@arbitrator/receiver",
   "scripts": {
     "dev": "bun run src/main.ts"
   },
