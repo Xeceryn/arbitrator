@@ -1,9 +1,15 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "moduleResolution": "bundler",
-    "lib": ["dom", "esnext"],
-    "types": ["bun-types", "@kitajs/html/htmx.d.ts"],
+    "lib": [
+      "dom",
+      "esnext"
+    ],
+    "types": [
+      "bun-types",
+      "@kitajs/html/htmx.d.ts"
+    ],
     "jsx": "react-jsx",
     "jsxImportSource": "@kitajs/html",
     "plugins": [
