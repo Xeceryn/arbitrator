@@ -21,6 +21,6 @@
     "drizzle-seed": "catalog:tools",
     "@arbitrator/logger": "workspace:*",
     "zod": "catalog:core",
-    "pg": "^8.16.3"
+    "pg": "catalog:core"
   }
 }

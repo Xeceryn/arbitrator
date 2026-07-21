@@ -1,8 +1,43 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "lib": [
       "ESNext"
     ],
+
+//    "paths": {
+//      /*
+//      * APPS
+//      */
+//      "@arbitrator/lister": [
+//        "apps/lister/src"
+//      ],
+//      "@arbitrator/lister/*": [
+//        "apps/lister/src/*"
+//      ],
+//      /*
+//      * PACKAGES
+//      */
+//      "@arbitrator/sdk": [
+//        "packages/sdk/src"
+//      ],
+//      "@arbitrator/sdk/*": [
+//        "packages/sdk/src/*"
+//      ],
+//      "@arbitrator/env-loader": [
+//        "packages/env-loader/src"
+//      ],
+//      "@arbitrator/env-loader/*": [
+//        "packages/env-loader/src/*"
+//      ],
+//      "@arbitrator/logger": [
+//        "packages/logger/src"
+//      ],
+//      "@arbitrator/logger/*": [
+//        "packages/logger/src/*"
+//      ]
+//    },
+
     "target": "ESNext",
     "module": "Preserve",
     "moduleDetection": "force",

@@ -4,9 +4,9 @@
   "version": "1.0.50",
   "scripts": {
     "dev": "bun run --watch src/main.ts",
-    "dev:tailwind": "tailwindcss -i ./assets/styles.css -o ./public/css/styles.css --watch",
+    "dev:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css --watch",
     "build": "bun build --target=bun ./src/main.ts --outdir=./dist",
-    "build:tailwind": "tailwindcss -i ./assets/styles.css -o ./public/css/styles.css"
+    "build:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css"
   },
   "type": "module",
   "dependencies": {

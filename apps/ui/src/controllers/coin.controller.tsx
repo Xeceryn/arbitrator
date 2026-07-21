@@ -13,6 +13,7 @@ import { createPushURL } from "../utils";
 import { CoinTableRow } from "../views/components/CoinTableRow";
 import { CoinPage } from "../views/pages/CryptocurrencyPage";
 import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
+import { AddCoinModal } from "../views/components/AddCoinModal";
 
 export const CryptocurrencyController = new Elysia()
   .use(html())
@@ -24,12 +25,14 @@ export const CryptocurrencyController = new Elysia()
       if (!hx.isHTMX) {
         return (
           <BaseLayout title="arbitmage - Cryptocurrencies">
+						<AddCoinModal />
             <CoinPage {...query} />
           </BaseLayout>
         );
       }
       return (
         <>
+					<AddCoinModal />
           <title>Coin List</title>
           <CoinPage {...query} />
         </>

@@ -91,7 +91,7 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
                   Next
                 </button>
                 <button
-                  disabled={data.meta.page === data.meta.pages}
+                  disabled={data.meta.page === data.meta.pages || data.meta.items === 0}
                   hx-get={`/coins?page=${data.meta.pages}`}
                   hx-trigger="click"
                   hx-target="closest main"

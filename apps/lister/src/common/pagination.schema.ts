@@ -1,8 +1,8 @@
 import z from "zod";
 
 export function createPaginationInputSchema<
-  TSearchByKeys extends z.ZodEnum,
-  TOrderByKeys extends z.ZodEnum,
+  TSearchByKeys extends z.ZodEnum<any>,
+  TOrderByKeys extends z.ZodEnum<any>,
 >(filter: {
   searchByKeys: TSearchByKeys;
   orderByKeys: TOrderByKeys;
