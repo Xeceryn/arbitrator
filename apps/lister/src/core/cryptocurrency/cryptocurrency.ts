@@ -21,13 +21,13 @@ export namespace Cryptocurrency {
       // handle number type search, we need to cast this
       if (input.searchBy === "id" || input.searchBy === "cmcId") {
         conditions.push(
-          or(
-            // ilike(
-            //   sql`${cryptocurrencyTable[input.searchBy]}::varchar`,
-            //   "%" + input.search.toString() + "%",
-            // ),
-            eq(cryptocurrencyTable[input.searchBy], Number(input.search)),
-          ),
+          // or(
+          // ilike(
+          //   sql`${cryptocurrencyTable[input.searchBy]}::varchar`,
+          //   "%" + input.search.toString() + "%",
+          // ),
+          eq(cryptocurrencyTable[input.searchBy], Number(input.search)),
+          // ),
         );
       } else {
         // if it's string we just do normal ilike

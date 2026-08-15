@@ -7,7 +7,6 @@
     ],
     "jsxImportSource": "@kitajs/html",
     "types": [
-      "bun-types",
       "@kitajs/html/htmx.d.ts"
     ],
     "plugins": [

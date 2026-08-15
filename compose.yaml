@@ -1,4 +1,5 @@
 services:
+
   postgresql:
     image: postgres:17.6-alpine
     restart: unless-stopped
@@ -20,3 +21,31 @@ services:
     volumes:
       - ./docker/nats/nats-server.conf:/etc/nats/nats-server.conf
       - ~/.docker-data/personal-nats:/data
+
+#   nats:
+#     image: nats:alpine
+#     container_name: nats
+#     ports:
+#       - "4222:4222"
+#       - "8222:8222"
+#       - "6222:6222"
+#     volumes:
+#       - ./docker/nats/nats-server.conf:/etc/nats/nats.conf:ro
+#       - nats-data:/data
+#     command: ["-c", "/etc/nats/nats.conf"]
+#     healthcheck:
+#       test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 3
+#     networks:
+#       - nats-network
+#     restart: unless-stopped
+#
+# volumes:
+#   nats-data:
+#     driver: local
+#
+# networks:
+#   nats-network:
+#     driver: bridge

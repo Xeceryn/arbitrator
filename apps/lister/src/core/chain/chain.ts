@@ -1,6 +1,8 @@
-import { and, eq, count } from "drizzle-orm";
+import { eq, count, or, ilike, and, asc, desc, SQL } from "drizzle-orm";
 import { database } from "../../database/connection";
 import { chainTable } from "./chain.sql";
+import type { ListChainInput } from "./chain.type";
+import { paginate } from "../../common/pagination.util";
 
 export namespace Chain {
   export async function add(chain: typeof chainTable.$inferInsert) {
@@ -11,20 +13,31 @@ export namespace Chain {
       .then((result) => result.at(0));
   }
 
-  export type FindAllFilter = {
-    code?: string;
-  };
-  export async function getAll(filter?: FindAllFilter) {
-    const conditions = [];
+  export async function list(input: ListChainInput) {
+    const conditions: (SQL<unknown> | undefined)[] = [];
 
-    if (filter?.code) {
-      conditions.push(eq(chainTable.code, filter.code));
+    if (input?.search) {
+      conditions.push(
+        or(
+          ilike(
+            chainTable[input.searchBy],
+            "%" + input.search.toLowerCase() + "%",
+          ),
+        ),
+      )
     }
+    const result = await paginate(
+      () => database.select().from(chainTable).where(conditions?.length ? and(...conditions) : undefined),
+      input.page,
+      input.limit,
+      await database
+        .select({ count: count() })
+        .from(chainTable)
+        .where(conditions?.length ? and(...conditions) : undefined)
+        .then((result) => result?.at(0)?.count || 0),
+    );
 
-    return await database
-      .select()
-      .from(chainTable)
-      .where(conditions?.length ? and(...conditions) : undefined);
+    return result;
   }
 
   export async function codeExists(code: string) {

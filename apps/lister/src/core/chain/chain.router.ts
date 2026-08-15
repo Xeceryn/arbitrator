@@ -37,7 +37,7 @@ export const chainRouter = {
     )
     .output(z.array(chainSelectSchema))
     .handler(async ({ input }) => {
-      return await Chain.getAll(input);
+      return await Chain.list(input);
     }),
 
   findById: os

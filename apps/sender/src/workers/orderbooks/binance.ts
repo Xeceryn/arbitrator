@@ -1,12 +1,12 @@
 // NOTE: for debugging purposes when not running as a worker
 // change the self to log instead of sending message to the parent
 
-// const self = {
-//   postMessage(...args: any[]) {
-//     console.log(args);
-//   },
-// };
-declare let self: Worker;
+const self = {
+  postMessage(...args: any[]) {
+    console.log(args);
+  },
+};
+// declare let self: Worker;
 
 import { threadId as processId } from "worker_threads";
 
@@ -26,23 +26,23 @@ const ChannelStore = new Map<string, number>();
 
 const nc = await connect();
 
-// const arg = Bun.argv
-//   .at(2)!
-//   .split(",")
-//   .map((s) => {
-//     const [id, symbol] = s.split("-");
-//     const cmcId = Number(id);
-//     // spot_depth_btcusdt_
-//     ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
-//     return { cmcId, symbol };
-//   });
-const arg = "1-btc,2-eth,3-xrp,4-sol".split(",").map((s) => {
-  const [id, symbol] = s.split("-");
-  const cmcId = Number(id);
-  // spot_depth_btcusdt_
-  ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
-  return { cmcId, symbol };
-});
+const arg = Bun.argv
+  .at(2)!
+  .split(",")
+  .map((s) => {
+    const [id, symbol] = s.split("-");
+    const cmcId = Number(id);
+    // spot_depth_btcusdt_
+    ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
+    return { cmcId, symbol };
+  });
+// const arg = "1-btc,2-eth,3-xrp,4-sol".split(",").map((s) => {
+//   const [id, symbol] = s.split("-");
+//   const cmcId = Number(id);
+//   // spot_depth_btcusdt_
+//   ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
+//   return { cmcId, symbol };
+// });
 
 const socketClient = new WebsocketClient(
   {},
@@ -78,8 +78,9 @@ socketClient.on("message", (event) => {
     asks,
     bids,
   };
+  self.postMessage(message);
 
-  nc.publish("orderbook.binance.update", JSON.stringify(message));
+  // nc.publish("orderbook.binance.update", JSON.stringify(message));
 });
 
 socketClient.on("reconnecting", () => {
