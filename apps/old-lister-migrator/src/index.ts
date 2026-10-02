@@ -1,7 +1,7 @@
+import { router } from "@arbitrator/lister/router";
 import { createORPCClient, createSafeClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { type RouterClient } from "@orpc/server";
-import { router } from "@arbitrator/lister";
 
 const link = new RPCLink({
   url: "http://localhost:3001",

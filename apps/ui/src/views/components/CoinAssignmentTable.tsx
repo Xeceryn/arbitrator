@@ -19,18 +19,15 @@ export const CoinAssignmentTableRow = (props: CoinAssignmentTableRowProps) => {
         {props.symbol}
       </td>
       <td class="px-6 py-4">{props.active ? "Active" : "Inactive"}</td>
-      <td class="px-6 py-4">
-        {props.marketSymbol ? props.marketSymbol : "N/A"}
-      </td>
+      <td class="px-6 py-4">{props.marketSymbol ? props.marketSymbol : "N/A"}</td>
     </tr>
   );
 };
 
 export const CoinAssignmentTable = async ({ id }: { id: number }) => {
-  const [assignmentsError, assignmentsData] =
-    await listerClient.exchangeCryptocurrency.list({
-      exchangeId: id,
-    });
+  const [assignmentsError, assignmentsData] = await listerClient.exchangeCryptocurrency.list({
+    exchangeId: id,
+  });
   if (assignmentsError) {
     return <div>Failed to fetch coins</div>;
   }
@@ -58,7 +55,7 @@ export const CoinAssignmentTable = async ({ id }: { id: number }) => {
         </tr>
       </thead>
       <tbody>
-        {data.map((x) => {
+        {assignmentsData.map((x) => {
           return <CoinAssignmentTableRow {...x} />;
         })}
       </tbody>

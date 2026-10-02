@@ -5,8 +5,8 @@
     "dev": "bun run src/main.ts"
   },
   "dependencies": {
-    "@nats-io/transport-node": "catalog:core",
     "@arbitrator/logger": "workspace:*",
-    "@arbitrator/sender": "workspace:*"
+    "@arbitrator/sender": "workspace:*",
+    "@nats-io/transport-node": "catalog:core"
   }
 }

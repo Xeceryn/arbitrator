@@ -29,7 +29,6 @@ async function main() {
 
     console.log(packageJson.name);
   }
-
 }
 
 main();

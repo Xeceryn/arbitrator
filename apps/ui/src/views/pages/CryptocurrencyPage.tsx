@@ -1,5 +1,5 @@
-import type { ListCryptocurrencyInput } from "@arbitrator/lister/types";
 import { CryptocurrencySearchByOptions } from "@arbitrator/lister/constants";
+import type { ListCryptocurrencyInput } from "@arbitrator/lister/types";
 import { listerClient } from "@arbitrator/sdk";
 
 import { capitalizeFirstLetter } from "../../utils";
@@ -91,7 +91,9 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
                   Next
                 </button>
                 <button
-                  disabled={data.meta.page === data.meta.pages || data.meta.items === 0}
+                  disabled={
+                    data.meta.page === data.meta.pages || data.meta.items === 0
+                  }
                   hx-get={`/coins?page=${data.meta.pages}`}
                   hx-trigger="click"
                   hx-target="closest main"

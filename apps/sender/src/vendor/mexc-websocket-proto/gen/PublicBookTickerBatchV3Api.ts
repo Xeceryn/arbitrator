@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+
 import { PublicBookTickerV3Api } from "./PublicBookTickerV3Api";
 
 export const protobufPackage = "";

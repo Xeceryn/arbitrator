@@ -1,10 +1,11 @@
 import { and, count, eq } from "drizzle-orm";
-import { exchangeCryptocurrencyTable } from "./exchange-cryptocurrency.sql";
+
 import { database } from "../../database/connection";
 import type {
   ExchangeCryptocurrencyFilterExists,
   ExchangeCryptocurrencySelect,
 } from "./exchange-cryptocurrency.schema";
+import { exchangeCryptocurrencyTable } from "./exchange-cryptocurrency.sql";
 
 export namespace ExchangeCryptocurrency {
   export async function exists(

@@ -1,11 +1,14 @@
 import { ORPCError, os } from "@orpc/server";
+import z from "zod";
+
 import { Chain } from "./chain";
 import {
   chainInsertSchema,
   chainSelectSchema,
   chainUpdateSchema,
+  listChainSelectSchema,
+  paginatedChainSelectSChema,
 } from "./chain.schema";
-import z from "zod";
 
 export const chainRouter = {
   add: os
@@ -28,16 +31,11 @@ export const chainRouter = {
     }),
 
   list: os
-    .input(
-      z
-        .object({
-          code: z.string().optional(),
-        })
-        .optional(),
-    )
-    .output(z.array(chainSelectSchema))
+    .input(listChainSelectSchema)
+    .output(paginatedChainSelectSChema)
     .handler(async ({ input }) => {
-      return await Chain.list(input);
+      const result = await Chain.list(input);
+      return result;
     }),
 
   findById: os

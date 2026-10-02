@@ -1,7 +1,8 @@
 import * as pg from "drizzle-orm/pg-core";
+
 import { addDefaultTimestampFields } from "../../utils/drizzle.util";
-import { exchangeCryptocurrencyTable } from "../exchange-cryptocurrency/exchange-cryptocurrency.sql";
 import { chainTable } from "../chain/chain.sql";
+import { exchangeCryptocurrencyTable } from "../exchange-cryptocurrency/exchange-cryptocurrency.sql";
 
 export const exchangeCryptocurrencyChainTable = pg.pgTable(
   "exchange_cryptocurrency_chain",

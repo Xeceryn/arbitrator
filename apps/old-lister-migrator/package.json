@@ -8,7 +8,8 @@
     "start": "bun run src/index.ts"
   },
   "dependencies": {
+    "@arbitrator/lister": "workspace:*",
     "@orpc/client": "catalog:core",
-    "@arbitrator/lister": "workspace:*"
+    "@orpc/server": "catalog:core"
   }
 }

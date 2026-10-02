@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+
 import { PublicIncreaseDepthsV3Api } from "./PublicIncreaseDepthsV3Api";
 
 export const protobufPackage = "";

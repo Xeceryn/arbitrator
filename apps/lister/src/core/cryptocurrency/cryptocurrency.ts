@@ -1,11 +1,12 @@
 import { and, desc, asc, count, eq, or, ilike } from "drizzle-orm";
-import { cryptocurrencyTable } from "./cryptocurrency.sql";
-import { database } from "../../database/connection";
 import type z from "zod";
+
+import { database } from "../../database/connection";
 import {
   cryptocurrencyInsertSchema,
   cryptocurrencyUpdateSchema,
 } from "./cryptocurrency.schema";
+import { cryptocurrencyTable } from "./cryptocurrency.sql";
 import type {
   ListCryptocurrencyInput,
   PaginatedCryptocurrencyList,

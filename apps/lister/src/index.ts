@@ -1,6 +1,7 @@
+import { createLogger } from "@arbitrator/logger";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin } from "@orpc/server/plugins";
-import { createLogger } from "@arbitrator/logger";
+
 import { router } from "./router";
 
 const logger = createLogger("arbitrator/lister");

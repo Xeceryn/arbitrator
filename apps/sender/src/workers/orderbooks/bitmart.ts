@@ -11,12 +11,13 @@ declare let self: Worker;
 import { WebsocketClient } from "bitmart-api";
 const SymbolStore = new Map<string, number>();
 import { threadId as processId } from "worker_threads";
-import type { SymbolInfo } from "../../types/metadata";
+
 import {
   WorkerMessageType,
   WorkerState,
   type OrderbookWorkerMessage,
 } from "../../types";
+import type { SymbolInfo } from "../../types/metadata";
 
 const exchange = "bitmart";
 const threadId = exchange + "-orderbook-" + processId;

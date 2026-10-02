@@ -1,4 +1,5 @@
 import * as pg from "drizzle-orm/pg-core";
+
 import { addDefaultTimestampFields } from "../../utils/drizzle.util";
 
 export const exchangeBaseCurrencyPgEnum = pg.pgEnum("exchangeBaseCurrency", [

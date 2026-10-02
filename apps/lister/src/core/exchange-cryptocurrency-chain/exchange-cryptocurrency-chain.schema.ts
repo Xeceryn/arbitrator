@@ -3,8 +3,9 @@ import {
   createSelectSchema,
   createUpdateSchema,
 } from "drizzle-zod";
-import { exchangeCryptocurrencyChainTable } from "./exchange-cryptocurrency-chain.sql";
 import type z from "zod";
+
+import { exchangeCryptocurrencyChainTable } from "./exchange-cryptocurrency-chain.sql";
 
 export const exchangeCryptocurrencyChainInsertSchema = createInsertSchema(
   exchangeCryptocurrencyChainTable,

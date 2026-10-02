@@ -1,10 +1,11 @@
+import { ORPCError } from "@orpc/client";
+
+import { listerClient } from "./client";
 import {
   CoinMarketCapExchange,
   get_exchange_cmc_details,
   get_old_data,
 } from "./lib/data-utils";
-import { listerClient } from "./client";
-import { ORPCError } from "@orpc/client";
 
 const [pingError] = await listerClient.utility.ping();
 if (pingError) {

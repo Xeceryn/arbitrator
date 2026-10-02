@@ -3,24 +3,28 @@
   "name": "@arbitrator/lister",
   "version": "0.0.0",
   "private": true,
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
-  },
   "exports": {
     ".": "./src/router.ts",
     "./types": "./src/core/types.ts",
     "./schemas": "./src/core/schemas.ts",
     "./constants": "./src/core/constants.ts"
   },
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio"
+  },
   "dependencies": {
+    "@arbitrator/logger": "workspace:*",
     "@orpc/server": "catalog:core",
     "drizzle-kit": "catalog:tools",
     "drizzle-orm": "catalog:core",
-    "drizzle-zod": "catalog:core",
     "drizzle-seed": "catalog:tools",
-    "@arbitrator/logger": "workspace:*",
-    "zod": "catalog:core",
-    "pg": "catalog:core"
+    "drizzle-zod": "catalog:core",
+    "pg": "catalog:core",
+    "zod": "catalog:core"
   }
 }

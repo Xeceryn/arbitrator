@@ -6,6 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+
 import { PrivateAccountV3Api } from "./PrivateAccountV3Api";
 import { PrivateDealsV3Api } from "./PrivateDealsV3Api";
 import { PrivateOrdersV3Api } from "./PrivateOrdersV3Api";
@@ -18,8 +19,8 @@ import { PublicDealsV3Api } from "./PublicDealsV3Api";
 import { PublicIncreaseDepthsBatchV3Api } from "./PublicIncreaseDepthsBatchV3Api";
 import { PublicIncreaseDepthsV3Api } from "./PublicIncreaseDepthsV3Api";
 import { PublicLimitDepthsV3Api } from "./PublicLimitDepthsV3Api";
-import { PublicMiniTickerV3Api } from "./PublicMiniTickerV3Api";
 import { PublicMiniTickersV3Api } from "./PublicMiniTickersV3Api";
+import { PublicMiniTickerV3Api } from "./PublicMiniTickerV3Api";
 import { PublicSpotKlineV3Api } from "./PublicSpotKlineV3Api";
 
 export const protobufPackage = "";

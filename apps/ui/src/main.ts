@@ -1,17 +1,16 @@
-import { Elysia, redirect } from "elysia";
+import { serverTiming } from "@elysiajs/server-timing";
 import staticPlugin from "@elysiajs/static";
 import { faker } from "@faker-js/faker";
+import { htmx } from "@gtramontina.com/elysia-htmx";
+import { Elysia, redirect } from "elysia";
 
+import { bundleClientSideResources } from "./bundler";
+import { ExchangeController } from "./controllers";
 import { CryptocurrencyController } from "./controllers/coin.controller";
 // import { SignalController } from "./controllers/signal.controller";
 // import { MarketController } from "./controllers/market.controller";
 import { ErrorPageController } from "./controllers/error-page.controller";
 import { HomeController } from "./controllers/home.controller";
-import { serverTiming } from "@elysiajs/server-timing";
-
-import { bundleClientSideResources } from "./bundler";
-import { htmx } from "@gtramontina.com/elysia-htmx";
-import { ExchangeController as ExchangeController } from "./controllers";
 
 if (!process.argv.includes("--cluster")) {
   await bundleClientSideResources();
@@ -39,7 +38,6 @@ new Elysia()
   .use(HomeController)
   .use(CryptocurrencyController)
   .use(ExchangeController)
-  // .use(SignalController)
   .use(staticPlugin({ prefix: "/public", assets: "./public" }))
   .get("/", () => {
     return redirect("/home");

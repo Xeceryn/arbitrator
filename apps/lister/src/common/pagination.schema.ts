@@ -34,7 +34,7 @@ const paginatedMetadataSchema = z.object({
   orderBy: z.string(),
 });
 
-export function createPaginatedOutputSchema<T extends z.ZodTypeAny>(
+export function createPaginatedOutputSchema<T extends z.ZodType>(
   itemSchema: T,
 ) {
   return z.object({
@@ -47,6 +47,6 @@ export type PaginationInput<T extends z.ZodEnum> = z.infer<
   ReturnType<typeof createPaginationInputSchema<T, T>>
 >;
 
-export type PaginatedOutput<T extends z.ZodTypeAny> = z.infer<
+export type PaginatedOutput<T extends z.ZodType> = z.infer<
   ReturnType<typeof createPaginatedOutputSchema<T>>
 >;

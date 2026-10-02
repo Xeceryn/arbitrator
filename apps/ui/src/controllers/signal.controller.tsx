@@ -1,10 +1,9 @@
-import { htmx } from "@gtramontina.com/elysia-htmx";
-import { Suspense } from "@kitajs/html/suspense";
-import { Elysia } from "elysia";
 import html from "@elysiajs/html";
-import { Html } from "@kitajs/html";
-import { Signal } from "../views/pages/Signal";
+import { htmx } from "@gtramontina.com/elysia-htmx";
+import { Elysia } from "elysia";
+
 import { BaseLayout } from "../helpers/BaseLayout";
+import { Signal } from "../views/pages/Signal";
 
 export const SignalController = new Elysia()
   .onError((error) => {
@@ -22,7 +21,7 @@ export const SignalController = new Elysia()
         console.log("Parse error", error);
         break;
       default:
-        console.log("Unhandled error", error.code);
+        console.log("Unhandled error", error);
         break;
     }
   })

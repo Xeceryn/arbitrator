@@ -3,13 +3,13 @@ import {
   createUpdateSchema,
   createInsertSchema,
 } from "drizzle-zod";
-
-import { chainTable } from "./chain.sql";
 import z from "zod";
+
 import {
   createPaginatedOutputSchema,
   createPaginationInputSchema,
 } from "../../common/pagination.schema";
+import { chainTable } from "./chain.sql";
 
 export const chainInsertSchema = createInsertSchema(chainTable).omit({
   createdAt: true,

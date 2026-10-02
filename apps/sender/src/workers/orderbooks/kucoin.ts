@@ -10,15 +10,15 @@ declare let self: Worker;
 
 import { threadId as processId } from "worker_threads";
 
+import { WebsocketClient } from "kucoin-api";
+
 import {
   WorkerMessageType,
   WorkerState,
   type OrderbookWorkerMessage,
 } from "../../types";
-
-import { WebsocketClient } from "kucoin-api";
-import { split_symbols } from "../../utils";
 import type { SymbolInfo } from "../../types/metadata";
+import { split_symbols } from "../../utils";
 
 const exchange = "kucoin";
 const threadId = exchange + "-orderbook-" + processId;

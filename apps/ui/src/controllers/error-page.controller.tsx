@@ -1,8 +1,9 @@
+import html from "@elysiajs/html";
+import { htmx } from "@gtramontina.com/elysia-htmx";
 import { Elysia } from "elysia";
+
 import { BaseLayout } from "../helpers/BaseLayout";
 import { InternalServerErrorPage, NotFoundPage } from "../views/pages/Error";
-import { htmx } from "@gtramontina.com/elysia-htmx";
-import html from "@elysiajs/html";
 
 export const ErrorPageController = new Elysia()
   .use(html())

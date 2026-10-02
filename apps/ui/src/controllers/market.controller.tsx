@@ -1,11 +1,12 @@
 import { listerClient } from "@arbitrator/sdk";
-import { Elysia, redirect, t } from "elysia";
-import { BaseLayout } from "../helpers/BaseLayout";
-import { MarketPage } from "../views/pages/MarketPage";
-import { MarketTableRow } from "../views/components/MarketTableRow";
-import { dateFormatter } from "../utils";
 import { htmx } from "@gtramontina.com/elysia-htmx";
+import { Elysia, redirect, t } from "elysia";
+
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
+import { BaseLayout } from "../helpers/BaseLayout";
+import { dateFormatter } from "../utils";
+import { MarketTableRow } from "../views/components/MarketTableRow";
+import { MarketPage } from "../views/pages/MarketPage";
 
 export const ExchangeController = new Elysia()
   .use(htmx())

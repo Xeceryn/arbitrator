@@ -4,16 +4,17 @@ import { htmx } from "@gtramontina.com/elysia-htmx";
 import { ORPCError } from "@orpc/client";
 import { Elysia, redirect, status } from "elysia";
 import z from "zod";
+
 import {
   cryptocurrencyUpdateSchema,
   listCryptocurrencySelectSchema,
 } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
 import { createPushURL } from "../utils";
-import { CoinTableRow } from "../views/components/CoinTableRow";
-import { CoinPage } from "../views/pages/CryptocurrencyPage";
-import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
 import { AddCoinModal } from "../views/components/AddCoinModal";
+import { CoinTableRow } from "../views/components/CoinTableRow";
+import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
+import { CoinPage } from "../views/pages/CryptocurrencyPage";
 
 export const CryptocurrencyController = new Elysia()
   .use(html())
@@ -25,14 +26,14 @@ export const CryptocurrencyController = new Elysia()
       if (!hx.isHTMX) {
         return (
           <BaseLayout title="arbitmage - Cryptocurrencies">
-						<AddCoinModal />
+            <AddCoinModal />
             <CoinPage {...query} />
           </BaseLayout>
         );
       }
       return (
         <>
-					<AddCoinModal />
+          <AddCoinModal />
           <title>Coin List</title>
           <CoinPage {...query} />
         </>

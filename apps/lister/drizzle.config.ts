@@ -1,5 +1,11 @@
 import { defineConfig } from "drizzle-kit";
 
+const dbUrl = () => {
+  return (
+    Bun.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/lister"
+  );
+};
+
 export default defineConfig({
   strict: true,
   verbose: true,

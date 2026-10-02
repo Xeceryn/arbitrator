@@ -1,6 +1,6 @@
 import { createLogger } from "@arbitrator/logger";
-import { connect } from "@nats-io/transport-node";
 import { type OrderbookMessageContent } from "@arbitrator/sender/types";
+import { connect } from "@nats-io/transport-node";
 
 const logger = createLogger("arbitrator/receiver");
 

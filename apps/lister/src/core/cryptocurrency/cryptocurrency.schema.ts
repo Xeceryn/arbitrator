@@ -3,13 +3,13 @@ import {
   createUpdateSchema,
   createInsertSchema,
 } from "drizzle-zod";
-
-import { cryptocurrencyTable } from "./cryptocurrency.sql";
 import z from "zod";
+
 import {
   createPaginationInputSchema as createPaginationInputSchema,
   createPaginatedOutputSchema,
 } from "../../common/pagination.schema";
+import { cryptocurrencyTable } from "./cryptocurrency.sql";
 
 export const cryptocurrencySelectSchema =
   createSelectSchema(cryptocurrencyTable);

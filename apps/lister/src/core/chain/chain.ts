@@ -1,8 +1,9 @@
-import { eq, count, or, ilike, and, asc, desc, SQL } from "drizzle-orm";
+import { eq, count, or, ilike, and, SQL } from "drizzle-orm";
+
 import { database } from "../../database/connection";
+import { SortOrder } from "../utility/sqlsort";
 import { chainTable } from "./chain.sql";
-import type { ListChainInput } from "./chain.type";
-import { paginate } from "../../common/pagination.util";
+import type { ListChainInput, PaginatedChainList } from "./chain.type";
 
 export namespace Chain {
   export async function add(chain: typeof chainTable.$inferInsert) {
@@ -13,7 +14,9 @@ export namespace Chain {
       .then((result) => result.at(0));
   }
 
-  export async function list(input: ListChainInput) {
+  export async function list(
+    input: ListChainInput,
+  ): Promise<PaginatedChainList> {
     const conditions: (SQL<unknown> | undefined)[] = [];
 
     if (input?.search) {
@@ -24,20 +27,47 @@ export namespace Chain {
             "%" + input.search.toLowerCase() + "%",
           ),
         ),
-      )
+      );
     }
-    const result = await paginate(
-      () => database.select().from(chainTable).where(conditions?.length ? and(...conditions) : undefined),
-      input.page,
-      input.limit,
-      await database
-        .select({ count: count() })
-        .from(chainTable)
-        .where(conditions?.length ? and(...conditions) : undefined)
-        .then((result) => result?.at(0)?.count || 0),
-    );
 
-    return result;
+    const totalItems = await database
+      .select({ count: count() })
+      .from(chainTable)
+      .where(conditions?.length ? and(...conditions) : undefined)
+      .then((result) => result?.at(0)?.count || 0);
+
+    const limit = input.limit === -1 ? totalItems : input.limit;
+    const offset = input.limit === -1 ? 0 : (input.page - 1) * input.limit;
+    const from = input.limit === -1 ? 0 : (input.page - 1) * input.limit + 1;
+    const to = input.limit === -1 ? totalItems : input.page * input.limit;
+
+    const result = await database
+      .select()
+      .from(chainTable)
+      .where(conditions?.length ? and(...conditions) : undefined)
+      .orderBy(SortOrder(input.order, chainTable[input.orderBy]))
+      .limit(limit)
+      .offset(offset);
+
+    const data = {
+      data: result,
+      meta: {
+        items: totalItems,
+        pages: Math.ceil(totalItems / input.limit),
+        page: input.page,
+        limit,
+        from,
+        to,
+        hasNextPage: input.page < Math.ceil(totalItems / input.limit),
+        hasPreviousPage: input.page > 1,
+        order: input.order,
+        orderBy: input.orderBy,
+        search: input.search,
+        searchBy: input.searchBy,
+      },
+    };
+
+    return data;
   }
 
   export async function codeExists(code: string) {

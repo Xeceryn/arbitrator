@@ -1,4 +1,5 @@
 import { spawn } from "bun";
+
 import { bundleClientSideResources } from "./bundler";
 
 const cpus = navigator.hardwareConcurrency; // Number of CPU cores

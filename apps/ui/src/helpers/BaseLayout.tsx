@@ -1,7 +1,8 @@
 import type { PropsWithChildren } from "@kitajs/html";
+
 import { Navbar } from "../views/components/Navbar";
-import { Sidebar } from "../views/components/Sidebar";
 import { NotificationToast } from "../views/components/NotificationToast";
+import { Sidebar } from "../views/components/Sidebar";
 
 type Props = PropsWithChildren<{
   title?: string;

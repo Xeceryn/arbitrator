@@ -1,16 +1,15 @@
 services:
-
   postgresql:
     image: postgres:17.6-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: sulthonuladib
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: sulthonuladib
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${DATABASE_NAME:-arbitrator}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ~/.docker-data/postgresql:/var/lib/postgresql/data
+      - postgres_data
 
   nats:
     image: nats:2.12-alpine
@@ -20,7 +19,6 @@ services:
       - "8222:8222"
     volumes:
       - ./docker/nats/nats-server.conf:/etc/nats/nats-server.conf
-      - ~/.docker-data/personal-nats:/data
 
 #   nats:
 #     image: nats:alpine
@@ -42,10 +40,11 @@ services:
 #       - nats-network
 #     restart: unless-stopped
 #
-# volumes:
-#   nats-data:
-#     driver: local
-#
+volumes:
+  nats-data:
+  postgres_data:
+
 # networks:
 #   nats-network:
 #     driver: bridge
+#

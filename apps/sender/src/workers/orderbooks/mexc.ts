@@ -9,8 +9,10 @@ declare let self: Worker;
 // };
 
 import { threadId as processId } from "node:worker_threads";
-import { PushDataV3ApiWrapper } from "../../vendor/mexc-websocket-proto/gen/PushDataV3ApiWrapper";
+
 import amqplib from "amqplib";
+
+import { PushDataV3ApiWrapper } from "../../vendor/mexc-websocket-proto/gen/PushDataV3ApiWrapper";
 
 // import dns from "node:dns/promises";
 // dns.setServers(["1.1.1.1", "1.0.0.1"]);

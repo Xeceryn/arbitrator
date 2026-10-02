@@ -1,5 +1,5 @@
 import type z from "zod";
-import { chainTable } from "./chain.sql";
+
 import type {
   chainInsertSchema,
   chainSelectSchema,
@@ -7,6 +7,7 @@ import type {
   listChainSelectSchema,
   paginatedChainSelectSChema,
 } from "./chain.schema";
+import { chainTable } from "./chain.sql";
 
 export type Chain = typeof chainTable.$inferSelect;
 export type ChainSelect = z.infer<typeof chainSelectSchema>;

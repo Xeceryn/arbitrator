@@ -1,4 +1,6 @@
 declare let self: Worker;
+import { threadId as processId } from "worker_threads";
+
 // NOTE: for debugging purposes when not running as a worker
 // const self = {
 //   postMessage(...args: any[]) {
@@ -6,7 +8,7 @@ declare let self: Worker;
 //   },
 // };
 import { DefaultLogger, WebsocketClient } from "gateio-api";
-import { threadId as processId } from "worker_threads";
+
 import {
   WorkerMessageType,
   WorkerState,

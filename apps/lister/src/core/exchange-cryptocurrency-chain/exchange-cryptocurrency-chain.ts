@@ -1,11 +1,12 @@
 import { and, count, eq } from "drizzle-orm";
-import { exchangeCryptocurrencyChainTable } from "./exchange-cryptocurrency-chain.sql";
+
 import { database } from "../../database/connection";
 import type {
   ExchangeCryptocurrencyChainFilterExists,
   ExchangeCryptocurrencyChainInsert,
   ExchangeCryptocurrencyChainUpdate,
 } from "./exchange-cryptocurrency-chain.schema";
+import { exchangeCryptocurrencyChainTable } from "./exchange-cryptocurrency-chain.sql";
 
 export namespace ExchangeCryptocurrencyChain {
   export type FindAllFilter = {
