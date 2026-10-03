@@ -5,7 +5,7 @@ import z from "zod";
 import { database } from "../../database/connection";
 import { Market } from "./market";
 import { marketInsertSchema, marketSelectSchema } from "./market.schema";
-import { marketTable } from "./market.sql";
+import { market } from "./market.sql";
 
 const assign = os
   .input(marketInsertSchema)
@@ -18,7 +18,7 @@ const assign = os
     }
 
     const result = await database
-      .insert(marketTable)
+      .insert(market)
       .values(input)
       .returning()
       .onConflictDoNothing()
@@ -50,12 +50,12 @@ const update = os
     }
 
     const result = await database
-      .update(marketTable)
+      .update(market)
       .set(input)
       .where(
         and(
-          eq(marketTable.exchangeId, input.exchangeId),
-          eq(marketTable.cryptocurrencyId, input.cryptocurrencyId),
+          eq(market.exchangeId, input.exchangeId),
+          eq(market.cryptocurrencyId, input.cryptocurrencyId),
         ),
       )
       .returning()
@@ -79,11 +79,11 @@ const unassign = os
   )
   .handler(async ({ input }) => {
     const result = await database
-      .delete(marketTable)
+      .delete(market)
       .where(
         and(
-          eq(marketTable.exchangeId, input.exchangeId),
-          eq(marketTable.cryptocurrencyId, input.cryptocurrencyId),
+          eq(market.exchangeId, input.exchangeId),
+          eq(market.cryptocurrencyId, input.cryptocurrencyId),
         ),
       )
       .returning()

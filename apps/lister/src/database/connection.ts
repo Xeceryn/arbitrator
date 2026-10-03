@@ -1,6 +1,8 @@
 import { SQL } from "bun";
 import { drizzle } from "drizzle-orm/bun-sql";
 
+import { relations } from "./relations";
+
 const url = () => {
   return (
     Bun.env.DATABASE_URL ||
@@ -9,6 +11,10 @@ const url = () => {
 };
 export const postgresConnection = new SQL(url());
 
-export const database = drizzle({ client: postgresConnection });
+export const database = drizzle({
+  client: postgresConnection,
+  relations: relations,
+  logger: true,
+});
 
 export type DB = typeof database;

@@ -9,17 +9,17 @@ import {
   createPaginatedOutputSchema,
   createPaginationInputSchema,
 } from "../../common/pagination.schema";
-import { exchangeTable } from "./exchange.sql";
+import { exchange } from "./exchange.sql";
 
-export const exchangeInsertSchema = createInsertSchema(exchangeTable).omit({
+export const exchangeInsertSchema = createInsertSchema(exchange).omit({
   createdAt: true,
   updatedAt: true,
 });
-export const exchangeUpdateSchema = createUpdateSchema(exchangeTable).omit({
+export const exchangeUpdateSchema = createUpdateSchema(exchange).omit({
   createdAt: true,
   updatedAt: true,
 });
-export const exchangeSelectSchema = createSelectSchema(exchangeTable);
+export const exchangeSelectSchema = createSelectSchema(exchange);
 export const exchangeSearchByKeysSchema = z.keyof(
   exchangeSelectSchema.omit({
     createdAt: true,

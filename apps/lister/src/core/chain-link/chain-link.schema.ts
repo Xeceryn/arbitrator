@@ -4,19 +4,19 @@ import {
   createUpdateSchema,
 } from "drizzle-zod";
 
-import { chainLinkTable } from "./chain-link.sql";
+import { chainLink } from "./chain-link.sql";
 
-export const chainLinkInsertSchema = createInsertSchema(chainLinkTable).omit({
+export const chainLinkInsertSchema = createInsertSchema(chainLink).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const chainLinkUpdateSchema = createUpdateSchema(chainLinkTable).omit({
+export const chainLinkUpdateSchema = createUpdateSchema(chainLink).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const chainLinkSelectSchema = createSelectSchema(chainLinkTable);
+export const chainLinkSelectSchema = createSelectSchema(chainLink);
 
 export const chainLinkFilterExistsSchema = chainLinkSelectSchema.pick({
   marketId: true,

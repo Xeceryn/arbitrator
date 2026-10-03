@@ -6,9 +6,9 @@ import type {
   chainLinkSelectSchema,
   chainLinkUpdateSchema,
 } from "./chain-link.schema";
-import { chainLinkTable } from "./chain-link.sql";
+import { chainLink } from "./chain-link.sql";
 
-export type ChainLink = typeof chainLinkTable.$inferSelect;
+export type ChainLink = typeof chainLink.$inferSelect;
 export type ChainLinkInsert = z.infer<typeof chainLinkInsertSchema>;
 
 export type ChainLinkUpdate = z.infer<typeof chainLinkUpdateSchema>;

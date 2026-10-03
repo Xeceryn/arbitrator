@@ -115,7 +115,7 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => {
                     class="input input-bordered join-item"
                     placeholder="Search"
                     value={props.search}
-                    hx-get="/coins/list?page=1"
+                    hx-get="/coins/list"
                     hx-include="[name=searchBy], [name=limit]"
                     hx-trigger="keyup changed delay:100ms"
                     hx-swap="innerHTML"

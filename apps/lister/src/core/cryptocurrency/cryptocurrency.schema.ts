@@ -9,23 +9,19 @@ import {
   createPaginationInputSchema,
   createPaginatedOutputSchema,
 } from "../../common/pagination.schema";
-import { cryptocurrencyTable } from "./cryptocurrency.sql";
+import { cryptocurrency } from "./cryptocurrency.sql";
 
-export const cryptocurrencySelectSchema =
-  createSelectSchema(cryptocurrencyTable);
+export const cryptocurrencySelectSchema = createSelectSchema(cryptocurrency);
 export const cryptocurrencyInsertSchema = createInsertSchema(
-  cryptocurrencyTable,
+  cryptocurrency,
 ).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const cryptocurrencyUpdateSchema = createUpdateSchema(
-  cryptocurrencyTable,
-  {
-    cmcId: z.coerce.number().optional(),
-  },
-).omit({
+export const cryptocurrencyUpdateSchema = createUpdateSchema(cryptocurrency, {
+  cmcId: z.coerce.number().optional(),
+}).omit({
   logo: true,
   createdAt: true,
   updatedAt: true,

@@ -27,13 +27,13 @@ export const CoinAssignmentTableRow = (props: CoinAssignmentTableRowProps) => {
 };
 
 export const CoinAssignmentTable = async ({ id }: { id: number }) => {
-  const [assignmentsError, assignmentsData] =
-    await listerClient.exchangeCryptocurrency.list({
-      exchangeId: id,
-    });
+  const [assignmentsError, assignmentsData] = await listerClient.market.list({
+    exchangeId: id,
+  });
   if (assignmentsError) {
     return <div>Failed to fetch coins</div>;
   }
+  const cryptocurrencies = await listerClient.cryptocurrency.list({});
 
   return (
     <table

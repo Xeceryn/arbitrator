@@ -1,7 +1,7 @@
 import { and, count, eq } from "drizzle-orm";
 
 import { database } from "../../database/connection";
-import { chainLinkTable } from "./chain-link.sql";
+import { chainLink } from "./chain-link.sql";
 import type {
   ChainLinkFilterExists,
   ChainLinkInsert,
@@ -17,23 +17,23 @@ export namespace ChainLink {
   export async function getAll(filter?: FindAllFilter) {
     const conditions = [];
     if (filter?.marketId) {
-      conditions.push(eq(chainLinkTable.marketId, filter.marketId));
+      conditions.push(eq(chainLink.marketId, filter.marketId));
     }
     if (filter?.chainId) {
-      conditions.push(eq(chainLinkTable.chainId, filter.chainId));
+      conditions.push(eq(chainLink.chainId, filter.chainId));
     }
 
     return await database
       .select()
-      .from(chainLinkTable)
+      .from(chainLink)
       .where(conditions?.length ? and(...conditions) : undefined);
   }
 
   export async function getById(id: number) {
     return await database
       .select()
-      .from(chainLinkTable)
-      .where(eq(chainLinkTable.id, id))
+      .from(chainLink)
+      .where(eq(chainLink.id, id))
       .then((result) => result.at(0));
   }
 
@@ -42,11 +42,11 @@ export namespace ChainLink {
   ): Promise<boolean> {
     const result = await database
       .select({ count: count() })
-      .from(chainLinkTable)
+      .from(chainLink)
       .where(
         and(
-          eq(chainLinkTable.marketId, filter.marketId),
-          eq(chainLinkTable.chainId, filter.chainId),
+          eq(chainLink.marketId, filter.marketId),
+          eq(chainLink.chainId, filter.chainId),
         ),
       )
       .execute();
@@ -54,27 +54,27 @@ export namespace ChainLink {
     return !!result[0]?.count;
   }
 
-  export async function add(chainLink: ChainLinkInsert) {
+  export async function add(input: ChainLinkInsert) {
     return await database
-      .insert(chainLinkTable)
-      .values(chainLink)
+      .insert(chainLink)
+      .values(input)
       .returning()
       .then((result) => result[0]);
   }
 
-  export async function update(id: number, chainLink: ChainLinkUpdate) {
+  export async function update(id: number, input: ChainLinkUpdate) {
     return await database
-      .update(chainLinkTable)
-      .set(chainLink)
-      .where(eq(chainLinkTable.id, id))
+      .update(chainLink)
+      .set(input)
+      .where(eq(chainLink.id, id))
       .returning()
       .then((result) => result[0]);
   }
 
   export async function remove(id: number) {
     return await database
-      .delete(chainLinkTable)
-      .where(eq(chainLinkTable.id, id))
+      .delete(chainLink)
+      .where(eq(chainLink.id, id))
       .returning()
       .then((result) => result[0]);
   }

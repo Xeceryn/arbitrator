@@ -7,7 +7,7 @@ export const exchangeBaseCurrencyPgEnum = pg.pgEnum("exchangeBaseCurrency", [
   "idr",
 ]);
 
-export const exchangeTable = pg.pgTable("exchange", {
+export const exchange = pg.pgTable("exchange", {
   id: pg.integer().primaryKey().generatedAlwaysAsIdentity(),
   cmcId: pg.integer().notNull().unique(),
   name: pg.varchar({ length: 255 }).notNull(),

@@ -1,3 +1,3 @@
-import { marketTable } from "./market.sql";
+import { market } from "./market.sql";
 
-export type Market = typeof marketTable.$inferSelect;
+export type Market = typeof market.$inferSelect;

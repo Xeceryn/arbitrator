@@ -27,6 +27,7 @@
         "drizzle-orm": "catalog:core",
         "drizzle-seed": "catalog:tools",
         "drizzle-zod": "catalog:core",
+        "effect": "^4.0.0",
         "pg": "catalog:core",
         "zod": "catalog:core",
       },
@@ -591,6 +592,8 @@
     "drizzle-zod": ["drizzle-zod@1.0.0-beta.9-e89174b", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-dnEHqeFk5KHuC5sqYEbXxk0FXcijiYRtLwI2/p/z4AclfyGBOcnCAakoVwbOdNHrF0emlc6ufyRl0NffVP1XRw=="],
 
     "dunder-proto": ["dunder-proto@1.0.1", "", { "dependencies": { "call-bind-apply-helpers": "^1.0.1", "es-errors": "^1.3.0", "gopd": "^1.2.0" } }, "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A=="],
+
+    "effect": ["effect@4.0.0", "", {}, "sha512-ooc1TG5t+FfzgYnFz2ff6BBKyZ7EwBRVXC7c4RhQUAD6/TZ2gTXXMeb4WX7a19ozQo4J73/QW+S00YAIresoMQ=="],
 
     "elysia": ["elysia@1.4.30", "", { "dependencies": { "cookie": "^1.1.1", "exact-mirror": "^0.2.7", "fast-decode-uri-component": "^1.0.1", "memoirist": "^0.4.0" }, "peerDependencies": { "@sinclair/typebox": ">= 0.34.0 < 1", "@types/bun": ">= 1.2.0", "file-type": ">= 20.0.0", "openapi-types": ">= 12.0.0", "typescript": ">= 5.0.0" }, "optionalPeers": ["@types/bun", "typescript"] }, "sha512-S2qqV0CbM4faB1hQQ5IYoeYnAUinjHlzRduxaBc4OoNqh0GjOc8k6tt3hv5ozWcG6Svr6hugw6JL4zNke4jwfA=="],
 

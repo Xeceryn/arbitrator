@@ -24,6 +24,7 @@
     "drizzle-orm": "catalog:core",
     "drizzle-seed": "catalog:tools",
     "drizzle-zod": "catalog:core",
+    "effect": "^4.0.0",
     "pg": "catalog:core",
     "zod": "catalog:core"
   }

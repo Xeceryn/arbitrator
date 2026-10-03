@@ -3,19 +3,19 @@ import { reset } from "drizzle-seed";
 import z from "zod";
 
 import { database } from "../../database/connection";
-import { chainTable } from "../chain/chain.sql";
-import { cryptocurrencyTable } from "../cryptocurrency/cryptocurrency.sql";
-import { exchangeCryptocurrencyChainTable } from "../exchange-cryptocurrency-chain/exchange-cryptocurrency-chain.sql";
-import { exchangeCryptocurrencyTable } from "../exchange-cryptocurrency/exchange-cryptocurrency.sql";
-import { exchangeTable } from "../exchange/exchange.sql";
+import { chainLink } from "../chain-link/chain-link.sql";
+import { chain } from "../chain/chain.sql";
+import { cryptocurrency } from "../cryptocurrency/cryptocurrency.sql";
+import { exchange } from "../exchange/exchange.sql";
+import { market } from "../market/market.sql";
 
 const clearDatabase = os.output(z.void()).handler(async () => {
   await reset(database, {
-    cryptocurrency: cryptocurrencyTable,
-    exchange: exchangeTable,
-    chain: chainTable,
-    exchangeCryptocurrency: exchangeCryptocurrencyTable,
-    exchangeCryptocurrencyChain: exchangeCryptocurrencyChainTable,
+    cryptocurrency: cryptocurrency,
+    exchange: exchange,
+    chain: chain,
+    market: market,
+    chainLink: chainLink,
   });
 });
 

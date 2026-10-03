@@ -7,9 +7,9 @@ import type {
   listChainSelectSchema,
   paginatedChainSelectSChema,
 } from "./chain.schema";
-import { chainTable } from "./chain.sql";
+import { chain } from "./chain.sql";
 
-export type Chain = typeof chainTable.$inferSelect;
+export type Chain = typeof chain.$inferSelect;
 export type ChainSelect = z.infer<typeof chainSelectSchema>;
 export type ChainInsert = z.infer<typeof chainInsertSchema>;
 export type ChainUpdate = z.infer<typeof chainUpdateSchema>;

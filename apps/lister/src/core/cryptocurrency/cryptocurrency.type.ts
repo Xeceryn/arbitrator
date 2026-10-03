@@ -7,9 +7,9 @@ import type {
   listCryptocurrencySelectSchema,
   paginatedCryptocurrencySelectSchema,
 } from "./cryptocurrency.schema";
-import { cryptocurrencyTable } from "./cryptocurrency.sql";
+import { cryptocurrency } from "./cryptocurrency.sql";
 
-export type Cryptocurrency = typeof cryptocurrencyTable.$inferSelect;
+export type Cryptocurrency = typeof cryptocurrency.$inferSelect;
 export type CryptocurrencySelect = z.infer<typeof cryptocurrencySelectSchema>;
 export type CryptocurrencyInsert = z.infer<typeof cryptocurrencyInsertSchema>;
 export type CryptocurrencyUpdate = z.infer<typeof cryptocurrencyUpdateSchema>;

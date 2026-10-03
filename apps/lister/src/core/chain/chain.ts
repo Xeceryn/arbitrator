@@ -2,14 +2,18 @@ import { eq, count } from "drizzle-orm";
 
 import { paginate } from "../../common/pagination";
 import { database } from "../../database/connection";
-import { chainTable } from "./chain.sql";
-import type { ListChainInput, PaginatedChainList } from "./chain.type";
+import { chain } from "./chain.sql";
+import type {
+  ChainUpdate,
+  ListChainInput,
+  PaginatedChainList,
+} from "./chain.type";
 
 export namespace Chain {
-  export async function add(chain: typeof chainTable.$inferInsert) {
+  export async function add(input: typeof chain.$inferInsert) {
     return await database
-      .insert(chainTable)
-      .values(chain)
+      .insert(chain)
+      .values(input)
       .returning()
       .then((result) => result.at(0));
   }
@@ -17,50 +21,47 @@ export namespace Chain {
   export async function list(
     input: ListChainInput,
   ): Promise<PaginatedChainList> {
-    const result = await paginate({ table: chainTable, input });
+    const result = await paginate({ table: chain, input });
     return result;
   }
 
   export async function codeExists(code: string) {
     return await database
       .select({ count: count() })
-      .from(chainTable)
-      .where(eq(chainTable.code, code))
+      .from(chain)
+      .where(eq(chain.code, code))
       .then((result) => !!result.at(0)?.count);
   }
 
   export async function getById(id: number) {
     return await database
       .select()
-      .from(chainTable)
-      .where(eq(chainTable.id, id))
+      .from(chain)
+      .where(eq(chain.id, id))
       .then((result) => result.at(0));
   }
 
   export async function getByCode(code: string) {
     return await database
       .select()
-      .from(chainTable)
-      .where(eq(chainTable.code, code))
+      .from(chain)
+      .where(eq(chain.code, code))
       .then((result) => result.at(0));
   }
 
-  export async function update(
-    id: number,
-    chain: Partial<typeof chainTable.$inferInsert>,
-  ) {
+  export async function update(id: number, input: ChainUpdate) {
     return await database
-      .update(chainTable)
-      .set(chain)
-      .where(eq(chainTable.id, id))
+      .update(chain)
+      .set(input)
+      .where(eq(chain.id, id))
       .returning()
       .then((result) => result.at(0));
   }
 
   export async function remove(id: number) {
     return await database
-      .delete(chainTable)
-      .where(eq(chainTable.id, id))
+      .delete(chain)
+      .where(eq(chain.id, id))
       .returning()
       .then((result) => result.at(0));
   }

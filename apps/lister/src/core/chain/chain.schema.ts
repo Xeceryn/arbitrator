@@ -9,19 +9,19 @@ import {
   createPaginatedOutputSchema,
   createPaginationInputSchema,
 } from "../../common/pagination.schema";
-import { chainTable } from "./chain.sql";
+import { chain } from "./chain.sql";
 
-export const chainInsertSchema = createInsertSchema(chainTable).omit({
+export const chainInsertSchema = createInsertSchema(chain).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const chainUpdateSchema = createUpdateSchema(chainTable).omit({
+export const chainUpdateSchema = createUpdateSchema(chain).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const chainSelectSchema = createSelectSchema(chainTable);
+export const chainSelectSchema = createSelectSchema(chain);
 export const chainSearchByKeysSchema = z.keyof(
   chainSelectSchema.omit({
     id: true,

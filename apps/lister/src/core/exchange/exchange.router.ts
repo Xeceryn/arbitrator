@@ -33,7 +33,6 @@ export const exchangeRouter = {
     .input(listExchangeSelectSchema)
     .output(paginatedExchangeSelectSchema)
     .handler(async ({ input }) => {
-      console.log(input);
       return await Exchange.list(input);
     }),
 
@@ -73,7 +72,13 @@ export const exchangeRouter = {
           });
         }
       }
-      return await Exchange.update(input.id, input.payload);
+      const data = await Exchange.update(input.id, input.payload);
+      if (!data) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "exchange not found",
+        });
+      }
+      return data;
     }),
 
   remove: os

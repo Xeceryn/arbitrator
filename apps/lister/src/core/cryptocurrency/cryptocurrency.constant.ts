@@ -4,6 +4,6 @@ import {
 } from "./cryptocurrency.schema";
 
 export const CryptocurrencySearchByOptions =
-  cryptocurrencySearchByKeysSchema.enum;
+  cryptocurrencySearchByKeysSchema.options;
 export const CryptocurrencyOrderByOptions =
-  cryptocurrencyOrderByKeysSchema.enum;
+  cryptocurrencyOrderByKeysSchema.options;

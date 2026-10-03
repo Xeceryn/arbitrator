@@ -34,9 +34,7 @@ export const cryptocurrencyRouter = {
     .input(listCryptocurrencySelectSchema)
     .output(paginatedCryptocurrencySelectSchema)
     .handler(async ({ input }) => {
-      console.log(input);
       const result = await Cryptocurrency.list(input);
-      console.log("result", result);
       return result;
     }),
 
@@ -78,7 +76,14 @@ export const cryptocurrencyRouter = {
         }
       }
 
-      return await Cryptocurrency.update(input.id, input.payload);
+      const result = await Cryptocurrency.update(input.id, input.payload);
+      if (!result) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "cryptocurrency not found",
+        });
+      }
+
+      return result;
     }),
 
   remove: os

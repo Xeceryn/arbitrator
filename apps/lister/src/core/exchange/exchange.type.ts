@@ -7,9 +7,9 @@ import type {
   listExchangeSelectSchema,
   paginatedExchangeSelectSchema,
 } from "./exchange.schema";
-import { exchangeTable } from "./exchange.sql";
+import { exchange } from "./exchange.sql";
 
-export type Exchange = typeof exchangeTable.$inferSelect;
+export type Exchange = typeof exchange.$inferSelect;
 export type ExchangeSelect = z.infer<typeof exchangeSelectSchema>;
 export type ExchangeInsert = z.infer<typeof exchangeInsertSchema>;
 export type ExchangeUpdate = z.infer<typeof exchangeUpdateSchema>;

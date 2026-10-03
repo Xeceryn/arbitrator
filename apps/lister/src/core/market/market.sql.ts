@@ -1,22 +1,22 @@
 import * as pg from "drizzle-orm/pg-core";
 
 import { addDefaultTimestampFields } from "../../utils/drizzle.util";
-import { cryptocurrencyTable } from "../cryptocurrency/cryptocurrency.sql";
-import { exchangeTable } from "../exchange/exchange.sql";
+import { cryptocurrency } from "../cryptocurrency/cryptocurrency.sql";
+import { exchange } from "../exchange/exchange.sql";
 
-export const marketTable = pg.pgTable("market", {
+export const market = pg.pgTable("market", {
   id: pg.integer().primaryKey().generatedAlwaysAsIdentity(),
   exchangeId: pg
     .integer()
     .notNull()
-    .references(() => exchangeTable.id, {
+    .references(() => exchange.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
   cryptocurrencyId: pg
     .integer()
     .notNull()
-    .references(() => cryptocurrencyTable.id, {
+    .references(() => cryptocurrency.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),

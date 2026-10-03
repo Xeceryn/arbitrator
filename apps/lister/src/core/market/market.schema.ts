@@ -5,19 +5,19 @@ import {
 } from "drizzle-zod";
 import type z from "zod";
 
-import { marketTable } from "./market.sql";
+import { market } from "./market.sql";
 
-export const marketInsertSchema = createInsertSchema(marketTable).omit({
+export const marketInsertSchema = createInsertSchema(market).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const marketUpdateSchema = createUpdateSchema(marketTable).omit({
+export const marketUpdateSchema = createUpdateSchema(market).omit({
   createdAt: true,
   updatedAt: true,
 });
 
-export const marketSelectSchema = createSelectSchema(marketTable);
+export const marketSelectSchema = createSelectSchema(market);
 
 export const marketFilterExistsSchema = marketSelectSchema.pick({
   exchangeId: true,
