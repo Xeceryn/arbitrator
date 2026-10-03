@@ -1,0 +1,1 @@
+ALTER TABLE "market" ADD COLUMN "tradeEnabled" boolean NOT NULL;

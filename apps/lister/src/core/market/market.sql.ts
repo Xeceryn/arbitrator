@@ -20,6 +20,7 @@ export const market = pg.pgTable("market", {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
+  tradeEnabled: pg.boolean().notNull(),
   exchangeSymbol: pg.varchar({ length: 255 }).notNull(),
   ...addDefaultTimestampFields(),
 });
