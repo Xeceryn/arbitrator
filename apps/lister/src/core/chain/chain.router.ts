@@ -59,7 +59,7 @@ export const chainRouter = {
         payload: chainUpdateSchema,
       }),
     )
-    .output(chainSelectSchema.partial())
+    .output(chainSelectSchema)
     .handler(async ({ input }) => {
       const target = await Chain.getById(input.id);
       if (!target) {

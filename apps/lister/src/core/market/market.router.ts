@@ -1,15 +1,26 @@
 import { ORPCError, os } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, notExists } from "drizzle-orm";
 import z from "zod";
 
 import { database } from "../../database/connection";
+import { Cryptocurrency } from "../cryptocurrency/cryptocurrency";
+import { Exchange } from "../exchange/exchange";
+import {
+  listExchangeSelectSchema,
+  paginatedExchangeSelectSchema,
+} from "../exchange/exchange.schema";
 import { exchange } from "../exchange/exchange.sql";
 import { Market } from "./market";
-import { marketInsertSchema, marketSelectSchema } from "./market.schema";
+import {
+  marketAssignSchema,
+  marketSelectSchema,
+  marketUpdatePayloadSchema,
+  marketWithRelationsSchema,
+} from "./market.schema";
 import { market } from "./market.sql";
 
 const assign = os
-  .input(marketInsertSchema)
+  .input(marketAssignSchema)
   .output(marketSelectSchema)
   .handler(async ({ input }) => {
     if (await Market.exists(input)) {
@@ -18,13 +29,25 @@ const assign = os
       });
     }
 
+    const cryptocurrency = await Cryptocurrency.getById(input.cryptocurrencyId);
+    if (!cryptocurrency) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "cryptocurrency not found",
+      });
+    }
+
     const result = await database
       .insert(market)
-      .values(input)
+      .values({
+        exchangeId: input.exchangeId,
+        cryptocurrencyId: input.cryptocurrencyId,
+        tradeEnabled: input.tradeEnabled,
+        exchangeSymbol:
+          input.exchangeSymbol ?? cryptocurrency.symbol.toUpperCase(),
+      })
       .returning()
       .onConflictDoNothing()
       .then((result) => result.at(0));
-    console.log("result", result);
 
     if (!result) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -36,12 +59,7 @@ const assign = os
   });
 
 const update = os
-  .input(
-    marketSelectSchema.pick({
-      exchangeId: true,
-      cryptocurrencyId: true,
-    }),
-  )
+  .input(marketUpdatePayloadSchema)
   .output(marketSelectSchema)
   .handler(async ({ input }) => {
     if (!(await Market.exists(input))) {
@@ -50,18 +68,7 @@ const update = os
       });
     }
 
-    const result = await database
-      .update(market)
-      .set(input)
-      .where(
-        and(
-          eq(market.exchangeId, input.exchangeId),
-          eq(market.cryptocurrencyId, input.cryptocurrencyId),
-        ),
-      )
-      .returning()
-      .then((result) => result.at(0));
-
+    const result = await Market.update(input, input);
     if (!result) {
       throw new ORPCError("INTERNAL_SERVER_ERROR", {
         message: "something wrong when updating exchange-cryptocurrency",
@@ -112,28 +119,50 @@ const list = os
   .handler(async ({ input }) => {
     return await Market.getAll(input);
   });
-const listCryptoByExchange = os
+
+/**
+ * Assignment read-model: markets with their exchange and cryptocurrency
+ * embedded. Filter by either side (exchange detail or coin sidebar).
+ */
+const listDetailed = os
   .input(
-    z.object({
-      exchangeId: z.number(),
-      tradeEnabled: z.boolean().optional().default(true),
+    z
+      .object({
+        exchangeId: z.number().optional(),
+        cryptocurrencyId: z.number().optional(),
+      })
+      .optional(),
+  )
+  .output(z.array(marketWithRelationsSchema))
+  .handler(async ({ input }) => {
+    return await Market.getAllWithRelations(input);
+  });
+
+/** Exchanges that are not yet assigned to the given coin. */
+const listAvailableExchanges = os
+  .input(
+    listExchangeSelectSchema.extend({
+      cryptocurrencyId: z.coerce.number(),
     }),
   )
+  .output(paginatedExchangeSelectSchema)
   .handler(async ({ input }) => {
-    const result = await database.query.exchange.findFirst({
-      where: {
-        id: input.exchangeId,
-      },
-      with: {
-        cryptocurrencies: {
-          limit: 10,
-          orderBy: {
-            cmcId: "asc",
-          },
-        },
-      },
-    });
-    return result;
+    const { cryptocurrencyId, ...pagination } = input;
+
+    return await Exchange.listExcluding(
+      pagination,
+      notExists(
+        database
+          .select({ id: market.id })
+          .from(market)
+          .where(
+            and(
+              eq(market.exchangeId, exchange.id),
+              eq(market.cryptocurrencyId, cryptocurrencyId),
+            ),
+          ),
+      ),
+    );
   });
 
 const findById = os
@@ -151,10 +180,11 @@ const findById = os
   });
 
 export const marketRouter = os.router({
-  listCryptoByExchange,
   assign,
   unassign,
   update,
   list,
+  listDetailed,
+  listAvailableExchanges,
   findById,
 });

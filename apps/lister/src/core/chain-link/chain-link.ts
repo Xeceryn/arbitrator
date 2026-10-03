@@ -6,6 +6,7 @@ import type {
   ChainLinkFilterExists,
   ChainLinkInsert,
   ChainLinkUpdate,
+  ChainLinkWithChain,
 } from "./chain-link.type";
 
 export namespace ChainLink {
@@ -27,6 +28,26 @@ export namespace ChainLink {
       .select()
       .from(chainLink)
       .where(conditions?.length ? and(...conditions) : undefined);
+  }
+
+  /** Chain links with their chain embedded, for the market expand panel. */
+  export async function getAllWithChain(
+    filter: FindAllFilter = {},
+  ): Promise<ChainLinkWithChain[]> {
+    const where: { marketId?: number; chainId?: number } = {};
+    if (filter.marketId) where.marketId = filter.marketId;
+    if (filter.chainId) where.chainId = filter.chainId;
+
+    const rows = await database.query.chainLink.findMany({
+      where: Object.keys(where).length > 0 ? where : undefined,
+      with: { chain: true },
+      orderBy: { id: "asc" },
+    });
+
+    return rows.map((row) => ({
+      ...row,
+      chain: row.chain!,
+    }));
   }
 
   export async function getById(id: number) {

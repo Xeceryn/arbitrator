@@ -1,45 +1,62 @@
-import { type PropsWithChildren } from "@kitajs/html";
+import type { PropsWithChildren } from "@kitajs/html";
 
-const SideBarItem = ({ title, path }: { title: string; path: string }) => {
-  return (
-    <li>
-      <a
-        hx-target="#main-content"
-        hx-get={path}
-        hx-swap="innerHTML"
-        hx-trigger="click"
-        hx-push-url="true"
-        hx-indicator=".progress"
-        safe
-      >
+import { ChainIcon, CoinsIcon, ExchangeIcon } from "./icons";
+
+/** On the collapsed rail these items show an icon and a tooltip. */
+const navItemClass = "is-drawer-close:tooltip is-drawer-close:tooltip-right";
+
+const SideBarItem = ({
+  title,
+  path,
+  children,
+}: PropsWithChildren<{ title: string; path: string }>) => (
+  <li>
+    <a
+      hx-target="#main-content"
+      hx-get={path}
+      hx-swap="innerHTML"
+      hx-trigger="click"
+      hx-push-url="true"
+      hx-indicator=".progress"
+      class={navItemClass}
+      data-tip={title}
+      onclick="document.getElementById('coin_assignment_dialog')?.close()"
+    >
+      {children}
+      <span class="is-drawer-close:hidden" safe>
         {title}
-      </a>
-    </li>
-  );
-};
+      </span>
+    </a>
+  </li>
+);
 
-export const Sidebar = ({ children }: PropsWithChildren) => {
-  return (
-    <div class="z-30 drawer lg:drawer-open">
-      <input id="left-drawer" type="checkbox" class="drawer-toggle" />
-      <div class="drawer-side">
-        <ul class="menu bg-base-300 text-base-content h-full p-4">
-          <li class="font-semibold text-xl">
-            <a href="/">
-              <img class="mask mask-squircle w-14" src="/public/favicon.ico" />
-              arbitmage
-            </a>
-          </li>
-          <SideBarItem title="Dashboard" path="dashboard" />
-          <SideBarItem title="Signal" path="signal" />
-          <SideBarItem title="Signal Settings" path="signal-settings" />
-          <SideBarItem title="Exchange Management" path="markets" />
-          <SideBarItem title="Cryptocurrency Management" path="coins" />
-          <SideBarItem title="Chain Management" path="chain" />
-          <SideBarItem title="Assignment" path="assignment" />
-        </ul>
-      </div>
-      <div class="drawer-content flex flex-col">{children}</div>
-    </div>
-  );
-};
+/**
+ * The navigation rail. Collapses to icons on desktop (`is-drawer-close`),
+ * expands to labels (`is-drawer-open`). The drawer wrapper lives in
+ * `BaseLayout`.
+ */
+export const Sidebar = () => (
+  <div class="flex min-h-full flex-col items-start bg-base-100 is-drawer-close:w-14 is-drawer-open:w-64">
+    <ul class="menu w-full grow">
+      <li>
+        <a href="/" class={navItemClass} data-tip="arbitmage">
+          <img
+            class="mask mask-squircle size-5"
+            src="/public/favicon.ico"
+            alt=""
+          />
+          <span class="is-drawer-close:hidden font-semibold">arbitmage</span>
+        </a>
+      </li>
+      <SideBarItem title="Cryptocurrency Management" path="coins">
+        <CoinsIcon />
+      </SideBarItem>
+      <SideBarItem title="Exchange Management" path="markets">
+        <ExchangeIcon />
+      </SideBarItem>
+      <SideBarItem title="Chain Management" path="chain">
+        <ChainIcon />
+      </SideBarItem>
+    </ul>
+  </div>
+);

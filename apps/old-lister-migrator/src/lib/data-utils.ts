@@ -52,7 +52,7 @@ export async function get_exchange_cmc_details(): Promise<CmcExchangeDetail> {
 
 export async function get_old_data() {
   const requestFromOldServices = await fetch(
-    "http://192.168.110.73:4000/api/v1/active-coin",
+    "http://192.168.110.120:4000/api/v1/active-coin",
     // "http://192.168.1.4:8080/api/v1/active-coin",
   );
   console.log(requestFromOldServices);

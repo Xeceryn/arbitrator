@@ -74,14 +74,16 @@ export function defaultSearchCondition(
 export async function paginate<TTable extends PgTable>(options: {
   table: TTable;
   input: PaginationQuery;
-  /** Optional override for the WHERE clause; defaults to `defaultSearchCondition`. */
+  /** Extra condition ANDed with the default search condition. */
   condition?: SQL;
 }): Promise<PaginatedResult<InferSelectModel<TTable>>> {
   const { table, input } = options;
-  const condition =
-    options.condition ??
-    defaultSearchCondition(table, input.searchBy, input.search);
-  const where = condition ? and(condition) : undefined;
+  const searchCondition = defaultSearchCondition(
+    table,
+    input.searchBy,
+    input.search,
+  );
+  const where = and(options.condition, searchCondition);
 
   // Drizzle's `.from()` uses a conditional type that cannot be resolved for a
   // generic table, so narrow to the concrete base type for the query only.

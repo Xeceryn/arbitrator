@@ -35,3 +35,11 @@
   z-index: 1000;
   top: 0;
 }
+
+/*
+  @tailwindcss/forms paints a check glyph on checked checkboxes. daisyUI's
+  toggle is already a switch, so drop that background image.
+*/
+.toggle {
+  background-image: none;
+}

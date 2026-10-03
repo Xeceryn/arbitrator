@@ -14,7 +14,7 @@ export const postgresConnection = new SQL(url());
 export const database = drizzle({
   client: postgresConnection,
   relations: relations,
-  logger: true,
+  // logger: true,
 });
 
 export type DB = typeof database;

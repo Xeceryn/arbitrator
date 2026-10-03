@@ -8,11 +8,29 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.chain.id.through(r.chainLink.chainId),
       to: r.market.id.through(r.chainLink.marketId),
     }),
+    chainLinks: r.many.chainLink({
+      from: r.chain.id,
+      to: r.chainLink.chainId,
+    }),
+  },
+  chainLink: {
+    market: r.one.market({
+      from: r.chainLink.marketId,
+      to: r.market.id,
+    }),
+    chain: r.one.chain({
+      from: r.chainLink.chainId,
+      to: r.chain.id,
+    }),
   },
   market: {
     chains: r.many.chain({
       from: r.market.id.through(r.chainLink.marketId),
       to: r.chain.id.through(r.chainLink.chainId),
+    }),
+    chainLinks: r.many.chainLink({
+      from: r.market.id,
+      to: r.chainLink.marketId,
     }),
     exchange: r.one.exchange({
       from: r.market.exchangeId,
@@ -38,6 +56,9 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.exchange.id,
       to: r.market.exchangeId,
     }),
-    cryptocurrencies: r.many.cryptocurrency(),
+    cryptocurrencies: r.many.cryptocurrency({
+      from: r.exchange.id.through(r.market.exchangeId),
+      to: r.cryptocurrency.id.through(r.market.cryptocurrencyId),
+    }),
   },
 }));

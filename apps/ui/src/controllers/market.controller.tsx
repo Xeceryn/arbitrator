@@ -1,57 +1,49 @@
 import { listerClient } from "@arbitrator/sdk";
 import { htmx } from "@gtramontina.com/elysia-htmx";
-import { ORPCError } from "@orpc/client";
-import { Elysia, redirect, t } from "elysia";
+import { Elysia, redirect, status } from "elysia";
+import z from "zod";
 
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
-import { dateFormatter } from "../utils";
+import { createPushURL } from "../utils";
+import { ExchangeEditModalContent } from "../views/components/ExchangeEditModalContent";
 import { MarketTableRow } from "../views/components/MarketTableRow";
-import { MarketPage } from "../views/pages/MarketPage";
+import { PageHeading } from "../views/components/PageHeading";
+import { MarketPage, MarketResults } from "../views/pages/MarketPage";
+
+/** Form bodies arrive as strings, so coerce before handing them to the API. */
+const exchangeBody = z.object({
+  cmcId: z.coerce.number().int().positive(),
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  logo: z.string().min(1),
+  baseCurrency: z.enum(["usdt", "idr"]),
+  registeredOnCmc: z
+    .union([z.literal("true"), z.literal("false")])
+    .transform((value) => value === "true"),
+});
+
+const exchangeUpdateBody = exchangeBody.partial();
 
 export const ExchangeController = new Elysia()
   .use(htmx())
 
-  .get("/markets", ({ hx }) => {
-    if (hx.isHTMX) {
-      return (
-        <>
-          <title>Market List</title>
-          <MarketPage />
-        </>
-      );
-    }
-    return (
-      <BaseLayout title="arbitmage - Exchanges">
-        <MarketPage />
-      </BaseLayout>
-    );
-  })
-
   .get(
-    "markets/list",
-    async ({ query, set, hx }) => {
+    "/markets",
+    ({ query, hx }) => {
+      hx.pushURL(createPushURL("/markets", query));
       if (!hx.isHTMX) {
-        return redirect("/markets");
+        return (
+          <BaseLayout title="arbitmage - Exchanges" heading="Exchanges">
+            <MarketPage {...query} />
+          </BaseLayout>
+        );
       }
-      const { data, error } = await listerClient.exchange.list(query);
-      console.log(error, data);
-
-      if (error) {
-        if (error instanceof ORPCError) {
-          console.log("ORPCError", error);
-        }
-        // console.log(error);
-        return <div>Failed to fetch markets</div>;
-      }
-      set.headers = {
-        "hx-push-url": `?search=${query.search}`,
-      };
       return (
         <>
-          {data.data.map((x) => {
-            return <MarketTableRow {...x} />;
-          })}
+          <PageHeading heading="Exchanges" oob />
+          <title>Exchanges</title>
+          <MarketPage {...query} />
         </>
       );
     },
@@ -61,107 +53,93 @@ export const ExchangeController = new Elysia()
   )
 
   .get(
-    "markets/:id",
-    async ({ params }) => {
-      const { data, error } = await listerClient.exchange.findById(params.id);
-      if (error !== null) {
-        console.log(error);
-        return <div>Failed to fetch markets</div>;
+    "markets/list",
+    async ({ query, hx }) => {
+      hx.pushURL(createPushURL("/markets", query));
+      if (!hx.isHTMX) {
+        return redirect(createPushURL("/markets", query));
       }
-      return <MarketTableRow {...data} />;
+      return <MarketResults {...query} />;
     },
     {
-      params: t.Object({
-        id: t.String(),
+      query: listExchangeSelectSchema,
+    },
+  )
+
+  .get(
+    "/markets/:id/edit-modal",
+    async ({ params, hx }) => {
+      if (!hx.isHTMX) {
+        return redirect("/markets");
+      }
+      const [error, data] = await listerClient.exchange.findById(params.id);
+      if (!data || error) {
+        hx.reswap("none");
+        hx.triggerEvent({
+          "make-toast": { level: "error", message: "exchange not found" },
+        });
+        return status("No Content");
+      }
+
+      return <ExchangeEditModalContent exchangeId={params.id} {...data} />;
+    },
+    {
+      params: z.object({
+        id: z.coerce.number(),
       }),
     },
   )
 
-  // .put("markets/:id", async ({ params, body, set }) => {
-  // 	const { data, error } = await LolocoClient.markets({ id: params.id }).put(body);
-  // 	if (error !== null) {
-  // 		console.log("error", error);
-  // 		set.status = error.status;
-  // 		return error.value
-  // 	}
-  // 	return (
-  // 		<MarketTableRow {...data} />
-  // 	)
-  // }, {
-  // 	params: t.Object({
-  // 		id: t.String(),
-  // 	}),
-  // 	body: t.Object({
-  // 		name: t.String(),
-  // 		symbol: t.String(),
-  // 	}),
-  // })
-
-  .get(
+  .patch(
     "/markets/:id/edit",
-    async ({ params }) => {
-      const [error, data] = await listerClient.exchange.findById(params.id);
-      if (error !== null) {
-        return <div>Failed to fetch markets</div>;
+    async ({ params, body, hx }) => {
+      const [error, data] = await listerClient.exchange.update({
+        id: params.id,
+        payload: body,
+      });
+      if (error || !data) {
+        hx.reswap("none");
+        hx.triggerEvent({
+          "make-toast": {
+            level: "error",
+            message: "failed to update exchange",
+          },
+        });
+        return status("No Content");
       }
-      return (
-        <tr
-          id={`edit-market-${params.id}`}
-          class="odd:bg-white dark:odd:bg-gray-900 even:bg-gray-50 dark:even:bg-gray-800 border-b dark:border-gray-700"
-        >
-          <th
-            scope="row"
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-          >
-            <input
-              type="text"
-              name="symbol"
-              class="px-6 py-4 block mb-2 text-sm font-medium dark:text-white"
-              value={data.slug}
-            />
-          </th>
-          <td class="px-6 py-4">
-            <input
-              class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-              type="text"
-              name="name"
-              value={data.name}
-            />
-          </td>
-          <td class="px-6 py-4">
-            {dateFormatter.format(new Date(data.createdAt)) as "safe"}
-          </td>
-          <td class="px-6 py-4">
-            {data.updatedAt
-              ? (dateFormatter.format(new Date(data.updatedAt)) as "safe")
-              : "Not Updated Yet"}
-          </td>
-          <td class="px-6 py-4">
-            <button
-              hx-put={`/markets/${params.id}`}
-              hx-target={`#edit-market-${params.id}`}
-              hx-swap="outerHTML"
-              hx-include="closest tr"
-              hx-trigger="click"
-              class="font-medium text-blue-600 dark:text-blue-500 hover:underline"
-            >
-              Save
-            </button>
-            <button
-              hx-get={`/markets/${params.id}`}
-              hx-swap="outerHTML"
-              hx-target={`#edit-market-${params.id}`}
-              class="ml-5 font-medium text-blue-600 dark:text-blue-500 hover:underline"
-            >
-              Cancel
-            </button>
-          </td>
-        </tr>
-      );
+
+      hx.triggerEvent({
+        "make-toast": { level: "success", message: "Exchange updated" },
+        update_exchange_success: null,
+      });
+      return <MarketTableRow {...data} />;
     },
     {
-      params: t.Object({
-        id: t.String(),
+      params: z.object({
+        id: z.coerce.number(),
       }),
+      body: exchangeUpdateBody,
+    },
+  )
+
+  .post(
+    "/markets",
+    async ({ body, hx }) => {
+      const [error, data] = await listerClient.exchange.add(body);
+      if (error || !data) {
+        hx.triggerEvent({
+          "make-toast": { level: "error", message: "failed to add exchange" },
+        });
+        return status("No Content");
+      }
+
+      hx.triggerEvent({
+        "make-toast": { level: "success", message: "Exchange added" },
+        "add-exchange-success": null,
+      });
+      return <MarketTableRow {...data} />;
+    },
+    {
+      body: exchangeBody,
     },
   );

@@ -11,10 +11,10 @@ import {
 } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
 import { createPushURL } from "../utils";
-import { AddCoinModal } from "../views/components/AddCoinModal";
 import { CoinTableRow } from "../views/components/CoinTableRow";
 import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
-import { CoinPage } from "../views/pages/CryptocurrencyPage";
+import { PageHeading } from "../views/components/PageHeading";
+import { CoinPage, CoinResults } from "../views/pages/CryptocurrencyPage";
 
 export const CryptocurrencyController = new Elysia()
   .use(html())
@@ -25,16 +25,18 @@ export const CryptocurrencyController = new Elysia()
       hx.pushURL(createPushURL("/coins", query));
       if (!hx.isHTMX) {
         return (
-          <BaseLayout title="arbitmage - Cryptocurrencies">
-            <AddCoinModal />
+          <BaseLayout
+            title="arbitmage - Cryptocurrencies"
+            heading="Cryptocurrencies"
+          >
             <CoinPage {...query} />
           </BaseLayout>
         );
       }
       return (
         <>
-          <AddCoinModal />
-          <title>Coin List</title>
+          <PageHeading heading="Cryptocurrencies" oob />
+          <title>Cryptocurrencies</title>
           <CoinPage {...query} />
         </>
       );
@@ -47,27 +49,14 @@ export const CryptocurrencyController = new Elysia()
   .get(
     "coins/list",
     async ({ query, hx }) => {
-      if (!hx.isHTMX) {
-        return redirect("/coins");
-      }
-      const result = await listerClient.cryptocurrency.list(query);
-      // const link = new OpenAPILink(router, {
-      //   origin: url(),
-      //   url: "/",
-      //   fetch: fetch,
-      // });
-
-      if (error || !data) {
-        return <div>Failed to fetch coins</div>;
-      }
+      // Canonical, reloadable URL in the address bar: /coins?page=2&search=...
+      // `/coins` renders the full page, `/coins/list` only the swap unit.
       hx.pushURL(createPushURL("/coins", query));
-      return (
-        <>
-          {data.data.map((x) => (
-            <CoinTableRow {...x} />
-          ))}
-        </>
-      );
+      if (!hx.isHTMX) {
+        return redirect(createPushURL("/coins", query));
+      }
+      // Exactly one root element = the swap target for hx-swap="outerMorph".
+      return <CoinResults {...query} />;
     },
     {
       query: listCryptocurrencySelectSchema,
@@ -109,9 +98,10 @@ export const CryptocurrencyController = new Elysia()
         update_coin_success: null,
       });
 
-      const [error, data] = await listerClient.cryptocurrency.findById(
-        params.id,
-      );
+      const [error, data] = await listerClient.cryptocurrency.update({
+        id: params.id,
+        payload: body,
+      });
       if (error !== null || !data) {
         hx.reswap("none");
         hx.triggerEvent({
@@ -122,16 +112,12 @@ export const CryptocurrencyController = new Elysia()
         });
         return status("No Content");
       }
-      if (body?.name) data.name = body.name;
-      if (body?.slug) data.slug = body.slug;
-      if (body?.symbol) data.symbol = body.symbol;
-      if (body?.cmcId) data.cmcId = body.cmcId;
 
       return <CoinTableRow {...data} />;
     },
     {
       params: z.object({
-        id: z.coerce.string(),
+        id: z.coerce.number(),
       }),
       body: cryptocurrencyUpdateSchema,
     },

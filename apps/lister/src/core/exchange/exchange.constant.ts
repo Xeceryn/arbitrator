@@ -3,5 +3,5 @@ import {
   exchangeOrderByKeysSchema,
 } from "./exchange.schema";
 
-export const ExhangeSearchByOptions = exchangeSearchByKeysSchema.options;
+export const ExchangeSearchByOptions = exchangeSearchByKeysSchema.options;
 export const ExchangeOrderByOptions = exchangeOrderByKeysSchema.options;

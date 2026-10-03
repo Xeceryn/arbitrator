@@ -5,7 +5,8 @@ import {
 } from "drizzle-zod";
 import z from "zod";
 
-import { cryptocurrencySelectSchema, exchangeSelectSchema } from "../schemas";
+import { cryptocurrencySelectSchema } from "../cryptocurrency/cryptocurrency.schema";
+import { exchangeSelectSchema } from "../exchange/exchange.schema";
 import { market } from "./market.sql";
 
 export const marketInsertSchema = createInsertSchema(market).omit({
@@ -23,6 +24,44 @@ export const marketSelectSchema = createSelectSchema(market);
 export const marketFilterExistsSchema = marketSelectSchema.pick({
   exchangeId: true,
   cryptocurrencyId: true,
+});
+
+/** A market row with its exchange and cryptocurrency embedded. */
+export const marketWithRelationsSchema = marketSelectSchema.extend({
+  exchange: exchangeSelectSchema,
+  cryptocurrency: cryptocurrencySelectSchema,
+});
+
+/**
+ * Input for `market.assign`. `exchangeSymbol` is optional and defaults to the
+ * coin's symbol; `tradeEnabled` defaults to enabled.
+ */
+export const marketAssignSchema = marketInsertSchema
+  .pick({ exchangeId: true, cryptocurrencyId: true })
+  .extend({
+    exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
+    tradeEnabled: marketInsertSchema.shape.tradeEnabled.default(true),
+  });
+
+/** Editable fields of an assignment, keyed by the (exchange, coin) pair. */
+export const marketUpdatePayloadSchema = marketSelectSchema
+  .pick({ exchangeId: true, cryptocurrencyId: true })
+  .extend({
+    tradeEnabled: marketInsertSchema.shape.tradeEnabled.optional(),
+    exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
+  });
+
+/** A coin plus the market metadata for one exchange. */
+export const cryptocurrencyWithMarketSchema = cryptocurrencySelectSchema.extend(
+  {
+    marketId: z.number(),
+    tradeEnabled: z.boolean(),
+    exchangeSymbol: z.string(),
+  },
+);
+
+export const exchangeWithCryptocurrenciesSchema = exchangeSelectSchema.extend({
+  cryptocurrencies: z.array(cryptocurrencyWithMarketSchema),
 });
 
 export const listExchangeWithMetadataSchema = exchangeSelectSchema.extend({

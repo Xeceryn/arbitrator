@@ -1,15 +1,17 @@
 import type { PropsWithChildren } from "@kitajs/html";
 
+import { XIcon } from "../views/components/icons";
 import { Navbar } from "../views/components/Navbar";
-import { NotificationToast } from "../views/components/NotificationToast";
 import { Sidebar } from "../views/components/Sidebar";
 
 type Props = PropsWithChildren<{
   title?: string;
+  heading?: string;
 }>;
 
 export const BaseLayout = async ({
   title = "E9 - Arbitmage",
+  heading,
   children,
 }: Props) => {
   return (
@@ -34,42 +36,99 @@ export const BaseLayout = async ({
 
           <script src="/public/dist/scripts.js"></script>
           <script src="/public/dist/notification-toast.js"></script>
-
-          {
-            // <script src="https://unpkg.com/lucide@latest"></script>
-            // <script>
-            // 	{`lucide.createIcons();`}
-            // </script>
-          }
+          <script src="/public/dist/drawer-state.js"></script>
         </head>
-        <body hx-indicator=".progress">
-          <Sidebar>
-            <progress class="progress w-full"></progress>
-            <Navbar>
-              <div
-                id="toast-container"
-                class=" z-100 toast toast-bottom toast-end"
-              >
-                <NotificationToast
-                  message="testing notification"
-                  level="info"
-                />
-              </div>
-            </Navbar>
-            <div id="main-content">{children}</div>
-          </Sidebar>
+        <body
+          hx-indicator=".progress"
+          class="bg-base-200 text-base-content antialiased"
+        >
+          <a
+            href="#main-content"
+            class="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-btn focus:bg-base-100 focus:px-4 focus:py-2 focus:shadow-lg"
+          >
+            Skip to content
+          </a>
 
-          <footer class="footer justify-center sm:footer-horizontal footer-center bg-base-300 text-base-content p-4">
-            <aside>
-              <p>
-                Copyright © BedokCorp {new Date().getFullYear()} - Built with
-                Love by{" "}
-                <a class={"font-bold"} href="https://sulthonuladib.dev">
-                  Sulthonul Adib
-                </a>
-              </p>
-            </aside>
-          </footer>
+          <div class="drawer lg:drawer-open">
+            <input
+              id="left-drawer"
+              type="checkbox"
+              class="drawer-toggle inline"
+            />
+
+            <div class="drawer-content flex min-h-screen flex-col">
+              <progress class="progress w-full"></progress>
+              <Navbar heading={heading} />
+              <main
+                id="main-content"
+                class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
+              >
+                {children}
+              </main>
+              <footer class="footer footer-center sm:footer-horizontal border-t border-base-300 bg-base-100 px-4 py-6 text-sm text-base-content/70">
+                <aside>
+                  <p>
+                    Copyright © BedokCorp {new Date().getFullYear()} · Built by{" "}
+                    <a
+                      class="link link-hover font-medium"
+                      href="https://sulthonuladib.dev"
+                    >
+                      Sulthonul Adib
+                    </a>
+                  </p>
+                </aside>
+              </footer>
+            </div>
+
+            <div class="drawer-side is-drawer-close:overflow-visible z-30">
+              <label
+                for="left-drawer"
+                class="drawer-overlay"
+                aria-label="Close menu"
+              ></label>
+              <Sidebar />
+            </div>
+          </div>
+
+          {/* Assignment manager: a centered modal with a fixed header and a
+              scrollable body. `max-w-3xl!` overrides daisyUI's modal-box width. */}
+          <dialog id="coin_assignment_dialog" class="modal modal-middle">
+            <div class="modal-box flex max-w-3xl! flex-col overflow-hidden">
+              <header class="flex items-center gap-3 border-b border-base-300 pb-4">
+                <div
+                  id="coin_assignment_header"
+                  class="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  <h2 class="text-lg font-semibold">Assignments</h2>
+                </div>
+                <span
+                  id="coin-assignment-indicator"
+                  class="htmx-indicator loading loading-spinner loading-sm"
+                ></span>
+                <form method="dialog">
+                  <button
+                    type="submit"
+                    class="btn btn-square btn-ghost btn-sm"
+                    aria-label="Close assignments"
+                  >
+                    <XIcon />
+                  </button>
+                </form>
+              </header>
+              <div
+                id="coin_assignment_panel"
+                class="min-h-0 flex-1 overflow-y-auto pt-4"
+              ></div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+              <button>close</button>
+            </form>
+          </dialog>
+
+          <div
+            id="toast-container"
+            class="toast toast-end toast-bottom z-50"
+          ></div>
         </body>
       </html>
     </>

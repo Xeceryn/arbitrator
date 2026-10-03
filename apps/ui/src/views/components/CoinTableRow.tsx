@@ -1,78 +1,84 @@
 import type { CryptocurrencySelect } from "@arbitrator/lister/types";
 
 import { timeAgo } from "../../utils";
+import { LinkIcon, PencilIcon, TrashIcon } from "./icons";
 
 export const CoinTableRow = (props: CryptocurrencySelect) => {
-  const logoUrl = `https://s2.coinmarketcap.com/static/img/coins/64x64/${props.cmcId}.png`;
+  // const logoUrl = `https://s2.coinmarketcap.com/static/img/coins/64x64/${props.cmcId}.png`;
   return (
-    <tr id={`coin-table-row-${props.id}`} class="">
+    <tr id={`coin-table-row-${props.id}`}>
       <td>
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center gap-2 sm:gap-3">
           <div class="avatar">
-            <div class="mask mask-circle w-12 h-12">
-              <img src={logoUrl} alt="coin logo" />
+            <div class="mask mask-circle size-8 sm:size-10">
+              {/* decorative: the coin name sits next to it */}
+              <img src={props.logo} alt="" loading="lazy" />
             </div>
           </div>
-          <div>
-            <div safe class="font-bold">
+          <div class="min-w-0">
+            <div class="truncate font-medium" safe>
               {props.name}
             </div>
-            <div safe class="text-sm opacity-50">
+            <div class="truncate text-sm text-base-content/60" safe>
               {props.slug}
             </div>
           </div>
         </div>
       </td>
-      <td safe>{props.symbol.toUpperCase()}</td>
-      <td>{props.cmcId}</td>
-      <td class="px-6 py-4" safe>
+      <td class="font-medium" safe>
+        {props.symbol.toUpperCase()}
+      </td>
+      <td class="hidden tabular-nums sm:table-cell">{props.cmcId}</td>
+      <td
+        class="hidden whitespace-nowrap text-base-content/70 lg:table-cell"
+        safe
+      >
         {timeAgo(props.createdAt)}
       </td>
-      <td class="px-6 py-4" safe>
+      <td
+        class="hidden whitespace-nowrap text-base-content/70 lg:table-cell"
+        safe
+      >
         {timeAgo(props.updatedAt)}
       </td>
-      <td class="px-6 py-4">
-        <button class="btn btn-square btn-outline btn-error">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-trash"
+      <td>
+        <div class="flex justify-end gap-1">
+          <button
+            type="button"
+            class="btn btn-square btn-outline btn-xs sm:btn-sm"
+            aria-label={`Edit ${props.name}`}
+            title={`Edit ${props.name}`}
+            onclick="cryptocurrency_edit_modal.showModal()"
+            hx-get={`/coins/${props.id}/edit-modal`}
+            hx-target="#cryptocurrency_edit_modal_content"
+            hx-swap="innerHTML"
           >
-            <path d="M3 6h18" />
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-          </svg>
-        </button>
-        <button
-          onclick="cryptocurrency_edit_modal.showModal()"
-          hx-get={`/coins/${props.id}/edit-modal`}
-          hx-trigger="click"
-          hx-target="#cryptocurrency_edit_modal_content"
-          hx-swap="innerHTML"
-          class="btn btn-square btn-outline"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide w-5 lucide-pencil"
+            <PencilIcon />
+          </button>
+          <button
+            type="button"
+            class="btn btn-square btn-outline btn-xs sm:btn-sm"
+            aria-label={`Manage assignments for ${props.name}`}
+            title={`Manage assignments for ${props.name}`}
+            hx-get={`/coins/${props.id}/assignment`}
+            hx-target="#coin_assignment_panel"
+            hx-swap="innerHTML"
+            hx-indicator="#coin-assignment-indicator"
+            onclick="coin_assignment_dialog.showModal()"
           >
-            <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-            <path d="m15 5 4 4" />
-          </svg>
-        </button>
+            <LinkIcon />
+          </button>
+          <button
+            type="button"
+            class="btn btn-square btn-outline btn-xs sm:btn-sm btn-error"
+            aria-label={`Delete ${props.name}`}
+            _="on click alert('ngawor sampean mas')"
+            title={`Delete ${props.name}`}
+            /* TODO: wire the delete request and add a confirmation step. */
+          >
+            <TrashIcon />
+          </button>
+        </div>
       </td>
     </tr>
   );

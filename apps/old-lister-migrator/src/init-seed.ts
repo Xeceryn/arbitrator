@@ -1,6 +1,6 @@
+import { listerClient } from "@arbitrator/sdk";
 import { ORPCError } from "@orpc/client";
 
-import { listerClient } from "./client";
 import {
   CoinMarketCapExchange,
   get_exchange_cmc_details,
@@ -88,10 +88,11 @@ for (const coin of old_data) {
       (m) => m.slug === CoinMarketCapExchange.Indodax,
     )!.id;
 
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.indodaxAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -100,10 +101,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.Bittime,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.bittimeAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -112,10 +114,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.Binance,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.binanceAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -124,10 +127,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.Kucoin,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.kucoinAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -136,10 +140,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.GateIO,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.gateioAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -148,10 +153,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.Okx,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.okxAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -160,10 +166,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.Bitmart,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.bitmartAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -172,10 +179,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.Htx,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.huobiAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -184,10 +192,11 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.MEXC,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.mexcAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
@@ -196,20 +205,22 @@ for (const coin of old_data) {
     const marketId = markets.data.find(
       (m) => m.slug === CoinMarketCapExchange.Bitget,
     )!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.bitgetAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 
   if (coin.pintuAlternateSymbol !== "") {
     const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
     const marketId = markets.data.find((m) => m.slug === "pintu")!.id;
-    await listerClient.exchangeCryptocurrency.assign({
+    await listerClient.market.assign({
       exchangeId: marketId,
       cryptocurrencyId: coinId,
       exchangeSymbol: coin.pintuAlternateSymbol,
+      tradeEnabled: true,
     });
   }
 }

@@ -1,6 +1,8 @@
 import { ORPCError, os } from "@orpc/server";
 import { z } from "zod";
 
+import { Market } from "../market/market";
+import { exchangeWithCryptocurrenciesSchema } from "../market/market.schema";
 import { Exchange } from "./exchange";
 import {
   exchangeInsertSchema,
@@ -47,6 +49,34 @@ export const exchangeRouter = {
         });
       }
       return result;
+    }),
+
+  /**
+   * Exchange detail with its assigned cryptocurrencies, each carrying the
+   * market metadata (`tradeEnabled`, `exchangeSymbol`).
+   */
+  findByIdWithCryptocurrencies: os
+    .input(z.coerce.number())
+    .output(exchangeWithCryptocurrenciesSchema)
+    .handler(async ({ input }) => {
+      const target = await Exchange.getById(input);
+      if (!target) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "exchange not found",
+        });
+      }
+
+      const markets = await Market.getAllWithRelations({ exchangeId: input });
+
+      return {
+        ...target,
+        cryptocurrencies: markets.map((market) => ({
+          ...market.cryptocurrency,
+          marketId: market.id,
+          tradeEnabled: market.tradeEnabled,
+          exchangeSymbol: market.exchangeSymbol,
+        })),
+      };
     }),
 
   update: os

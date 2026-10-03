@@ -2,15 +2,10 @@
   "version": "8",
   "dialect": "postgres",
   "id": "a9f3422e-a0a9-49f6-a8d7-7cc510547716",
-  "prevIds": [
-    "f680b52c-0f4c-4d01-8bc6-00a085375d28"
-  ],
+  "prevIds": ["f680b52c-0f4c-4d01-8bc6-00a085375d28"],
   "ddl": [
     {
-      "values": [
-        "usdt",
-        "idr"
-      ],
+      "values": ["usdt", "idr"],
       "name": "exchangeBaseCurrency",
       "entityType": "enums",
       "schema": "public"
@@ -560,14 +555,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "marketId"
-      ],
+      "columns": ["marketId"],
       "schemaTo": "public",
       "tableTo": "market",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "name": "chain_link_marketId_market_id_fkey",
@@ -577,14 +568,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "chainId"
-      ],
+      "columns": ["chainId"],
       "schemaTo": "public",
       "tableTo": "chain",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "name": "chain_link_chainId_chain_id_fkey",
@@ -594,14 +581,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "exchangeId"
-      ],
+      "columns": ["exchangeId"],
       "schemaTo": "public",
       "tableTo": "exchange",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "name": "market_exchangeId_exchange_id_fkey",
@@ -611,14 +594,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "cryptocurrencyId"
-      ],
+      "columns": ["cryptocurrencyId"],
       "schemaTo": "public",
       "tableTo": "cryptocurrency",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "CASCADE",
       "onDelete": "CASCADE",
       "name": "market_cryptocurrencyId_cryptocurrency_id_fkey",
@@ -627,9 +606,7 @@
       "table": "market"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "chain_link_pkey",
       "schema": "public",
@@ -637,9 +614,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "chain_pkey",
       "schema": "public",
@@ -647,9 +622,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "cryptocurrency_pkey",
       "schema": "public",
@@ -657,9 +630,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "exchange_pkey",
       "schema": "public",
@@ -667,9 +638,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "market_pkey",
       "schema": "public",
@@ -678,9 +647,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "code"
-      ],
+      "columns": ["code"],
       "nullsNotDistinct": false,
       "name": "chain_code_key",
       "schema": "public",
@@ -689,9 +656,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "slug"
-      ],
+      "columns": ["slug"],
       "nullsNotDistinct": false,
       "name": "cryptocurrency_slug_key",
       "schema": "public",
@@ -700,9 +665,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "cmcId"
-      ],
+      "columns": ["cmcId"],
       "nullsNotDistinct": false,
       "name": "cryptocurrency_cmcId_key",
       "schema": "public",
@@ -711,9 +674,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "cmcId"
-      ],
+      "columns": ["cmcId"],
       "nullsNotDistinct": false,
       "name": "exchange_cmcId_key",
       "schema": "public",
@@ -722,9 +683,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "slug"
-      ],
+      "columns": ["slug"],
       "nullsNotDistinct": false,
       "name": "exchange_slug_key",
       "schema": "public",

@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { count, eq, type SQL } from "drizzle-orm";
 
 import { paginate } from "../../common/pagination";
 import { database } from "../../database/connection";
@@ -22,6 +22,14 @@ export namespace Exchange {
     input: ListExchangeInput,
   ): Promise<PaginatedExchangeList> {
     return await paginate({ table: exchange, input });
+  }
+
+  /** List with a caller-supplied extra filter (e.g. exclude assigned). */
+  export async function listExcluding(
+    input: ListExchangeInput,
+    condition?: SQL,
+  ): Promise<PaginatedExchangeList> {
+    return await paginate({ table: exchange, input, condition });
   }
 
   export async function cmcIdExists(cmcId: number) {

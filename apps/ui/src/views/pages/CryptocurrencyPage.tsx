@@ -3,190 +3,309 @@ import type { ListCryptocurrencyInput } from "@arbitrator/lister/types";
 import { listerClient } from "@arbitrator/sdk";
 
 import { capitalizeFirstLetter } from "../../utils";
+import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
 import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
+import { PageButton } from "../components/PageButton";
+import { SortableHeader } from "../components/SortableHeader";
+import { PlusIcon, SearchIcon } from "../components/icons";
 
-export const CoinPage = async (props: ListCryptocurrencyInput) => {
+const LIMIT_OPTIONS = [10, 20, 50, 100];
+
+/**
+ * The filter bar is static chrome: a list request never re-renders it, so the
+ * search input keeps its focus and caret. It submits itself into
+ * `#coin-list-results`.
+ */
+const CoinFilter = (props: ListCryptocurrencyInput) => {
+  const active = CryptocurrencySearchByOptions.find(
+    (option) => option === props.searchBy,
+  );
+
+  return (
+    <form
+      id="coin-filter"
+      hx-get="/coins/list"
+      hx-target="#coin-list-results"
+      /* Only the results are swapped, so the form stays untouched. */
+      hx-swap="outerMorph"
+      /* submit handles the pagination buttons; `input` covers both the text
+         field and the <select>s. */
+      hx-trigger="submit, input changed delay:300ms"
+      /* abort the in-flight request when a newer one starts */
+      hx-sync="this:replace"
+      hx-indicator="#coin-list-indicator"
+      class="flex flex-wrap items-center"
+    >
+      <span
+        id="coin-list-indicator"
+        class="htmx-indicator loading loading-spinner loading-sm"
+      ></span>
+
+      <div class="join">
+        <label class="input input-bordered join-item">
+          <span class="sr-only">Search coins</span>
+          <SearchIcon />
+          <input
+            type="search"
+            name="search"
+            value={props.search}
+            placeholder="Search"
+            autocomplete="off"
+          />
+        </label>
+        <label class="select select-bordered join-item">
+          <span class="sr-only">Search by</span>
+          <select name="searchBy">
+            {CryptocurrencySearchByOptions.map((option) => (
+              <option value={option} selected={active === option}>
+                {capitalizeFirstLetter(option)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <label class="select select-bordered w-40">
+        <span class="sr-only">Rows per page</span>
+        <select name="limit">
+          {LIMIT_OPTIONS.map((option) => (
+            <option value={option.toString()} selected={props.limit === option}>
+              {option} rows
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {/* type=button so it never submits the filter form */}
+      <button
+        type="button"
+        class="btn btn-primary ml-auto"
+        onclick="add_coin_modal.showModal()"
+      >
+        <PlusIcon /> Add coin
+      </button>
+    </form>
+  );
+};
+
+/**
+ * The results are the only swap unit. `GET /coins/list` returns exactly this
+ * `<div id="coin-list-results">`, so the table and the pagination can never
+ * drift apart.
+ *
+ * The hidden sort inputs live here rather than in the static filter form, so
+ * they are refreshed whenever the results are. The native `form` attribute
+ * keeps them associated with `#coin-filter`, so search and pagination still
+ * carry the sort.
+ */
+export const CoinResults = async (props: ListCryptocurrencyInput) => {
   const [error, data] = await listerClient.cryptocurrency.list(props);
-  if (error) {
+
+  if (error || !data) {
     return (
-      <div>
-        <div>Failed to fetch coins</div>
-        <div safe>{error.message}</div>
+      <div id="coin-list-results" class="flex flex-col gap-2">
+        <div class="alert alert-error" role="alert">
+          <span>Unable to load cryptocurrencies.</span>
+          {error?.message ? <span safe>{error.message}</span> : null}
+        </div>
       </div>
     );
   }
 
-  const active = CryptocurrencySearchByOptions.find(
-    (option) => option === props.searchBy,
-  );
-  const limit_options = [10, 20, 50, 100];
+  const hasCoins = data.data.length > 0;
 
   return (
-    <>
-      <main class="flex-1 overflow-y-auto md:pt-4 pt-4 px-12  bg-base-200">
-        {/*<AddCoinModal /> */}
-        <CryptocurrencyEditModal />
-        <div class="card w-full p-6 bg-base-100 shadow-xl mt-2">
-          <div class="flex w-full justify-end">
-            <div class="divider divider-horizontal "></div>
-            <div>
-              Showing {data.meta.from} to {data.meta.to} of {data.meta.items}{" "}
-              entries
-              <select
-                name="limit"
-                hx-get={`/coins`}
-                hx-trigger="change"
-                hx-swap="outerHTML"
-                hx-params="*"
-                hx-target="closest main"
-                class="select select-bordered join-item"
+    <div id="coin-list-results" class="flex flex-col gap-2">
+      <input
+        type="hidden"
+        form="coin-filter"
+        name="orderBy"
+        value={props.orderBy}
+      />
+      <input type="hidden" form="coin-filter" name="order" value={props.order} />
+
+      <div class="overflow-x-auto w-full">
+        <table class="table w-full table-pin-rows table-pin-cols [&_td]:px-2 [&_th]:px-2 sm:[&_td]:px-4 sm:[&_th]:px-4">
+          <thead>
+            <tr>
+              <SortableHeader
+                form="coin-filter"
+                url="/coins/list"
+                target="#coin-list-results"
+                indicator="#coin-list-indicator"
+                field="name"
+                name="Name / Slug"
+                orderBy={props.orderBy}
+                order={props.order}
+                class="w-1/2 whitespace-normal"
               >
-                <option disabled value="">
-                  Limit
-                </option>
-                {limit_options.map((option) => (
-                  <option
-                    value={option.toString()}
-                    {...(props.limit === option ? { selected: true } : {})}
+                Name / Slug
+              </SortableHeader>
+              <SortableHeader
+                form="coin-filter"
+                url="/coins/list"
+                target="#coin-list-results"
+                indicator="#coin-list-indicator"
+                field="symbol"
+                name="Symbol"
+                orderBy={props.orderBy}
+                order={props.order}
+                class="w-20"
+              >
+                Symbol
+              </SortableHeader>
+              <SortableHeader
+                form="coin-filter"
+                url="/coins/list"
+                target="#coin-list-results"
+                indicator="#coin-list-indicator"
+                field="cmcId"
+                name="CMC ID"
+                orderBy={props.orderBy}
+                order={props.order}
+                class="hidden w-24 sm:table-cell"
+              >
+                CMC ID
+              </SortableHeader>
+              <SortableHeader
+                form="coin-filter"
+                url="/coins/list"
+                target="#coin-list-results"
+                indicator="#coin-list-indicator"
+                field="createdAt"
+                name="Created At"
+                orderBy={props.orderBy}
+                order={props.order}
+                class="hidden lg:table-cell"
+              >
+                Created At
+              </SortableHeader>
+              <SortableHeader
+                form="coin-filter"
+                url="/coins/list"
+                target="#coin-list-results"
+                indicator="#coin-list-indicator"
+                field="updatedAt"
+                name="Updated At"
+                orderBy={props.orderBy}
+                order={props.order}
+                class="hidden lg:table-cell"
+              >
+                Updated At
+              </SortableHeader>
+              <th class="w-20 text-right">
+                <span class="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="coin-table-body">
+            {hasCoins ? (
+              data.data.map((coin) => <CoinTableRow {...coin} />)
+            ) : (
+              <tr>
+                <td colspan="6" class="py-16 text-center">
+                  <p class="font-medium">No coins yet</p>
+                  <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
+                    Add a coin to make it available to your signals.
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-primary mt-4"
+                    onclick="add_coin_modal.showModal()"
                   >
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+                    <PlusIcon /> Add coin
+                  </button>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-            <div class="divider divider-horizontal "></div>
-
-            <div id="coin-page-filter">
-              <div
-                class="join"
-                hx-trigger="click"
-                hx-include="[name=searchBy], [name=search], [name=limit]"
-                hx-target="closest main"
-                hx-swap="outerHTML"
-              >
-                <button
-                  disabled={data.meta.page === 1}
-                  class="join-item btn btn-outline"
-                  hx-get={`/coins?page=${1}`}
-                >
-                  First
-                </button>
-                <button
-                  disabled={!data.meta.hasPreviousPage}
-                  class="join-item btn btn-outline"
-                  hx-get={`/coins?page=${data.meta.page - 1}`}
-                >
-                  Previous
-                </button>
-                <button name="page" class="join-item btn btn-outline">
-                  Page {data.meta.page}
-                </button>
-                <button
-                  disabled={!data.meta.hasNextPage}
-                  class="join-item btn btn-outline"
-                  hx-get={`/coins?page=${data.meta.page + 1}`}
-                >
-                  Next
-                </button>
-                <button
-                  disabled={
-                    data.meta.page === data.meta.pages || data.meta.items === 0
-                  }
-                  hx-get={`/coins?page=${data.meta.pages}`}
-                  hx-trigger="click"
-                  hx-target="closest main"
-                  hx-swap="outerHTML"
-                  class="join-item btn btn-outline"
-                >
-                  Last
-                </button>
-              </div>
-            </div>
-
-            <div class="divider divider-horizontal"></div>
-
-            <div class="join">
-              <div>
-                <div>
-                  <input
-                    name="search"
-                    class="input input-bordered join-item"
-                    placeholder="Search"
-                    value={props.search}
-                    hx-get="/coins/list"
-                    hx-include="[name=searchBy], [name=limit]"
-                    hx-trigger="keyup changed delay:100ms"
-                    hx-swap="innerHTML"
-                    hx-target="#coin-table-body"
-                  />
-                </div>
-              </div>
-
-              <select
-                name="searchBy"
-                hx-get="/coins?page=1"
-                hx-include="[name=search], [name=limit]"
-                hx-trigger="change"
-                hx-swap="innerHTML"
-                hx-target="#coin-table-body"
-                class="select select-bordered join-item"
-              >
-                <option disabled value="">
-                  Search By
-                </option>
-                {CryptocurrencySearchByOptions.map((option) => (
-                  <option
-                    safe
-                    value={option}
-                    {...(active === option ? { selected: true } : {})}
-                  >
-                    {capitalizeFirstLetter(option)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div class="divider divider-horizontal "></div>
-
-            <div class="join">
-              <button
-                class="btn btn-outline"
-                onclick="add_coin_modal.showModal()"
-              >
-                Add New
-              </button>
-            </div>
-          </div>
-
-          <div class="divider mt-4"></div>
-
-          <div class="h-full w-full pb-6 bg-base-100">
-            <div class="overflow-x-auto w-full">
-              <table class="table w-full table-pin-rows table-pin-cols">
-                <thead>
-                  <tr>
-                    <th class={"w-1/4"}>Name / Slug</th>
-                    <th class={"w-1/8"}>Symbol</th>
-                    <th class={"w-1/8"}>CMC ID</th>
-                    <th>Created At</th>
-                    <th>Updated At</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="coin-table-body">
-                  {data.data.map((coin) => (
-                    <CoinTableRow {...coin} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      {hasCoins ? (
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <p class="text-sm opacity-70">
+            Showing{" "}
+            <span class="tabular-nums" safe>
+              {data.meta.from}
+            </span>{" "}
+            to{" "}
+            <span class="tabular-nums" safe>
+              {data.meta.to}
+            </span>{" "}
+            of{" "}
+            <span class="tabular-nums" safe>
+              {data.meta.items}
+            </span>{" "}
+            coins
+          </p>
+          <div class="join">
+            <PageButton
+              form="coin-filter"
+              page={1}
+              disabled={data.meta.page === 1}
+            >
+              First
+            </PageButton>
+            <PageButton
+              form="coin-filter"
+              page={data.meta.page - 1}
+              disabled={!data.meta.hasPreviousPage}
+            >
+              Previous
+            </PageButton>
+            <button type="button" disabled class="join-item btn btn-outline">
+              Page{" "}
+              <span class="tabular-nums" safe>
+                {data.meta.page}
+              </span>
+            </button>
+            <PageButton
+              form="coin-filter"
+              page={data.meta.page + 1}
+              disabled={!data.meta.hasNextPage}
+            >
+              Next
+            </PageButton>
+            <PageButton
+              form="coin-filter"
+              page={data.meta.pages}
+              disabled={
+                data.meta.page === data.meta.pages || data.meta.items === 0
+              }
+            >
+              Last
+            </PageButton>
           </div>
         </div>
-
-        <div class="h-20"></div>
-      </main>
-    </>
+      ) : null}
+    </div>
   );
 };
+
+/**
+ * The full list card: static filter bar plus swappable results.
+ */
+export const CoinList = (props: ListCryptocurrencyInput) => (
+  <section id="coin-list" class="w-full">
+    <div class="card w-full bg-base-100 shadow-xl">
+      <div class="card-body p-4 sm:p-8">
+        <CoinFilter {...props} />
+        <CoinResults {...props} />
+      </div>
+    </div>
+  </section>
+);
+
+/**
+ * The full page. Modals live here, outside the swap unit, so refreshing the
+ * list never destroys an open dialog.
+ */
+export const CoinPage = async (props: ListCryptocurrencyInput) => (
+  <div class="flex flex-col gap-6">
+    <AddCoinModal />
+    <CryptocurrencyEditModal />
+    <CoinList {...props} />
+  </div>
+);

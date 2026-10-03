@@ -1,16 +1,17 @@
-import { eq, count } from "drizzle-orm";
+import { eq, count, type SQL } from "drizzle-orm";
 
 import { paginate } from "../../common/pagination";
 import { database } from "../../database/connection";
 import { chain } from "./chain.sql";
 import type {
+  ChainInsert,
   ChainUpdate,
   ListChainInput,
   PaginatedChainList,
 } from "./chain.type";
 
 export namespace Chain {
-  export async function add(input: typeof chain.$inferInsert) {
+  export async function add(input: ChainInsert) {
     return await database
       .insert(chain)
       .values(input)
@@ -23,6 +24,14 @@ export namespace Chain {
   ): Promise<PaginatedChainList> {
     const result = await paginate({ table: chain, input });
     return result;
+  }
+
+  /** List with a caller-supplied extra filter (e.g. exclude assigned). */
+  export async function listExcluding(
+    input: ListChainInput,
+    condition?: SQL,
+  ): Promise<PaginatedChainList> {
+    return await paginate({ table: chain, input, condition });
   }
 
   export async function codeExists(code: string) {
