@@ -3,8 +3,9 @@ import {
   createSelectSchema,
   createUpdateSchema,
 } from "drizzle-zod";
-import type z from "zod";
+import z from "zod";
 
+import { cryptocurrencySelectSchema, exchangeSelectSchema } from "../schemas";
 import { market } from "./market.sql";
 
 export const marketInsertSchema = createInsertSchema(market).omit({
@@ -22,6 +23,10 @@ export const marketSelectSchema = createSelectSchema(market);
 export const marketFilterExistsSchema = marketSelectSchema.pick({
   exchangeId: true,
   cryptocurrencyId: true,
+});
+
+export const listExchangeWithMetadataSchema = exchangeSelectSchema.extend({
+  cryptocurrencies: z.array(cryptocurrencySelectSchema),
 });
 
 export type MarketInsert = z.infer<typeof marketInsertSchema>;

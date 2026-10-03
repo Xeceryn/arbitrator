@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import z from "zod";
 
 import { database } from "../../database/connection";
+import { exchange } from "../exchange/exchange.sql";
 import { Market } from "./market";
 import { marketInsertSchema, marketSelectSchema } from "./market.schema";
 import { market } from "./market.sql";
@@ -111,6 +112,29 @@ const list = os
   .handler(async ({ input }) => {
     return await Market.getAll(input);
   });
+const listCryptoByExchange = os
+  .input(
+    z.object({
+      exchangeId: z.number(),
+      tradeEnabled: z.boolean().optional().default(true),
+    }),
+  )
+  .handler(async ({ input }) => {
+    const result = await database.query.exchange.findFirst({
+      where: {
+        id: input.exchangeId,
+      },
+      with: {
+        cryptocurrencies: {
+          limit: 10,
+          orderBy: {
+            cmcId: "asc",
+          },
+        },
+      },
+    });
+    return result;
+  });
 
 const findById = os
   .input(z.number())
@@ -127,6 +151,7 @@ const findById = os
   });
 
 export const marketRouter = os.router({
+  listCryptoByExchange,
   assign,
   unassign,
   update,
