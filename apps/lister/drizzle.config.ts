@@ -2,17 +2,16 @@ import { defineConfig } from "drizzle-kit";
 
 const dbUrl = () => {
   return (
-    Bun.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/lister"
+    Bun.env.DATABASE_URL ||
+    "postgres://postgres:postgres@localhost:5432/arbitrator"
   );
 };
 
 export default defineConfig({
-  strict: true,
-  verbose: true,
   out: "./migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: "postgres://sulthonuladib:123456@localhost:5432/lister",
+    url: dbUrl(),
   },
   schema: "./src/**/*.sql.ts",
 });

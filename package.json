@@ -9,20 +9,21 @@
     ],
     "catalogs": {
       "core": {
-        "amqplib": "^2.2.0",
-        "@orpc/client": "^1.15.4",
-        "@orpc/server": "^1.15.4",
-        "drizzle-orm": "^0.45.3",
-        "drizzle-zod": "^0.8.3",
-        "zod": "^4.6.5",
         "@nats-io/transport-node": "^3.4.0",
-        "pg": "^8.23.1"
+        "@orpc/client": "2.0.0-beta.41",
+        "@orpc/server": "2.0.0-beta.41",
+        "@orpc/contract": "2.0.0-beta.41",
+        "amqplib": "^2.2.0",
+        "pg": "^8.23.1",
+        "zod": "^4.6.5",
+        "drizzle-orm": "^1.0.0-beta.22",
+        "drizzle-zod": "^1.0.0-beta.14-a36c63d"
       },
       "tools": {
         "axios": "^1.11.0",
         "winston": "^3.19.0",
-        "drizzle-kit": "^0.31.11",
-        "drizzle-seed": "^0.3.1",
+        "drizzle-kit": "^1.0.0-beta.22",
+        "drizzle-seed": "^1.0.0-beta.22",
         "@faker-js/faker": "^10.6.0"
       },
       "sdk": {
@@ -48,24 +49,13 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@eslint/json": "^2.1.0",
     "@types/bun": "^1.4.2",
-    "eslint": "^10.11.0",
-    "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.13.0",
-    "jiti": "^2.7.0",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
-    "prettier": "3.9.9",
-    "typescript-eslint": "^8.71.0"
-  },
-  "peerDependencies": {
     "typescript": "^7.0.2"
   },
   "trustedDependencies": [
     "@bufbuild/buf",
-    "@parcel/watcher",
     "@tailwindcss/oxide",
     "esbuild"
   ]

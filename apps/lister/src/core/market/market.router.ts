@@ -3,27 +3,22 @@ import { and, eq } from "drizzle-orm";
 import z from "zod";
 
 import { database } from "../../database/connection";
-import { ExchangeCryptocurrency } from "./exchange-cryptocurrency";
-import {
-  exchangeCryptocurrencyInsertSchema,
-  exchangeCryptocurrencySelectSchema,
-} from "./exchange-cryptocurrency.schema";
-import { exchangeCryptocurrencyTable } from "./exchange-cryptocurrency.sql";
+import { Market } from "./market";
+import { marketInsertSchema, marketSelectSchema } from "./market.schema";
+import { marketTable } from "./market.sql";
 
 const assign = os
-  .input(exchangeCryptocurrencyInsertSchema)
-  .output(exchangeCryptocurrencySelectSchema)
+  .input(marketInsertSchema)
+  .output(marketSelectSchema)
   .handler(async ({ input }) => {
-    if (await ExchangeCryptocurrency.exists(input)) {
+    if (await Market.exists(input)) {
       throw new ORPCError("CONFLICT", {
         message: "exchange with cryptocurrency already exists",
-        status: 409,
-        defined: true,
       });
     }
-    console.log("input", input);
+
     const result = await database
-      .insert(exchangeCryptocurrencyTable)
+      .insert(marketTable)
       .values(input)
       .returning()
       .onConflictDoNothing()
@@ -41,29 +36,26 @@ const assign = os
 
 const update = os
   .input(
-    exchangeCryptocurrencySelectSchema.pick({
+    marketSelectSchema.pick({
       exchangeId: true,
       cryptocurrencyId: true,
     }),
   )
-  .output(exchangeCryptocurrencySelectSchema)
+  .output(marketSelectSchema)
   .handler(async ({ input }) => {
-    if (!(await ExchangeCryptocurrency.exists(input))) {
+    if (!(await Market.exists(input))) {
       throw new ORPCError("NOT_FOUND", {
         message: "exchange-cryptocurrency assignment not found",
       });
     }
 
     const result = await database
-      .update(exchangeCryptocurrencyTable)
+      .update(marketTable)
       .set(input)
       .where(
         and(
-          eq(exchangeCryptocurrencyTable.exchangeId, input.exchangeId),
-          eq(
-            exchangeCryptocurrencyTable.cryptocurrencyId,
-            input.cryptocurrencyId,
-          ),
+          eq(marketTable.exchangeId, input.exchangeId),
+          eq(marketTable.cryptocurrencyId, input.cryptocurrencyId),
         ),
       )
       .returning()
@@ -80,21 +72,18 @@ const update = os
 
 const unassign = os
   .input(
-    exchangeCryptocurrencySelectSchema.pick({
+    marketSelectSchema.pick({
       exchangeId: true,
       cryptocurrencyId: true,
     }),
   )
   .handler(async ({ input }) => {
     const result = await database
-      .delete(exchangeCryptocurrencyTable)
+      .delete(marketTable)
       .where(
         and(
-          eq(exchangeCryptocurrencyTable.exchangeId, input.exchangeId),
-          eq(
-            exchangeCryptocurrencyTable.cryptocurrencyId,
-            input.cryptocurrencyId,
-          ),
+          eq(marketTable.exchangeId, input.exchangeId),
+          eq(marketTable.cryptocurrencyId, input.cryptocurrencyId),
         ),
       )
       .returning()
@@ -118,16 +107,16 @@ const list = os
       })
       .optional(),
   )
-  .output(z.array(exchangeCryptocurrencySelectSchema))
+  .output(z.array(marketSelectSchema))
   .handler(async ({ input }) => {
-    return await ExchangeCryptocurrency.getAll(input);
+    return await Market.getAll(input);
   });
 
 const findById = os
   .input(z.number())
-  .output(exchangeCryptocurrencySelectSchema)
+  .output(marketSelectSchema)
   .handler(async ({ input }) => {
-    const result = await ExchangeCryptocurrency.getById(input);
+    const result = await Market.getById(input);
     if (!result) {
       throw new ORPCError("NOT_FOUND", {
         message: "exchange-cryptocurrency assignment not found",
@@ -137,21 +126,7 @@ const findById = os
     return result;
   });
 
-const countExchangeCryptocurrencies = os
-  .input(
-    z
-      .object({
-        exchangeId: z.number().optional(),
-        cryptocurrencyId: z.number().optional(),
-      })
-      .optional(),
-  )
-  .output(z.number())
-  .handler(async ({ input }) => {
-    return await ExchangeCryptocurrency.count(input);
-  });
-
-export const exchangeCryptocurrencyRouter = os.router({
+export const marketRouter = os.router({
   assign,
   unassign,
   update,

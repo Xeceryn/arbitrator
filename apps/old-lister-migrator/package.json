@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@arbitrator/lister": "workspace:*",
+    "@arbitrator/sdk": "workspace:*",
     "@orpc/client": "catalog:core",
     "@orpc/server": "catalog:core"
   }

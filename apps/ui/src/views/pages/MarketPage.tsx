@@ -1,10 +1,11 @@
-// import { listerClient } from "@arbitrator/sdk";
 // import type { ListExchangeInput } from "@arbitrator/lister/types";
+// import { listerClient } from "@arbitrator/sdk";
 
 export async function MarketPage() {
   // const [error, data] = await listerClient.exchange.list(props);
+  // console.log(error, data);
   // if (error) {
-  // 	return <div>Failed to fetch coins</div>;
+  // 	return <div>Failed to fetch exchange</div>;
   // }
 
   return (

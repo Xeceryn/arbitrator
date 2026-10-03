@@ -1,25 +1,3 @@
 {
-  "mcpServers": {
-    "tmux-mcp": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "tmux-mcp"],
-      "env": {}
-    },
-    "context7": {
-      "type": "stdio",
-      "description": "Context7 MCP, used to search documentation for multiple libs or frameworks",
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"],
-      "env": {}
-    },
-    "lister-rest-api": {
-      "enabled": true,
-      "command": "node",
-      "args": ["/home/sulthonuladib/personal/mcp-rest-api/build/index.js"],
-      "env": {
-        "REST_BASE_URL": "http://localhost:3000"
-      }
-    }
-  }
+  "mcpServers": {}
 }

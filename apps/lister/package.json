@@ -13,9 +13,9 @@
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "drizzle-kit migrate",
-    "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate": "bunx --bun drizzle-kit migrate",
+    "db:generate": "bunx --bun drizzle-kit generate",
+    "db:studio": "bunx --bun drizzle-kit studio"
   },
   "dependencies": {
     "@arbitrator/logger": "workspace:*",

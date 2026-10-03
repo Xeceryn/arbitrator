@@ -1,25 +1,25 @@
 import { ORPCError, os } from "@orpc/server";
 import z from "zod";
 
-import { ExchangeCryptocurrencyChain } from "./exchange-cryptocurrency-chain";
+import { ChainLink } from "./chain-link";
 import {
-  exchangeCryptocurrencyChainInsertSchema,
-  exchangeCryptocurrencyChainSelectSchema,
-  exchangeCryptocurrencyChainUpdateSchema,
-} from "./exchange-cryptocurrency-chain.schema";
+  chainLinkInsertSchema,
+  chainLinkSelectSchema,
+  chainLinkUpdateSchema,
+} from "./chain-link.schema";
 
-export const exchangeCryptocurrencyChainRouter = {
+export const chainLinkRouter = {
   add: os
-    .input(exchangeCryptocurrencyChainInsertSchema)
-    .output(exchangeCryptocurrencyChainSelectSchema)
+    .input(chainLinkInsertSchema)
+    .output(chainLinkSelectSchema)
     .handler(async ({ input }) => {
-      if (await ExchangeCryptocurrencyChain.exists(input)) {
+      if (await ChainLink.exists(input)) {
         throw new ORPCError("CONFLICT", {
           message: "exchange-cryptocurrency-chain assignment already exists",
         });
       }
 
-      const result = await ExchangeCryptocurrencyChain.add(input);
+      const result = await ChainLink.add(input);
       if (!result) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: "something wrong when adding exchange-cryptocurrency-chain",
@@ -38,16 +38,16 @@ export const exchangeCryptocurrencyChainRouter = {
         })
         .optional(),
     )
-    .output(z.array(exchangeCryptocurrencyChainSelectSchema))
+    .output(z.array(chainLinkSelectSchema))
     .handler(async ({ input }) => {
-      return await ExchangeCryptocurrencyChain.getAll(input);
+      return await ChainLink.getAll(input);
     }),
 
   findById: os
     .input(z.number())
-    .output(exchangeCryptocurrencyChainSelectSchema)
+    .output(chainLinkSelectSchema)
     .handler(async ({ input }) => {
-      const result = await ExchangeCryptocurrencyChain.getById(input);
+      const result = await ChainLink.getById(input);
       if (!result) {
         throw new ORPCError("NOT_FOUND", {
           message: "exchange-cryptocurrency-chain not found",
@@ -61,22 +61,19 @@ export const exchangeCryptocurrencyChainRouter = {
     .input(
       z.object({
         id: z.number(),
-        payload: exchangeCryptocurrencyChainUpdateSchema,
+        payload: chainLinkUpdateSchema,
       }),
     )
-    .output(exchangeCryptocurrencyChainSelectSchema)
+    .output(chainLinkSelectSchema)
     .handler(async ({ input }) => {
-      const target = await ExchangeCryptocurrencyChain.getById(input.id);
+      const target = await ChainLink.getById(input.id);
       if (!target) {
         throw new ORPCError("NOT_FOUND", {
           message: "exchange-cryptocurrency-chain not found",
         });
       }
 
-      const result = await ExchangeCryptocurrencyChain.update(
-        input.id,
-        input.payload,
-      );
+      const result = await ChainLink.update(input.id, input.payload);
       if (!result) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message:
@@ -89,9 +86,9 @@ export const exchangeCryptocurrencyChainRouter = {
 
   remove: os
     .input(z.number())
-    .output(exchangeCryptocurrencyChainSelectSchema)
+    .output(chainLinkSelectSchema)
     .handler(async ({ input }) => {
-      const result = await ExchangeCryptocurrencyChain.remove(input);
+      const result = await ChainLink.remove(input);
       if (!result) {
         throw new ORPCError("NOT_FOUND", {
           message: "exchange-cryptocurrency-chain not found",

@@ -1,5 +1,6 @@
 import { listerClient } from "@arbitrator/sdk";
 import { htmx } from "@gtramontina.com/elysia-htmx";
+import { ORPCError } from "@orpc/client";
 import { Elysia, redirect, t } from "elysia";
 
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
@@ -11,31 +12,21 @@ import { MarketPage } from "../views/pages/MarketPage";
 export const ExchangeController = new Elysia()
   .use(htmx())
 
-  .get(
-    "/markets",
-    ({ hx }) => {
-      if (hx.isHTMX) {
-        return (
-          <>
-            <title>Market List</title>
-            <MarketPage />
-          </>
-        );
-      }
+  .get("/markets", ({ hx }) => {
+    if (hx.isHTMX) {
       return (
-        <BaseLayout title="arbitmage - Exchanges">
+        <>
+          <title>Market List</title>
           <MarketPage />
-        </BaseLayout>
+        </>
       );
-    },
-    {
-      query: t.Optional(
-        t.Object({
-          search: t.Optional(t.String({ default: "" })),
-        }),
-      ),
-    },
-  )
+    }
+    return (
+      <BaseLayout title="arbitmage - Exchanges">
+        <MarketPage />
+      </BaseLayout>
+    );
+  })
 
   .get(
     "markets/list",
@@ -44,9 +35,13 @@ export const ExchangeController = new Elysia()
         return redirect("/markets");
       }
       const { data, error } = await listerClient.exchange.list(query);
+      console.log(error, data);
 
       if (error) {
-        console.log(error);
+        if (error instanceof ORPCError) {
+          console.log("ORPCError", error);
+        }
+        // console.log(error);
         return <div>Failed to fetch markets</div>;
       }
       set.headers = {

@@ -1,1 +1,0 @@
-ALTER TABLE "cryptocurrency" ADD COLUMN "logo" varchar(255) NOT NULL;

@@ -33,12 +33,12 @@ new Elysia()
     console.log(request.url);
     set.headers["content-type"] = "text/html; charset=utf-8";
   })
+  .use(staticPlugin({ prefix: "/public", assets: "./public" }))
   .use(serverTiming())
   .use(ErrorPageController)
   .use(HomeController)
   .use(CryptocurrencyController)
   .use(ExchangeController)
-  .use(staticPlugin({ prefix: "/public", assets: "./public" }))
   .get("/", () => {
     return redirect("/home");
   })

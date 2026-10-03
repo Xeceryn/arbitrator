@@ -10,8 +10,16 @@ export function createPaginationInputSchema<
   defaultOrderBy: z.infer<TOrderByKeys>;
 }) {
   return z.object({
-    page: z.coerce.number().min(1).default(1),
-    limit: z.coerce.number().min(-1).max(100).default(10),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(-1)
+      .max(100)
+      .refine((limit) => limit !== 0, {
+        message: "limit must be -1 (all) or between 1 and 100",
+      })
+      .default(10),
     search: z.string().default(""),
     searchBy: filter.searchByKeys.default(filter.defaultSearchBy),
     orderBy: filter.orderByKeys.default(filter.defaultOrderBy),
@@ -19,7 +27,7 @@ export function createPaginationInputSchema<
   });
 }
 
-const paginatedMetadataSchema = z.object({
+export const paginationMetadataSchema = z.object({
   items: z.coerce.number(),
   pages: z.coerce.number(),
   page: z.coerce.number(),
@@ -34,19 +42,13 @@ const paginatedMetadataSchema = z.object({
   orderBy: z.string(),
 });
 
+export type PaginationMetadata = z.infer<typeof paginationMetadataSchema>;
+
 export function createPaginatedOutputSchema<T extends z.ZodType>(
   itemSchema: T,
 ) {
   return z.object({
     data: z.array(itemSchema),
-    meta: paginatedMetadataSchema,
+    meta: paginationMetadataSchema,
   });
 }
-
-export type PaginationInput<T extends z.ZodEnum> = z.infer<
-  ReturnType<typeof createPaginationInputSchema<T, T>>
->;
-
-export type PaginatedOutput<T extends z.ZodType> = z.infer<
-  ReturnType<typeof createPaginatedOutputSchema<T>>
->;

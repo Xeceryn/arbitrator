@@ -8,8 +8,5 @@
   "env": {
     "builtin": true
   },
-  "ignorePatterns": [
-    "dist",
-    "apps/ui/public"
-  ]
+  "ignorePatterns": ["dist", "apps/ui/public"]
 }

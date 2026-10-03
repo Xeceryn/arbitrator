@@ -90,8 +90,12 @@ export const SignalCard = (signal: Signal) => {
           </div>
           <div class="flex justify-between items-center mt-4">
             <div>
-              <p class="text-lg font-semibold">Profit: ${signal.profitAmount}</p>
-              <p class="text-sm text-gray-600">Profit: {signal.profitPercentage}%</p>
+              <p class="text-lg font-semibold">
+                Profit: ${signal.profitAmount}
+              </p>
+              <p class="text-sm text-gray-600">
+                Profit: {signal.profitPercentage}%
+              </p>
             </div>
             <div>
               <p class="text-sm text-gray-600" safe>

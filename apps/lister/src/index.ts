@@ -13,16 +13,23 @@ const handler = new RPCHandler(router, {
 Bun.serve({
   async fetch(request: Request) {
     console.log(request.method, request.url, request.destination);
-    const { response } = await handler.handle(request, {
-      context: {}, // Provide initial context if needed
-    });
-    if (!response) {
-      return new Response("NOT FOUND", {
-        status: 404,
+    try {
+      const { response } = await handler.handle(request, {
+        context: {}, // Provide initial context if needed
+      });
+      if (!response) {
+        return new Response("NOT FOUND", {
+          status: 404,
+        });
+      }
+
+      return response;
+    } catch (error) {
+      console.log(error);
+      return new Response("INTERNAL SERVER ERROR", {
+        status: 500,
       });
     }
-
-    return response;
   },
   port: 3001,
 });

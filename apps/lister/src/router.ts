@@ -1,15 +1,15 @@
+import { chainLinkRouter } from "./core/chain-link/chain-link.router";
 import { chainRouter } from "./core/chain/chain.router";
 import { cryptocurrencyRouter } from "./core/cryptocurrency/cryptocurrency.router";
-import { exchangeCryptocurrencyChainRouter } from "./core/exchange-cryptocurrency-chain/exchange-cryptocurrency-chain.router";
-import { exchangeCryptocurrencyRouter } from "./core/exchange-cryptocurrency/exchange-cryptocurrency.router";
 import { exchangeRouter } from "./core/exchange/exchange.router";
+import { marketRouter } from "./core/market/market.router";
 import { utilityRouter } from "./core/utility/utility.router";
 
 export const router = {
   exchange: exchangeRouter,
   cryptocurrency: cryptocurrencyRouter,
-  exchangeCryptocurrency: exchangeCryptocurrencyRouter,
-  exchangeCryptocurrencyChain: exchangeCryptocurrencyChainRouter,
+  market: marketRouter,
+  chainLink: chainLinkRouter,
   chain: chainRouter,
   utility: utilityRouter,
 };

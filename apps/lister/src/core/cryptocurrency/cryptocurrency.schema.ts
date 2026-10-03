@@ -6,7 +6,7 @@ import {
 import z from "zod";
 
 import {
-  createPaginationInputSchema as createPaginationInputSchema,
+  createPaginationInputSchema,
   createPaginatedOutputSchema,
 } from "../../common/pagination.schema";
 import { cryptocurrencyTable } from "./cryptocurrency.sql";

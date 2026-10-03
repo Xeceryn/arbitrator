@@ -33,6 +33,7 @@ export const exchangeRouter = {
     .input(listExchangeSelectSchema)
     .output(paginatedExchangeSelectSchema)
     .handler(async ({ input }) => {
+      console.log(input);
       return await Exchange.list(input);
     }),
 

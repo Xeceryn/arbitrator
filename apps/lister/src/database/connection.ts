@@ -1,23 +1,14 @@
+import { SQL } from "bun";
 import { drizzle } from "drizzle-orm/bun-sql";
 
-import * as chainTables from "../core/chain/chain.sql";
-import * as cryptocurrencyTables from "../core/cryptocurrency/cryptocurrency.sql";
-import * as exchangeCryptocurrencyChainTables from "../core/exchange-cryptocurrency-chain/exchange-cryptocurrency-chain.sql";
-import * as exchangeCryptocurrencyTables from "../core/exchange-cryptocurrency/exchange-cryptocurrency.sql";
-import * as exchangeTables from "../core/exchange/exchange.sql";
+const url = () => {
+  return (
+    Bun.env.DATABASE_URL ||
+    "postgres://postgres:postgres@localhost:5432/arbitrator"
+  );
+};
+export const postgresConnection = new SQL(url());
 
-export const postgresConnection = new Bun.SQL(
-  "postgres://sulthonuladib:123456@localhost:5432/lister",
-);
-
-export const database = drizzle(postgresConnection, {
-  schema: {
-    exchangeTables,
-    cryptocurrencyTables,
-    chainTables,
-    exchangeCryptocurrencyTables,
-    exchangeCryptocurrencyChainTables,
-  },
-});
+export const database = drizzle({ client: postgresConnection });
 
 export type DB = typeof database;
