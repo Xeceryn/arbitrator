@@ -4456,7 +4456,7 @@
   .focus\:absolute:focus {
     position: absolute;
   }
-  .focus\:start-4:focus {
+  .focus\:inset-s-4:focus {
     inset-inline-start: calc(var(--spacing) * 4);
   }
   .focus\:top-4:focus {

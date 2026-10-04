@@ -37,6 +37,7 @@ export const BaseLayout = async ({
           <script src="/public/dist/scripts.js"></script>
           <script src="/public/dist/notification-toast.js"></script>
           <script src="/public/dist/drawer-state.js"></script>
+          <script src="/public/dist/dropdown.js"></script>
         </head>
         <body
           hx-indicator=".progress"
@@ -44,7 +45,7 @@ export const BaseLayout = async ({
         >
           <a
             href="#main-content"
-            class="sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50 focus:rounded-btn focus:bg-base-100 focus:px-4 focus:py-2 focus:shadow-lg"
+            class="sr-only focus:not-sr-only focus:absolute focus:inset-s-4 focus:top-4 focus:z-50 focus:rounded-btn focus:bg-base-100 focus:px-4 focus:py-2 focus:shadow-lg"
           >
             Skip to content
           </a>

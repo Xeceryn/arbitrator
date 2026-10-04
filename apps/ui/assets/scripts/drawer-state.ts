@@ -24,6 +24,27 @@ function initDrawerState() {
   toggle.addEventListener("change", () => {
     localStorage.setItem(STORAGE_KEY, toggle.checked ? "open" : "closed");
   });
+
+  closeOverlayOnNavigate(toggle);
+}
+
+/**
+ * Close the drawer after an in-app navigation.
+ *
+ * Below `lg` the drawer is an off-canvas overlay, so if it is left checked it
+ * keeps covering the page that was just navigated to. At `lg` the sidebar is
+ * persistent and its width is the only thing the checkbox changes, so we leave
+ * it (and the remembered desktop state) alone.
+ */
+function closeOverlayOnNavigate(toggle: HTMLInputElement) {
+  document.addEventListener("click", (event) => {
+    if (window.matchMedia(DESKTOP_QUERY).matches) return;
+
+    const target = event.target as Element | null;
+    if (!target?.closest(".drawer-side a[hx-get]")) return;
+
+    toggle.checked = false;
+  });
 }
 
 if (document.readyState === "loading") {

@@ -52,7 +52,15 @@ key off `.drawer-toggle:checked ~ .drawer-side`.
 The state is persisted across full reloads by
 `assets/scripts/drawer-state.ts` (bundled to `public/dist/drawer-state.js`):
 it mirrors the checkbox to `localStorage` under `arbitrator:drawer` and
-restores it on load, desktop-only so mobile always starts closed.
+restores it on load, desktop-only so mobile always starts closed. The same
+script closes the drawer when a sidebar item is clicked, but only below `lg` —
+there the overlay would otherwise keep covering the page it just navigated to,
+while at `lg` the rail is persistent and its state is left untouched.
+
+The navbar's theme picker is a native `<details class="dropdown">`. Selecting
+a theme is a `[data-set-theme]` click handled by theme-change, which does not
+toggle the `<details>`, so `assets/scripts/dropdown.ts` closes the enclosing
+`<details>` after an option is picked.
 
 **The navbar owns the page `<h1>`.** Pass `heading` to `BaseLayout`:
 

@@ -23,7 +23,7 @@ if (unmappedChainExists.data.length < 1) {
   });
   console.log("adding", addError, addedChain);
 }
-console.log('unmappedChainExists', unmappedChainExists)
+console.log("unmappedChainExists", unmappedChainExists);
 
 const [targetChainError, targetChain] = await listerClient.chain.list({
   searchBy: "code",

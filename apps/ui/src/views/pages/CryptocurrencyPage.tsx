@@ -6,9 +6,9 @@ import { capitalizeFirstLetter } from "../../utils";
 import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
 import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
+import { PlusIcon, SearchIcon } from "../components/icons";
 import { PageButton } from "../components/PageButton";
 import { SortableHeader } from "../components/SortableHeader";
-import { PlusIcon, SearchIcon } from "../components/icons";
 
 const LIMIT_OPTIONS = [10, 20, 50, 100];
 
@@ -123,7 +123,12 @@ export const CoinResults = async (props: ListCryptocurrencyInput) => {
         name="orderBy"
         value={props.orderBy}
       />
-      <input type="hidden" form="coin-filter" name="order" value={props.order} />
+      <input
+        type="hidden"
+        form="coin-filter"
+        name="order"
+        value={props.order}
+      />
 
       <div class="overflow-x-auto w-full">
         <table class="table w-full table-pin-rows table-pin-cols [&_td]:px-2 [&_th]:px-2 sm:[&_td]:px-4 sm:[&_th]:px-4">
