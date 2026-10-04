@@ -25,18 +25,41 @@ export const BaseLayout = async ({
             content="width=device-width, initial-scale=1, shrink-to-fit=no"
           />
           <title safe>{title}</title>
+          <link rel="preconnect" href="https://s2.coinmarketcap.com" />
+
           <link rel="icon" href="/public/favicon.ico" />
 
-          <link href="/public/css/styles.css" rel="stylesheet" />
+          <link rel="preload" href="/public/css/styles.css" as="style" />
+          <link rel="stylesheet" href="/public/css/styles.css" as="style" />
 
+          <link rel="preload" href="/public/js/htmx.min.js" as="script" />
           <script src="/public/js/htmx.min.js"></script>
+
+          <link
+            rel="preload"
+            href="/public/js/hyperscript.min.js"
+            as="script"
+          />
           <script src="/public/js/hyperscript.min.js"></script>
-					{ /*<script src="/public/js/lucide.js"></script> */ }
+          {/*<script src="/public/js/lucide.js"></script> */}
+
+          <link rel="preload" href="/public/js/theme-change.js" as="script" />
           <script src="/public/js/theme-change.js"></script>
 
+          <link rel="preload" href="/public/dist/scripts.js" as="script" />
           <script src="/public/dist/scripts.js"></script>
+
+          <link
+            rel="preload"
+            href="/public/dist/notification-toast.js"
+            as="script"
+          />
           <script src="/public/dist/notification-toast.js"></script>
+
+          <link rel="preload" href="/public/dist/drawer-state.js" as="script" />
           <script src="/public/dist/drawer-state.js"></script>
+
+          <link rel="preload" href="/public/dist/dropdown.js" as="script" />
           <script src="/public/dist/dropdown.js"></script>
         </head>
         <body
