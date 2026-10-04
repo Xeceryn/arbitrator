@@ -10,6 +10,7 @@ import {
   type WorkersData,
   WorkersPage,
   WorkersResults,
+  WorkersRowUpdate,
 } from "../views/pages/WorkersPage";
 
 const slugParam = z.object({ slug: z.string().min(1) });
@@ -59,6 +60,25 @@ async function loadWorkersData({
   }
 }
 
+/**
+ * After start/stop, swap only the affected row (the primary response) and let
+ * the summary/hint update out-of-band. Falls back to the full results when the
+ * data can't be loaded.
+ */
+async function renderRowUpdate(clients: AppClients, slug: string) {
+  const data = await loadWorkersData(clients);
+  if (!data.ok) {
+    return <WorkersResults data={data} />;
+  }
+
+  const exchange = data.exchanges.find((item) => item.slug === slug);
+  if (!exchange) {
+    return <WorkersResults data={data} />;
+  }
+
+  return <WorkersRowUpdate status={data.status} exchange={exchange} />;
+}
+
 export const WorkersController = new Elysia()
   .use(htmx())
   .use(clientsPlugin)
@@ -106,9 +126,7 @@ export const WorkersController = new Elysia()
         });
       }
 
-      return (
-        <WorkersResults data={await loadWorkersData({ lister, sender })} />
-      );
+      return renderRowUpdate({ lister, sender }, params.slug);
     },
     { params: slugParam },
   )
@@ -130,9 +148,7 @@ export const WorkersController = new Elysia()
         });
       }
 
-      return (
-        <WorkersResults data={await loadWorkersData({ lister, sender })} />
-      );
+      return renderRowUpdate({ lister, sender }, params.slug);
     },
     { params: slugParam },
   );
