@@ -9,6 +9,7 @@
     ],
     "catalogs": {
       "core": {
+        "@elysiajs/eden": "^1.4.9",
         "@nats-io/transport-node": "^3.4.0",
         "@orpc/client": "2.0.0-beta.41",
         "@orpc/server": "2.0.0-beta.41",
@@ -17,7 +18,8 @@
         "pg": "^8.23.1",
         "zod": "^4.6.5",
         "drizzle-orm": "^1.0.0-beta.22",
-        "drizzle-zod": "^1.0.0-beta.14-a36c63d"
+        "drizzle-zod": "^1.0.0-beta.14-a36c63d",
+        "elysia": "^1.4.30"
       },
       "tools": {
         "axios": "^1.11.0",

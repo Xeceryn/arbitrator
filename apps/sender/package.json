@@ -19,7 +19,7 @@
     "binance": "^3.6.1",
     "bitget-api": "^3.2.1",
     "bitmart-api": "^2.5.1",
-    "elysia": "^1.4.30",
+    "elysia": "catalog:core",
     "gateio-api": "^1.6.1",
     "kucoin-api": "^2.6.1",
     "okx-api": "^3.2.1",

@@ -9,6 +9,7 @@ import {
   AssignmentController,
   ChainController,
   ExchangeController,
+  WorkersController,
 } from "./controllers";
 import { CryptocurrencyController } from "./controllers/coin.controller";
 import { ErrorPageController } from "./controllers/error-page.controller";
@@ -57,6 +58,7 @@ new Elysia()
   .use(ExchangeController)
   .use(ChainController)
   .use(AssignmentController)
+  .use(WorkersController)
   .get("/", () => {
     return redirect("/home");
   })

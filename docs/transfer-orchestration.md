@@ -14,7 +14,7 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 
 ## Status & handoff (read this first)
 
-**Current stage:** Phase 0–4 done; Phase 5 (UI) next.
+**Current stage:** All phases (0–5) implemented.
 
 - [x] `packages/contracts` filled (subjects, metadata event, raw/normalized
       orderbook, worker control protocol, domain value objects).
@@ -28,7 +28,9 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 - [x] sender subscribes `metadata.changed` → debounced reconcile (T11).
 - [x] receiver normalizer: `orderbook.*.raw` → `orderbook.normalized.<exchange>`
       under the shared queue group (T12).
-- [ ] Phase 5: UI start/stop via Eden (T13).
+- [x] UI: Workers page (`/workers`) with per-exchange start/stop, Eden client in
+      `apps/ui/src/sender.client.ts`, status + worker/coin counts, unplaced
+      warning.
 
 **Run / verify:**
 
@@ -37,6 +39,7 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
   `start` returns 501 for an exchange with no adapter.
 - receiver: `bun run dev` in `apps/receiver`; consumes `orderbook.*.raw` and
   publishes `orderbook.normalized.<exchange>`.
+- ui: `bun run dev` in `apps/ui` → port 3000; open `/workers` for start/stop.
 - new sender code typecheck: `bunx tsc -p apps/sender/tsconfig.app.json --noEmit`
   (legacy debt workers are excluded).
 - tests: `bun test apps/sender/src/orchestrator`.
@@ -44,7 +47,8 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 **Only open question:** receiver delivery guarantee — core NATS queue group vs
 JetStream ack/redelivery. See §7.
 
-**Next action:** Phase 5, task T13 (Eden client in `@arbitrator/sdk` + UI controls).
+**Next action:** none — feature implemented. Only the receiver delivery question
+(§7) remains open.
 
 **How to resume with a fresh context:** read this doc top to bottom once, then
 work the checklist in §10 in order. The design rationale lives in §1–§5; the
@@ -345,7 +349,8 @@ Each task ends on a checkable bound.
 
 ### Phase 5 — UI
 
-- [ ] **T13** Eden client in `@arbitrator/sdk` + start/stop controls in `apps/ui`.
+- [x] **T13** Eden client (`apps/ui/src/sender.client.ts`, UI-local to avoid an
+      sdk↔sender cycle) + start/stop controls on `/workers`.
 
 ### Follow-ups (out of current scope)
 

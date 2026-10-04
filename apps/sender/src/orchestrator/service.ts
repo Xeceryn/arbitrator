@@ -33,6 +33,7 @@ export type OrchestratorStatus = {
   started: string[];
   workers: ReturnType<WorkerPool["snapshot"]>;
   unplaced: DesiredSubscription[];
+  supported: string[];
 };
 
 /**
@@ -75,6 +76,7 @@ export class Orchestrator {
       started: [...this.started],
       workers: this.pool.snapshot(),
       unplaced: this.unplaced,
+      supported: Object.keys(workerAdapters),
     };
   }
 

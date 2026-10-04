@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "@kitajs/html";
 
-import { ChainIcon, CoinsIcon, ExchangeIcon } from "./icons";
+import { ChainIcon, CoinsIcon, ExchangeIcon, ServerIcon } from "./icons";
 
 /** On the collapsed rail these items show an icon and a tooltip. */
 const navItemClass = "is-drawer-close:tooltip is-drawer-close:tooltip-right";
@@ -53,6 +53,9 @@ export const Sidebar = () => (
       </SideBarItem>
       <SideBarItem title="Exchange Management" path="markets">
         <ExchangeIcon />
+      </SideBarItem>
+      <SideBarItem title="Worker Orchestration" path="workers">
+        <ServerIcon />
       </SideBarItem>
       <SideBarItem title="Chain Management" path="chain">
         <ChainIcon />

@@ -13,6 +13,8 @@
   "dependencies": {
     "@arbitrator/lister": "workspace:*",
     "@arbitrator/sdk": "workspace:*",
+    "@arbitrator/sender": "workspace:*",
+    "@elysiajs/eden": "catalog:core",
     "@elysiajs/html": "^1.4.2",
     "@elysiajs/server-timing": "^1.4.1",
     "@elysiajs/static": "^1.4.10",
@@ -21,7 +23,7 @@
     "@kitajs/html": "^4.2.13",
     "@kitajs/ts-html-plugin": "^4.1.4",
     "@orpc/client": "catalog:core",
-    "elysia": "^1.4.30",
+    "elysia": "catalog:core",
     "htmx.org": "4.0.0",
     "hyperscript.org": "^0.9.93",
     "lucide": "^1.50.0",

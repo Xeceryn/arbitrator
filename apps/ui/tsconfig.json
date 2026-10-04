@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "moduleResolution": "bundler",
-    "lib": ["dom"],
+    "lib": ["dom", "ESNext"],
     "jsxImportSource": "@kitajs/html",
     "types": ["@kitajs/html/htmx.d.ts"],
     "plugins": [
