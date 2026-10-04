@@ -1,12 +1,12 @@
 {
-  "$schema": "https://schemastore.org/package.json",
+  "$schema": "https://json.schemastore.org/package.json",
   "name": "@arbitrator/receiver",
   "scripts": {
     "dev": "bun run src/main.ts"
   },
   "dependencies": {
+    "@arbitrator/contracts": "workspace:*",
     "@arbitrator/logger": "workspace:*",
-    "@arbitrator/sender": "workspace:*",
     "@nats-io/transport-node": "catalog:core"
   }
 }

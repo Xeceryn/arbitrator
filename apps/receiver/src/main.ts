@@ -1,18 +1,20 @@
 const cpus = navigator.hardwareConcurrency;
-const buns = new Array(cpus);
+const children: Bun.Subprocess[] = [];
 
-for (let i = 0; i < cpus; i++) {
-  buns[i] = Bun.spawn({
-    cmd: ["bun", "run", "--watch", "src/index.ts", "--cluster"],
-    stdout: "inherit",
-    stderr: "inherit",
-    stdin: "inherit",
-  });
+for (let index = 0; index < cpus; index++) {
+  children.push(
+    Bun.spawn({
+      cmd: ["bun", "run", "--watch", "src/index.ts", "--cluster"],
+      stdout: "inherit",
+      stderr: "inherit",
+      stdin: "inherit",
+    }),
+  );
 }
 
 function kill() {
-  for (const bun of buns) {
-    bun.kill();
+  for (const child of children) {
+    child.kill();
   }
 }
 

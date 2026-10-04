@@ -14,7 +14,7 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 
 ## Status & handoff (read this first)
 
-**Current stage:** Phase 0–3 done; Phase 4 (receiver) next.
+**Current stage:** Phase 0–4 done; Phase 5 (UI) next.
 
 - [x] `packages/contracts` filled (subjects, metadata event, raw/normalized
       orderbook, worker control protocol, domain value objects).
@@ -26,7 +26,8 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 - [x] Phase 3: Elysia app, worker registry (binance + gate), worker pool
       (`worker_threads` + `workerData` + postMessage), 6 pool tests.
 - [x] sender subscribes `metadata.changed` → debounced reconcile (T11).
-- [ ] Phase 4: receiver normalizer (T12).
+- [x] receiver normalizer: `orderbook.*.raw` → `orderbook.normalized.<exchange>`
+      under the shared queue group (T12).
 - [ ] Phase 5: UI start/stop via Eden (T13).
 
 **Run / verify:**
@@ -34,6 +35,8 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 - sender: `bun run dev` in `apps/sender` → port 3002. Routes:
   `POST /exchanges/:slug/start|stop`, `GET /exchanges`, `GET /workers`.
   `start` returns 501 for an exchange with no adapter.
+- receiver: `bun run dev` in `apps/receiver`; consumes `orderbook.*.raw` and
+  publishes `orderbook.normalized.<exchange>`.
 - new sender code typecheck: `bunx tsc -p apps/sender/tsconfig.app.json --noEmit`
   (legacy debt workers are excluded).
 - tests: `bun test apps/sender/src/orchestrator`.
@@ -41,7 +44,7 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 **Only open question:** receiver delivery guarantee — core NATS queue group vs
 JetStream ack/redelivery. See §7.
 
-**Next action:** Phase 4, task T12 (receiver raw → normalize → publish).
+**Next action:** Phase 5, task T13 (Eden client in `@arbitrator/sdk` + UI controls).
 
 **How to resume with a fresh context:** read this doc top to bottom once, then
 work the checklist in §10 in order. The design rationale lives in §1–§5; the
@@ -338,7 +341,7 @@ Each task ends on a checkable bound.
 ### Phase 4 — events + receiver
 
 - [x] **T11** sender subscribes `metadata.changed` → debounced reconcile.
-- [ ] **T12** receiver: raw → normalize → publish; imports contracts only.
+- [x] **T12** receiver: raw → normalize → publish; imports contracts only.
 
 ### Phase 5 — UI
 
@@ -348,4 +351,7 @@ Each task ends on a checkable bound.
 
 - [ ] Receiver price conversion/lookup + DB persistence.
 - [ ] `listTransferableCoins` filters for the future signal row.
-- [ ] Migrate remaining exchange workers off `Bun.argv`.
+- [ ] Migrate the remaining exchange workers (bitget, bitmart, huobi, indodax,
+      kucoin, mexc, pintu) to the contracts protocol. They are the only
+      consumers of the legacy shims left in `src/types/` and `src/utils/`;
+      delete those shims once migrated.

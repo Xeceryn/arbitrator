@@ -50,8 +50,8 @@
     "apps/receiver": {
       "name": "@arbitrator/receiver",
       "dependencies": {
+        "@arbitrator/contracts": "workspace:*",
         "@arbitrator/logger": "workspace:*",
-        "@arbitrator/sender": "workspace:*",
         "@nats-io/transport-node": "catalog:core",
       },
     },
