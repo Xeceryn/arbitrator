@@ -21,7 +21,9 @@
       "name": "@arbitrator/lister",
       "version": "0.0.0",
       "dependencies": {
+        "@arbitrator/contracts": "workspace:*",
         "@arbitrator/logger": "workspace:*",
+        "@nats-io/transport-node": "catalog:core",
         "@orpc/server": "catalog:core",
         "drizzle-kit": "catalog:tools",
         "drizzle-orm": "catalog:core",
@@ -59,7 +61,7 @@
         "@arbitrator/logger": "workspace:*",
         "@bufbuild/buf": "^1.72.0",
         "@bufbuild/protobuf": "^2.13.0",
-        "@nats-io/transport-node": "^3.4.0",
+        "@nats-io/transport-node": "catalog:core",
         "@orpc/server": "catalog:core",
         "amqplib": "catalog:core",
         "binance": "^3.6.1",
@@ -70,7 +72,7 @@
         "okx-api": "^3.2.1",
         "winston": "^3.19.0",
         "ws": "^8.21.1",
-        "zod": "^4.4.3",
+        "zod": "catalog:core",
       },
       "devDependencies": {
         "@types/amqplib": "^0.10.8",
@@ -109,6 +111,13 @@
         "@tailwindcss/typography": "^0.5.20",
         "daisyui": "^5.7.47",
         "tailwindcss": "^4.3.3",
+      },
+    },
+    "packages/contracts": {
+      "name": "@arbitrator/contracts",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "catalog:core",
       },
     },
     "packages/env-loader": {
@@ -174,6 +183,8 @@
     },
   },
   "packages": {
+    "@arbitrator/contracts": ["@arbitrator/contracts@workspace:packages/contracts"],
+
     "@arbitrator/env-loader": ["@arbitrator/env-loader@workspace:packages/env-loader"],
 
     "@arbitrator/galactus": ["@arbitrator/galactus@workspace:apps/galactus"],

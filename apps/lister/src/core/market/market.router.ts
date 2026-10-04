@@ -3,6 +3,7 @@ import { and, eq, notExists } from "drizzle-orm";
 import z from "zod";
 
 import { database } from "../../database/connection";
+import { publishMetadataChanged } from "../../events";
 import { Cryptocurrency } from "../cryptocurrency/cryptocurrency";
 import { Exchange } from "../exchange/exchange";
 import {
@@ -12,10 +13,12 @@ import {
 import { exchange } from "../exchange/exchange.sql";
 import { Market } from "./market";
 import {
+  listTransferableCoinsInputSchema,
   marketAssignSchema,
   marketSelectSchema,
   marketUpdatePayloadSchema,
   marketWithRelationsSchema,
+  transferableCoinsSchema,
 } from "./market.schema";
 import { market } from "./market.sql";
 
@@ -55,6 +58,14 @@ const assign = os
       });
     }
 
+    void publishMetadataChanged({
+      entity: "market",
+      action: "created",
+      exchangeIds: [result.exchangeId],
+      cryptocurrencyIds: [result.cryptocurrencyId],
+      marketIds: [result.id],
+    });
+
     return result;
   });
 
@@ -74,6 +85,14 @@ const update = os
         message: "something wrong when updating exchange-cryptocurrency",
       });
     }
+
+    void publishMetadataChanged({
+      entity: "market",
+      action: "updated",
+      exchangeIds: [result.exchangeId],
+      cryptocurrencyIds: [result.cryptocurrencyId],
+      marketIds: [result.id],
+    });
 
     return result;
   });
@@ -102,6 +121,14 @@ const unassign = os
         message: "exchange-cryptocurrency assignment not found",
       });
     }
+
+    void publishMetadataChanged({
+      entity: "market",
+      action: "deleted",
+      exchangeIds: [result.exchangeId],
+      cryptocurrencyIds: [result.cryptocurrencyId],
+      marketIds: [result.id],
+    });
 
     return result;
   });
@@ -179,6 +206,17 @@ const findById = os
     return result;
   });
 
+/**
+ * Directed transferability read-model for the sender orchestrator: the union of
+ * per-exchange coin subscriptions for the requested started exchanges.
+ */
+const listTransferableCoins = os
+  .input(listTransferableCoinsInputSchema)
+  .output(transferableCoinsSchema)
+  .handler(async ({ input }) => {
+    return await Market.listTransferableCoins(input.exchangeIds);
+  });
+
 export const marketRouter = os.router({
   assign,
   unassign,
@@ -186,5 +224,6 @@ export const marketRouter = os.router({
   list,
   listDetailed,
   listAvailableExchanges,
+  listTransferableCoins,
   findById,
 });

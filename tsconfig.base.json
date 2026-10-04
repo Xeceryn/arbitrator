@@ -18,7 +18,9 @@
       "@arbitrator/env-loader": ["./packages/env-loader/src"],
       "@arbitrator/env-loader/*": ["./packages/env-loader/src/*"],
       "@arbitrator/logger": ["./packages/logger/src"],
-      "@arbitrator/logger/*": ["./packages/logger/src/*"]
+      "@arbitrator/logger/*": ["./packages/logger/src/*"],
+      "@arbitrator/contracts": ["./packages/contracts/src"],
+      "@arbitrator/contracts/*": ["./packages/contracts/src/*"]
     },
 
     "target": "ESNext",

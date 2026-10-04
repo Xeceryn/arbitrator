@@ -3,6 +3,7 @@ import { and, eq, notExists } from "drizzle-orm";
 import z from "zod";
 
 import { database } from "../../database/connection";
+import { publishMetadataChanged } from "../../events";
 import { Chain } from "../chain/chain";
 import {
   listChainSelectSchema,
@@ -34,6 +35,13 @@ const add = os
         message: "something wrong when adding exchange-cryptocurrency-chain",
       });
     }
+
+    void publishMetadataChanged({
+      entity: "chain_link",
+      action: "created",
+      chainIds: [result.chainId],
+      marketIds: [result.marketId],
+    });
 
     return result;
   });
@@ -131,6 +139,13 @@ const update = os
       });
     }
 
+    void publishMetadataChanged({
+      entity: "chain_link",
+      action: "updated",
+      chainIds: [result.chainId],
+      marketIds: [result.marketId],
+    });
+
     return result;
   });
 
@@ -144,6 +159,13 @@ const remove = os
         message: "exchange-cryptocurrency-chain not found",
       });
     }
+
+    void publishMetadataChanged({
+      entity: "chain_link",
+      action: "deleted",
+      chainIds: [result.chainId],
+      marketIds: [result.marketId],
+    });
 
     return result;
   });

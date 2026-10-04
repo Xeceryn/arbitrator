@@ -1,7 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@arbitrator/contracts",
+  "version": "0.0.0",
+  "private": true,
   "exports": {
     ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "catalog:core"
   }
 }

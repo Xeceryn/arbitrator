@@ -18,7 +18,9 @@
     "db:studio": "bunx --bun drizzle-kit studio"
   },
   "dependencies": {
+    "@arbitrator/contracts": "workspace:*",
     "@arbitrator/logger": "workspace:*",
+    "@nats-io/transport-node": "catalog:core",
     "@orpc/server": "catalog:core",
     "drizzle-kit": "catalog:tools",
     "drizzle-orm": "catalog:core",

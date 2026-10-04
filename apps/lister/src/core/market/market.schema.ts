@@ -75,3 +75,38 @@ export type MarketUpdate = z.infer<typeof marketUpdateSchema>;
 export type MarketSelect = z.infer<typeof marketSelectSchema>;
 
 export type MarketFilterExists = z.infer<typeof marketFilterExistsSchema>;
+
+/* -------------------------------------------------------------------------- */
+/* Transferable-coin read-model (sender orchestrator)                          */
+/* -------------------------------------------------------------------------- */
+
+/** A coin an exchange's worker must subscribe to. */
+export const transferableSubscriptionSchema = z.object({
+  exchangeId: z.number(),
+  cmcId: z.number(),
+  symbol: z.string(),
+});
+
+/** Provenance for why a pair is included: which chain, one direction. */
+export const transferableRouteSchema = z.object({
+  aExchangeId: z.number(),
+  bExchangeId: z.number(),
+  cmcId: z.number(),
+  chainId: z.number(),
+});
+
+export const transferableExchangeSchema = exchangeSelectSchema.pick({
+  id: true,
+  slug: true,
+  baseCurrency: true,
+});
+
+export const listTransferableCoinsInputSchema = z.object({
+  exchangeIds: z.array(z.number()).min(2),
+});
+
+export const transferableCoinsSchema = z.object({
+  exchanges: z.array(transferableExchangeSchema),
+  subscriptions: z.array(transferableSubscriptionSchema),
+  routes: z.array(transferableRouteSchema),
+});
