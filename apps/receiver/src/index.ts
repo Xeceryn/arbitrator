@@ -1,8 +1,7 @@
 import {
-  type NormalizedOrderbookEvent,
   OrderbookQueue,
   Subjects,
-  rawOrderbookSchema,
+  normalizedOrderbookSchema,
 } from "@arbitrator/contracts";
 import { createLogger } from "@arbitrator/logger";
 import { connect } from "@nats-io/transport-node";
@@ -17,29 +16,20 @@ const nc = await connect({
   maxReconnectAttempts: -1,
 });
 
-const encoder = new TextEncoder();
-
-// `main.ts` runs one of these per CPU; sharing the queue group means each raw
+// Workers already normalize; this subscribes to the single normalized stream.
+// `main.ts` runs one of these per CPU under a shared queue group, so each
 // message is handled by exactly one process.
-const subscription = nc.subscribe(Subjects.orderbookRaw("*"), {
-  queue: OrderbookQueue,
-});
-logger.info(
-  `receiver-${process.pid} listening on ${Subjects.orderbookRaw("*")}`,
-);
+const subject = Subjects.orderbookNormalized("*");
+const subscription = nc.subscribe(subject, { queue: OrderbookQueue });
+logger.info(`receiver-${process.pid} listening on ${subject}`);
 
 for await (const message of subscription) {
-  const parsed = rawOrderbookSchema.safeParse(message.json());
+  const parsed = normalizedOrderbookSchema.safeParse(message.json());
   if (!parsed.success) {
-    logger.warn(`dropping malformed raw orderbook: ${parsed.error.message}`);
+    logger.warn(`dropping malformed orderbook: ${parsed.error.message}`);
     continue;
   }
 
-  const { exchange, cmcId, asks, bids } = parsed.data;
-  const normalized: NormalizedOrderbookEvent = { cmcId, asks, bids };
-
-  nc.publish(
-    Subjects.orderbookNormalized(exchange),
-    encoder.encode(JSON.stringify(normalized)),
-  );
+  // The exchange is the last subject token; the payload carries cmcId/asks/bids.
+  // TODO(separate feature): price conversion/lookup + persist to DB.
 }

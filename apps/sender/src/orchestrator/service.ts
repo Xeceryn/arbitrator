@@ -1,5 +1,3 @@
-import { createLogger } from "@arbitrator/logger";
-
 import type { WorkerPool } from "./pool";
 import {
   type DesiredSubscription,
@@ -7,8 +5,6 @@ import {
   reconcile,
 } from "./reconcile";
 import { workerAdapters } from "./registry";
-
-const logger = createLogger("arbitrator/sender/orchestrator");
 
 /** Shape returned by `market.listTransferableCoins`. */
 export type TransferableCoinsResult = {
@@ -32,7 +28,6 @@ export type ListerGateway = {
 export type OrchestratorStatus = {
   started: string[];
   workers: ReturnType<WorkerPool["snapshot"]>;
-  unplaced: DesiredSubscription[];
   supported: string[];
 };
 
@@ -43,7 +38,6 @@ export type OrchestratorStatus = {
  */
 export class Orchestrator {
   private readonly started = new Set<string>();
-  private unplaced: DesiredSubscription[] = [];
   private debounce: ReturnType<typeof setTimeout> | undefined;
   private running = false;
   private pending = false;
@@ -75,7 +69,6 @@ export class Orchestrator {
     return {
       started: [...this.started],
       workers: this.pool.snapshot(),
-      unplaced: this.unplaced,
       supported: Object.keys(workerAdapters),
     };
   }
@@ -160,16 +153,6 @@ export class Orchestrator {
   }
 
   private apply(result: ReconcileResult): void {
-    this.unplaced = result.unplaced;
     this.pool.apply(result.commands);
-
-    if (result.unplaced.length > 0) {
-      const summary = result.unplaced
-        .map((item) => `${item.exchangeSlug}:${item.cmcId}`)
-        .join(", ");
-      logger.warn(
-        `${result.unplaced.length} subscription(s) unplaced (capacity): ${summary}`,
-      );
-    }
   }
 }

@@ -11,7 +11,7 @@ updates must reach the receiver, which runs clustered across CPUs.
 The parent↔worker channel (`postMessage`) carries **control only**: subscribe,
 unsubscribe, shutdown, and worker state/acks. Orderbook updates never travel
 through `postMessage`; workers publish them directly to NATS
-(`orderbook.<exchange>.raw`), and the receiver consumes them.
+(`orderbook.normalized.<exchange>`), and the receiver consumes them.
 
 ## Why
 

@@ -26,19 +26,18 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 - [x] Phase 3: Elysia app, worker registry (binance + gate), worker pool
       (`worker_threads` + `workerData` + postMessage), 6 pool tests.
 - [x] sender subscribes `metadata.changed` → debounced reconcile (T11).
-- [x] receiver normalizer: `orderbook.*.raw` → `orderbook.normalized.<exchange>`
-      under the shared queue group (T12).
+- [x] receiver consumer: subscribes `orderbook.normalized.<exchange>` under the
+      shared queue group (T12).
 - [x] UI: Workers page (`/workers`) with per-exchange start/stop, Eden client in
-      `apps/ui/src/sender.client.ts`, status + worker/coin counts, unplaced
-      warning.
+      `apps/ui/src/sender.client.ts`, status + worker/coin counts.
 
 **Run / verify:**
 
 - sender: `bun run dev` in `apps/sender` → port 3002. Routes:
   `POST /exchanges/:slug/start|stop`, `GET /exchanges`, `GET /workers`.
   `start` returns 501 for an exchange with no adapter.
-- receiver: `bun run dev` in `apps/receiver`; consumes `orderbook.*.raw` and
-  publishes `orderbook.normalized.<exchange>`.
+- receiver: `bun run dev` in `apps/receiver`; consumes
+  `orderbook.normalized.<exchange>` (no republish).
 - ui: `bun run dev` in `apps/ui` → port 3000; open `/workers` for start/stop.
 - new sender code typecheck: `bunx tsc -p apps/sender/tsconfig.app.json --noEmit`
   (legacy debt workers are excluded).
@@ -145,14 +144,12 @@ listTransferableCoins({ exchangeIds: number[] }): Promise<{
 `src/subjects.ts`, `src/events.ts`, `src/orderbook.ts`, `src/worker.ts`,
 `src/domain.ts`, re-exported from `src/index.ts`.
 
-- `Subjects.orderbookRaw(exchange)` → `orderbook.<exchange>.raw`
 - `Subjects.orderbookNormalized(exchange)` → `orderbook.normalized.<exchange>`
 - `Subjects.metadataChanged` → `metadata.changed`
 - `metadataChangedSchema` — `{ version: 1, entity, action, exchangeIds?,
 cryptocurrencyIds?, chainIds?, marketIds?, occurredAt }`
-- `rawOrderbookSchema` — `{ exchange, cmcId, asks, bids, ts }`
 - `normalizedOrderbookSchema` — `{ cmcId, asks, bids }` (exchange lives in the
-  subject)
+  subject; workers normalize, there is no raw tier)
 - `workerCommandSchema` / `workerEventSchema` — parent↔worker `postMessage`
   control protocol
 - `symbolSubscriptionSchema`, `workerStateSchema`, `baseCurrencySchema`
@@ -188,7 +185,8 @@ reconcile(startedExchangeIds):
     toAdd    = desired - current
     toRemove = current - desired
     send unsubscribe(toRemove ∩ worker.symbols)         // postMessage
-    pack toAdd into workers with room, else spawn new chunked workers
+    pack toAdd into workers with room; spawn as many new workers as needed
+    (each capped at maxSubscriptionsPerConnection) to cover every coin
     terminate only workers whose symbol set becomes empty
   terminate exchanges with no desired subs
   if startedExchangeIds.size < 2: terminate everything
@@ -200,8 +198,8 @@ drift-safe (periodic full resync); stable bin-packing. Keep
 `reconcile(desired, currentWorkers, configs) → commands` **pure**; lister and
 worker I/O at the edges.
 
-Capacity overflow: place what fits, surface the rest as unplaced in
-`GET /workers`, retry next reconcile.
+`maxSubscriptionsPerConnection` is the only limit: it decides how many workers
+are opened, never how many coins are streamed. Every desired coin is covered.
 
 ### 4.3 Exchange/worker registry
 
@@ -211,7 +209,6 @@ type WorkerAdapterConfig = {
   modulePath: string; // "src/workers/orderbooks/gate-io.ts"
   baseCurrency: "usdt" | "idr"; // from lister, fallback here
   maxSubscriptionsPerConnection: number;
-  maxConnectionsPerExchange: number;
   supportsDynamicSubscribe: boolean;
 };
 ```
@@ -223,28 +220,28 @@ Scope now: **binance + gate-io only**; rest is debt. Resolves `"gate"` vs
 
 - `node:worker_threads`; args via `workerData` (migrate off `Bun.argv`).
 - Control = `postMessage` (`workerCommandSchema` / `workerEventSchema`).
-- Data = NATS only (`orderbook.<exchange>.raw`); `postMessage` carries state,
-  acks, errors.
+- Data = NATS only (`orderbook.normalized.<exchange>`); `postMessage` carries
+  state, acks, errors.
 - Non-dynamic adapters fall back to terminate+respawn; hidden behind one interface.
 - Lifecycle: in-process threads, killed with the sender. A worker that dies on
   its own is respawned and re-subscribed.
 
 ---
 
-## 5. receiver → orderbook normalizer
+## 5. receiver → orderbook consumer
 
 ```
-sender workers ──raw──> receiver ──normalized──> downstream consumers
-orderbook.<exchange>.raw        orderbook.normalized.<exchange>
+sender workers ──normalized──> receiver ──> price conversion/lookup + DB
+orderbook.normalized.<exchange>
 ```
 
+- Workers already normalize; there is no raw tier and the receiver does **not**
+  republish.
 - Cluster mode: one process per CPU, all in queue group `ORDERBOOK_UPDATE`, so
   each message is handled by exactly one process.
-- Per message: validate → normalize `{ cmcId, asks, bids }` → price
+- Per message: validate against `normalizedOrderbookSchema` → price
   conversion/lookup → persist to DB.
-- Publish normalized with exchange in the subject.
-- Conversion/lookup/DB is a follow-up; this session settles the contract and the
-  normalizer boundary. `ts` is intentionally not in the normalized payload.
+- Conversion/lookup/DB is a follow-up feature.
 
 ---
 
@@ -280,13 +277,16 @@ enable JetStream and add `@nats-io/jetstream`.
 - **Metadata changes:** only acted on while workers are running; edits with no
   workers running reconcile on next start.
 - **Adapter scope:** binance + gate-io only; rest is debt.
-- **Receiver:** raw → normalize → publish; cluster uses the NATS queue group.
-- **Subjects:** raw `orderbook.<exchange>.raw`, normalized
-  `orderbook.normalized.<exchange>`; normalized payload `{ cmcId, asks, bids }`.
+- **Receiver:** consumes the normalized stream and processes it; no republish;
+  cluster uses the NATS queue group.
+- **Subjects:** single `orderbook.normalized.<exchange>`; payload
+  `{ cmcId, asks, bids }`; workers normalize, there is no raw tier.
+- **Capacity:** `maxSubscriptionsPerConnection` is the only limit; the
+  reconciler opens as many connections as needed and never drops a subscription.
 - **Durability:** core NATS, no JetStream/replay for `metadata.changed`; no
   churn of healthy subscriptions.
 - **Lister events:** handler-level publish (no outbox) for now.
-- **Worker registry:** per-exchange config incl. `maxConnectionsPerExchange`;
+- **Worker registry:** per-exchange config (`maxSubscriptionsPerConnection`);
   exchanges with no adapter return "worker not implemented".
 - **Base assets:** all allowed; price conversion is receiver-side, out of scope.
 
@@ -295,7 +295,7 @@ enable JetStream and add `@nats-io/jetstream`.
 ## 9. Prototype note
 
 The reconciler is the risky logic (start A/B/C, stop, metadata change mid-flight,
-capacity overflow). Before/while implementing Phase 2, a **throwaway logic
+connection splitting). Before/while implementing Phase 2, a **throwaway logic
 prototype** (single HTML: start/stop buttons + transferability toggles, rendering
 desired vs current subscriptions and worker topology) can validate the state
 model cheaply. Per the prototype discipline: commit it to a throwaway branch,
@@ -327,10 +327,10 @@ Each task ends on a checkable bound.
 
 - [x] **T5** `reconcile(desired, currentWorkers, configs)` pure module at
       `apps/sender/src/orchestrator/reconcile.ts`. Verified: empty desired → no
-      commands; same desired twice → nothing on the second call; capacity
-      overflow produces additional workers and no dropped symbols.
+      commands; same desired twice → nothing on the second call; overflowing a
+      connection opens more workers and drops no symbol.
 - [x] **T6** tests at `apps/sender/src/orchestrator/reconcile.test.ts` (6 cases:
-      teardown, spawn, idempotent, capacity overflow, metadata drop, stop).
+      teardown, spawn, idempotent, multi-connection split, metadata drop, stop).
 
 ### Phase 3 — sender Elysia + worker pool
 
@@ -340,12 +340,12 @@ Each task ends on a checkable bound.
 - [x] **T9** worker pool + `workerData` + postMessage control + failure-driven
       reconcile; 6 pool tests.
 - [x] **T10** adapted binance + gate-io: `workerData`, dynamic
-      subscribe/unsubscribe, publish raw to NATS.
+      subscribe/unsubscribe, publish normalized orderbook to NATS.
 
 ### Phase 4 — events + receiver
 
 - [x] **T11** sender subscribes `metadata.changed` → debounced reconcile.
-- [x] **T12** receiver: raw → normalize → publish; imports contracts only.
+- [x] **T12** receiver: consume `orderbook.normalized.*`; imports contracts only.
 
 ### Phase 5 — UI
 

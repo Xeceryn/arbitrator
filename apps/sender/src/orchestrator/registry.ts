@@ -17,7 +17,6 @@ export const workerAdapters: Record<string, WorkerAdapter> = {
     workerFile: new URL("../workers/orderbooks/binance.ts", import.meta.url),
     baseCurrency: "usdt",
     maxSubscriptionsPerConnection: 100,
-    maxConnectionsPerExchange: 3,
     supportsDynamicSubscribe: true,
   },
   gate: {
@@ -26,7 +25,6 @@ export const workerAdapters: Record<string, WorkerAdapter> = {
     workerFile: new URL("../workers/orderbooks/gate-io.ts", import.meta.url),
     baseCurrency: "usdt",
     maxSubscriptionsPerConnection: 100,
-    maxConnectionsPerExchange: 3,
     supportsDynamicSubscribe: true,
   },
 };

@@ -1,12 +1,11 @@
 import { parentPort, workerData } from "node:worker_threads";
 
 import {
-  type RawOrderbookEvent,
+  type NormalizedOrderbookEvent,
   type SymbolSubscription,
   Subjects,
   type WorkerCommand,
   type WorkerState,
-  rawOrderbookSchema,
   workerCommandSchema,
 } from "@arbitrator/contracts";
 import { type NatsConnection, connect } from "@nats-io/transport-node";
@@ -70,7 +69,8 @@ export type OrderbookPublisher = {
 };
 
 /**
- * Orderbook data leaves the worker directly over NATS (never postMessage).
+ * Orderbook data leaves the worker directly over NATS (never postMessage). The
+ * worker normalizes exchange-specific payloads; the exchange is the subject.
  * One connection per worker keeps the data plane parallel across threads.
  */
 export async function createOrderbookPublisher(
@@ -84,17 +84,15 @@ export async function createOrderbookPublisher(
     maxReconnectAttempts: -1,
   });
 
-  const subject = Subjects.orderbookRaw(exchange);
+  const subject = Subjects.orderbookNormalized(exchange);
   const encoder = new TextEncoder();
 
   return {
     publish(update) {
-      const event: RawOrderbookEvent = {
-        exchange,
+      const event: NormalizedOrderbookEvent = {
         cmcId: update.cmcId,
         asks: update.asks,
         bids: update.bids,
-        ts: Date.now(),
       };
       nc.publish(subject, encoder.encode(JSON.stringify(event)));
     },
@@ -103,5 +101,3 @@ export async function createOrderbookPublisher(
     },
   };
 }
-
-export { rawOrderbookSchema };

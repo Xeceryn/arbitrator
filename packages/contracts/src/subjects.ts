@@ -2,9 +2,10 @@
  * NATS subjects. Never write a literal subject in a service; import from here.
  */
 export const Subjects = {
-  /** Raw orderbook emitted by a sender worker. */
-  orderbookRaw: (exchange: string) => `orderbook.${exchange}.raw`,
-  /** Normalized orderbook emitted by the receiver for downstream consumers. */
+  /**
+   * Normalized orderbook published by sender workers and consumed by the
+   * receiver. The exchange is the last token.
+   */
   orderbookNormalized: (exchange: string) => `orderbook.normalized.${exchange}`,
   /** Coarse metadata-change notification emitted by lister. */
   metadataChanged: "metadata.changed",

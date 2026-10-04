@@ -1,12 +1,11 @@
 import type { SymbolSubscription } from "@arbitrator/contracts";
 
-/** Per-exchange worker configuration. One exchange may need several workers. */
+/** Per-exchange worker configuration. */
 export type WorkerAdapterConfig = {
   slug: string;
   modulePath: string;
   baseCurrency: "usdt" | "idr";
   maxSubscriptionsPerConnection: number;
-  maxConnectionsPerExchange: number;
   supportsDynamicSubscribe: boolean;
 };
 
@@ -55,8 +54,6 @@ export type ReconcileInput = {
 
 export type ReconcileResult = {
   commands: ReconcileCommand[];
-  /** Coins that could not be placed within the connection cap. */
-  unplaced: DesiredSubscription[];
   /** Projected worker topology after the commands are applied. */
   nextWorkers: WorkerSnapshot[];
 };
@@ -69,7 +66,6 @@ export type ReconcileResult = {
 export function reconcile(input: ReconcileInput): ReconcileResult {
   const { startedExchanges, desired, currentWorkers, configs } = input;
   const commands: ReconcileCommand[] = [];
-  const unplaced: DesiredSubscription[] = [];
   const nextWorkers: WorkerSnapshot[] = [];
 
   // Fewer than two started exchanges means nothing is arbitrageable.
@@ -121,13 +117,6 @@ export function reconcile(input: ReconcileInput): ReconcileResult {
       for (const worker of workers) {
         commands.push({ type: "terminate", workerId: worker.id, exchangeSlug });
       }
-      // Unconfigured but started: report the coins it cannot serve.
-      if (active.has(exchangeSlug) && !config) {
-        for (const [cmcId, symbol] of wantedByExchange.get(exchangeSlug) ??
-          []) {
-          unplaced.push({ exchangeSlug, cmcId, symbol });
-        }
-      }
       continue;
     }
 
@@ -172,13 +161,9 @@ export function reconcile(input: ReconcileInput): ReconcileResult {
       }
     }
 
-    // 3. Spawn additional workers for the remainder, up to the connection cap.
-    let connections = workers.length;
+    // 3. Spawn as many workers as needed to cover every remaining coin.
     let index = 0;
-    while (
-      index < pending.length &&
-      connections < config.maxConnectionsPerExchange
-    ) {
+    while (index < pending.length) {
       const chunk = pending.slice(
         index,
         index + config.maxSubscriptionsPerConnection,
@@ -192,12 +177,7 @@ export function reconcile(input: ReconcileInput): ReconcileResult {
         symbols: chunk,
       });
       workers.push({ id, exchangeSlug, symbols: [...chunk] });
-      connections += 1;
       index += chunk.length;
-    }
-    for (; index < pending.length; index += 1) {
-      const symbol = pending[index]!;
-      unplaced.push({ exchangeSlug, ...symbol });
     }
 
     // 4. Terminate workers left with nothing to stream.
@@ -210,5 +190,5 @@ export function reconcile(input: ReconcileInput): ReconcileResult {
     }
   }
 
-  return { commands, unplaced, nextWorkers };
+  return { commands, nextWorkers };
 }

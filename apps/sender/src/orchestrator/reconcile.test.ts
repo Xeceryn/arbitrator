@@ -12,7 +12,6 @@ const binance: WorkerAdapterConfig = {
   modulePath: "src/workers/orderbooks/binance.ts",
   baseCurrency: "usdt",
   maxSubscriptionsPerConnection: 2,
-  maxConnectionsPerExchange: 1,
   supportsDynamicSubscribe: true,
 };
 
@@ -49,7 +48,6 @@ describe("reconcile", () => {
       { type: "terminate", workerId: "binance:0", exchangeSlug: "binance" },
     ]);
     expect(result.nextWorkers).toEqual([]);
-    expect(result.unplaced).toEqual([]);
   });
 
   test("spawns one worker per exchange for two started exchanges", () => {
@@ -64,7 +62,6 @@ describe("reconcile", () => {
 
     const spawns = result.commands.filter((c) => c.type === "spawn");
     expect(spawns).toHaveLength(2);
-    expect(result.unplaced).toEqual([]);
     expect(result.nextWorkers).toHaveLength(2);
   });
 
@@ -85,11 +82,10 @@ describe("reconcile", () => {
     });
 
     expect(second.commands).toEqual([]);
-    expect(second.unplaced).toEqual([]);
     expect(second.nextWorkers).toEqual(first.nextWorkers);
   });
 
-  test("surfaces coins beyond the connection cap as unplaced", () => {
+  test("spawns additional workers to cover every coin", () => {
     const result = reconcile({
       startedExchanges: ["binance", "gate"],
       desired: [...coins("binance", [1, 2, 3]), ...coins("gate", [1])],
@@ -97,10 +93,14 @@ describe("reconcile", () => {
       configs,
     });
 
-    expect(result.commands.filter((c) => c.type === "spawn")).toHaveLength(2);
-    expect(result.unplaced).toEqual([
-      { exchangeSlug: "binance", cmcId: 3, symbol: "COIN3" },
-    ]);
+    // binance: 3 coins at 2 per connection -> 2 workers; gate: 1 worker.
+    expect(result.commands.filter((c) => c.type === "spawn")).toHaveLength(3);
+
+    const binanceCoins = result.nextWorkers
+      .filter((worker) => worker.exchangeSlug === "binance")
+      .flatMap((worker) => worker.symbols.map((symbol) => symbol.cmcId))
+      .sort((a, b) => a - b);
+    expect(binanceCoins).toEqual([1, 2, 3]);
   });
 
   test("unsubscribes a coin when metadata drops it", () => {

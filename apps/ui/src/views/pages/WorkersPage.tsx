@@ -12,16 +12,9 @@ type WorkerSnapshot = {
   symbols: SymbolSubscription[];
 };
 
-type UnplacedSubscription = {
-  exchangeSlug: string;
-  cmcId: number;
-  symbol: string;
-};
-
 type SenderStatus = {
   started: string[];
   workers: WorkerSnapshot[];
-  unplaced: UnplacedSubscription[];
   supported: string[];
 };
 
@@ -92,6 +85,10 @@ export const WorkersResults = async () => {
   const { status } = statusResult;
   const startedSet = new Set(status.started);
   const supportedSet = new Set(status.supported);
+  const totalSymbols = status.workers.reduce(
+    (total, worker) => total + worker.symbols.length,
+    0,
+  );
 
   const workerCount = (slug: string) =>
     status.workers.filter((worker) => worker.exchangeSlug === slug).length;
@@ -112,19 +109,10 @@ export const WorkersResults = async () => {
           <div class="stat-value tabular-nums">{status.workers.length}</div>
         </div>
         <div class="stat">
-          <div class="stat-title">Unplaced coins</div>
-          <div class="stat-value tabular-nums">{status.unplaced.length}</div>
+          <div class="stat-title">Streaming coins</div>
+          <div class="stat-value tabular-nums">{totalSymbols}</div>
         </div>
       </div>
-
-      {status.unplaced.length > 0 ? (
-        <div class="alert alert-warning" role="alert">
-          <span>
-            {status.unplaced.length} coin(s) exceeded a connection limit and are
-            not streaming.
-          </span>
-        </div>
-      ) : null}
 
       {status.started.length === 1 ? (
         <div class="alert" role="status">
