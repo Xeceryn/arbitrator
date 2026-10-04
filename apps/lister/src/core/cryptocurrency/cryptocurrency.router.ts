@@ -1,6 +1,7 @@
 import { ORPCError, os } from "@orpc/server";
 import z from "zod";
 
+import { publishMetadataChanged } from "../../events";
 import { Cryptocurrency } from "./cryptocurrency";
 import {
   cryptocurrencyInsertSchema,
@@ -27,6 +28,12 @@ export const cryptocurrencyRouter = {
           message: "something wrong when adding cryptocurrency",
         });
       }
+
+      void publishMetadataChanged({
+        entity: "cryptocurrency",
+        action: "created",
+        cryptocurrencyIds: [result.id],
+      });
 
       return result;
     }),
@@ -92,6 +99,12 @@ export const cryptocurrencyRouter = {
         });
       }
 
+      void publishMetadataChanged({
+        entity: "cryptocurrency",
+        action: "updated",
+        cryptocurrencyIds: [result.id],
+      });
+
       return result;
     }),
 
@@ -105,6 +118,12 @@ export const cryptocurrencyRouter = {
           message: "cryptocurrency not found",
         });
       }
+
+      void publishMetadataChanged({
+        entity: "cryptocurrency",
+        action: "deleted",
+        cryptocurrencyIds: [result.id],
+      });
 
       return result;
     }),

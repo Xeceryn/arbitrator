@@ -8,6 +8,7 @@
     "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
+    "@arbitrator/contracts": "workspace:*",
     "@arbitrator/logger": "workspace:*",
     "@bufbuild/buf": "^1.72.0",
     "@bufbuild/protobuf": "^2.13.0",

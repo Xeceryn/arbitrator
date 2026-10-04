@@ -14,21 +14,21 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 
 ## Status & handoff (read this first)
 
-**Current stage:** Phase 0–1 started.
+**Current stage:** Phase 0–2 done; Phase 3 next.
 
 - [x] `packages/contracts` filled (subjects, metadata event, raw/normalized
       orderbook, worker control protocol, domain value objects).
 - [x] lister `market.listTransferableCoins` (directed, `tradeEnabled` both sides).
-- [x] lister `events/` NATS publisher, wired into `market` and `chain_link`
-      mutations.
-- [ ] lister events wired into `exchange`, `cryptocurrency`, `chain` mutations.
-- [ ] Everything from Phase 2 down (see §10).
+- [x] lister `events/` NATS publisher, wired into every mutation router
+      (`market`, `chain_link`, `exchange`, `cryptocurrency`, `chain`).
+      `utility.clearDatabase` is dev-only and intentionally left out.
+- [x] pure `reconcile` module + 6 tests (`apps/sender/src/orchestrator/`).
+- [ ] Phase 3 (Elysia orchestrator + worker pool).
 
 **Only open question:** receiver delivery guarantee — core NATS queue group vs
-JetStream ack/redelivery. See §7. This does not block Phases 2–3.
+JetStream ack/redelivery. See §7. This does not block Phase 3.
 
-**Next action:** implement the pure reconciler (Phase 2 / task T4), or wire the
-remaining lister mutations (T3) — T4 is the risky one and should come first.
+**Next action:** Phase 3, task T7 (Elysia app + start/stop/inspect routes).
 
 **How to resume with a fresh context:** read this doc top to bottom once, then
 work the checklist in §10 in order. The design rationale lives in §1–§5; the
@@ -293,10 +293,9 @@ Each task ends on a checkable bound.
       no service imports another service's internal paths across the boundary.
 - [x] **T2** lister `events/` publisher exists; `publishMetadataChanged` validates
       before send and never throws.
-- [ ] **T3** events wired into every mutation that can change transferability:
-      `market.*`, `chain_link.*` (done), `exchange.*`, `cryptocurrency.*`,
-      `chain.*` (pending). Done when grepping the routers shows a publish call on
-      every create/update/delete handler.
+- [x] **T3** events wired into every mutation that can change transferability:
+      `market.*`, `chain_link.*`, `exchange.*`, `cryptocurrency.*`, `chain.*`.
+      `utility.clearDatabase` is dev-only, intentionally excluded.
 
 ### Phase 1 — lister read-model
 
@@ -306,12 +305,12 @@ Each task ends on a checkable bound.
 
 ### Phase 2 — pure reconciler
 
-- [ ] **T5** `reconcile(desired, currentWorkers, configs)` pure module.
-      Done when: empty desired → no commands; identical desired twice → second
-      call emits nothing; capacity overflow produces additional workers and no
-      dropped symbols.
-- [ ] **T6** tests or CLI harness covering start A, start B, start C, stop A,
-      metadata change.
+- [x] **T5** `reconcile(desired, currentWorkers, configs)` pure module at
+      `apps/sender/src/orchestrator/reconcile.ts`. Verified: empty desired → no
+      commands; same desired twice → nothing on the second call; capacity
+      overflow produces additional workers and no dropped symbols.
+- [x] **T6** tests at `apps/sender/src/orchestrator/reconcile.test.ts` (6 cases:
+      teardown, spawn, idempotent, capacity overflow, metadata drop, stop).
 
 ### Phase 3 — sender Elysia + worker pool
 

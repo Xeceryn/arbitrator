@@ -1,6 +1,7 @@
 import { ORPCError, os } from "@orpc/server";
 import { z } from "zod";
 
+import { publishMetadataChanged } from "../../events";
 import { Market } from "../market/market";
 import { exchangeWithCryptocurrenciesSchema } from "../market/market.schema";
 import { Exchange } from "./exchange";
@@ -28,6 +29,13 @@ export const exchangeRouter = {
           message: "something wrong when adding exchange",
         });
       }
+
+      void publishMetadataChanged({
+        entity: "exchange",
+        action: "created",
+        exchangeIds: [result.id],
+      });
+
       return result;
     }),
 
@@ -108,6 +116,13 @@ export const exchangeRouter = {
           message: "exchange not found",
         });
       }
+
+      void publishMetadataChanged({
+        entity: "exchange",
+        action: "updated",
+        exchangeIds: [data.id],
+      });
+
       return data;
     }),
 
@@ -119,6 +134,12 @@ export const exchangeRouter = {
       if (!result) {
         throw new ORPCError("NOT_FOUND");
       }
+
+      void publishMetadataChanged({
+        entity: "exchange",
+        action: "deleted",
+        exchangeIds: [result.id],
+      });
 
       return result;
     }),

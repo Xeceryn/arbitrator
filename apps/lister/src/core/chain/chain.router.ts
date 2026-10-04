@@ -1,6 +1,7 @@
 import { ORPCError, os } from "@orpc/server";
 import z from "zod";
 
+import { publishMetadataChanged } from "../../events";
 import { Chain } from "./chain";
 import {
   chainInsertSchema,
@@ -26,6 +27,12 @@ export const chainRouter = {
           message: "something wrong when adding chain",
         });
       }
+
+      void publishMetadataChanged({
+        entity: "chain",
+        action: "created",
+        chainIds: [result.id],
+      });
 
       return result;
     }),
@@ -83,6 +90,12 @@ export const chainRouter = {
         });
       }
 
+      void publishMetadataChanged({
+        entity: "chain",
+        action: "updated",
+        chainIds: [result.id],
+      });
+
       return result;
     }),
 
@@ -96,6 +109,12 @@ export const chainRouter = {
           message: "chain not found",
         });
       }
+
+      void publishMetadataChanged({
+        entity: "chain",
+        action: "deleted",
+        chainIds: [result.id],
+      });
 
       return result;
     }),
