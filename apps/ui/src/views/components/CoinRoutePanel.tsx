@@ -25,15 +25,15 @@ const ExchangeLabel = ({
 }: {
   endpoint: CryptocurrencyRouteEndpoint;
 }) => (
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-1.5">
     <div class="avatar">
-      <div class="mask mask-circle size-6">
+      <div class="mask mask-circle size-5">
         <img src={endpoint.exchange.logo} alt="" loading="lazy" />
       </div>
     </div>
     <div class="flex min-w-0 items-center gap-1">
       <span
-        class="max-w-24 truncate text-xs font-medium"
+        class="max-w-20 truncate text-xs font-medium"
         title={endpoint.exchange.name}
         safe
       >
@@ -85,6 +85,30 @@ const RouteCell = ({ chains, from, to }: CellProps) => {
   );
 };
 
+/** Shown when a matrix cannot say anything useful (< 2 exchanges). */
+const PanelNotice = ({
+  exchanges,
+}: {
+  exchanges: CryptocurrencyRouteEndpoint[];
+}) =>
+  exchanges.length === 0 ? (
+    <div class="rounded-box bg-base-200 p-8 text-center">
+      <p class="font-medium">No exchanges assigned</p>
+      <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
+        Assign this coin to exchanges and link chains before transfer routes can
+        be shown.
+      </p>
+    </div>
+  ) : (
+    <div class="rounded-box bg-base-200 p-8 text-center">
+      <p class="font-medium">Only one exchange assigned</p>
+      <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
+        A transfer route needs two exchanges. Assign this coin to another
+        exchange to compare routes.
+      </p>
+    </div>
+  );
+
 type PanelProps = {
   data: CryptocurrencyRoutes;
 };
@@ -93,16 +117,8 @@ type PanelProps = {
 export const CoinRoutePanel = ({ data }: PanelProps) => {
   const { exchanges, routes } = data;
 
-  if (exchanges.length === 0) {
-    return (
-      <div class="rounded-box bg-base-200 p-6 text-center">
-        <p class="font-medium">No exchanges assigned</p>
-        <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
-          Assign this coin to exchanges and link chains before transfer routes
-          can be shown.
-        </p>
-      </div>
-    );
+  if (exchanges.length < 2) {
+    return <PanelNotice exchanges={exchanges} />;
   }
 
   // from marketId -> to marketId -> the chains that connect them.
@@ -114,12 +130,14 @@ export const CoinRoutePanel = ({ data }: PanelProps) => {
       byFrom.set(route.from.marketId, row);
     }
     const chains = row.get(route.to.marketId) ?? [];
-    chains.push(route.chain.name);
+    if (!chains.includes(route.chain.name)) {
+      chains.push(route.chain.name);
+    }
     row.set(route.to.marketId, chains);
   }
 
   return (
-    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-3">
       <p class="text-sm opacity-60">
         Rows withdraw, columns deposit.{" "}
         <span class="tabular-nums" safe>
@@ -132,11 +150,13 @@ export const CoinRoutePanel = ({ data }: PanelProps) => {
         exchanges.
       </p>
 
-      <div class="overflow-x-auto">
-        <table class="table table-sm table-pin-rows table-pin-cols">
+      {/* Single scroll container so the sticky header and first column pin
+          against the same axis, however many exchanges there are. */}
+      <div class="max-h-[65vh] overflow-auto rounded-box border border-base-300">
+        <table class="table table-sm table-pin-rows [&_td]:px-1.5 [&_th]:px-1.5 [&_thead]:z-30">
           <thead>
             <tr>
-              <th class="bg-base-100">
+              <th class="sticky left-0 z-20 border-r border-base-300 bg-base-100">
                 <CornerLabel />
               </th>
               {exchanges.map((to) => (
@@ -148,8 +168,11 @@ export const CoinRoutePanel = ({ data }: PanelProps) => {
           </thead>
           <tbody>
             {exchanges.map((from) => (
-              <tr>
-                <th scope="row" class="bg-base-100">
+              <tr class="hover:bg-base-200/60">
+                <th
+                  scope="row"
+                  class="sticky left-0 z-10 border-r border-base-300 bg-base-100"
+                >
                   <ExchangeLabel endpoint={from} />
                 </th>
                 {exchanges.map((to) =>
@@ -198,7 +221,7 @@ export const CoinRouteHeader = ({ coin, oob }: HeaderProps) => (
       </div>
     </div>
     <div class="min-w-0 flex-1">
-      <h2 class="truncate text-lg font-semibold" safe>
+      <h2 id="coin-route-title" class="truncate text-lg font-semibold" safe>
         {coin.name}
       </h2>
       <p class="truncate text-sm opacity-60" safe>

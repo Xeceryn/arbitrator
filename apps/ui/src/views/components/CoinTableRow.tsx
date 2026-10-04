@@ -76,7 +76,7 @@ export const CoinTableRow = (props: CryptocurrencySelect) => {
             hx-get={`/coins/${props.id}/routes`}
             hx-target="#coin-route-modal-content"
             hx-swap="innerHTML"
-            hx-indicator="#coin-route-indicator"
+            hx-indicator="#coin-route-indicator, #coin-route-loading"
             onclick="coin_route_modal.showModal()"
           >
             <RouteIcon />
