@@ -31,7 +31,7 @@ export const BaseLayout = async ({
 
           <script src="/public/js/htmx.min.js"></script>
           <script src="/public/js/hyperscript.min.js"></script>
-          <script src="/public/js/lucide.js"></script>
+					{ /*<script src="/public/js/lucide.js"></script> */ }
           <script src="/public/js/theme-change.js"></script>
 
           <script src="/public/dist/scripts.js"></script>

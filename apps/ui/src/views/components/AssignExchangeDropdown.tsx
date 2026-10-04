@@ -78,7 +78,6 @@ export const AssignExchangeDropdown = ({ coinId }: { coinId: number }) => (
     hx-target="#available-exchanges"
     hx-swap="innerHTML"
     hx-trigger="load, submit, input changed delay:300ms"
-    hx-indicator="#available-exchanges-indicator"
   >
     <label class="input input-bordered w-full">
       <span class="sr-only">Search exchanges</span>
@@ -91,10 +90,6 @@ export const AssignExchangeDropdown = ({ coinId }: { coinId: number }) => (
         autocomplete="off"
       />
     </label>
-    <span
-      id="available-exchanges-indicator"
-      class="htmx-indicator loading loading-spinner loading-sm"
-    ></span>
     <div id="available-exchanges"></div>
   </form>
 );

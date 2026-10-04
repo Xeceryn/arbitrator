@@ -106,7 +106,7 @@ export const CryptocurrencyController = new Elysia()
         id: params.id,
         payload: body,
       });
-      if (error !== null || !data) {
+      if (error !== null) {
         hx.reswap("none");
         hx.triggerEvent({
           "make-toast": {

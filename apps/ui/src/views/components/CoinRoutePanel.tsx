@@ -22,10 +22,12 @@ const TradeDot = ({ tradeEnabled }: { tradeEnabled: boolean }) => (
 
 const ExchangeLabel = ({
   endpoint,
+  center = false,
 }: {
   endpoint: CryptocurrencyRouteEndpoint;
+  center?: boolean;
 }) => (
-  <div class="flex items-center gap-1.5">
+  <div class={`flex items-center gap-1.5 ${center ? "justify-center" : ""}`}>
     <div class="avatar">
       <div class="mask mask-circle size-5">
         <img src={endpoint.exchange.logo} alt="" loading="lazy" />
@@ -160,8 +162,8 @@ export const CoinRoutePanel = ({ data }: PanelProps) => {
                 <CornerLabel />
               </th>
               {exchanges.map((to) => (
-                <th class="bg-base-100">
-                  <ExchangeLabel endpoint={to} />
+                <th class="bg-base-100 text-center">
+                  <ExchangeLabel endpoint={to} center />
                 </th>
               ))}
             </tr>
