@@ -20,7 +20,7 @@ type AvailableProps = {
 export const AvailableChains = ({ coinId, marketId, data }: AvailableProps) => (
   <div class="mt-1">
     {data.data.length === 0 ? (
-      <p class="px-2 py-2 text-sm opacity-60">No chains found.</p>
+      <p class="px-2 py-2 text-sm opacity-60">All chains assigned!</p>
     ) : (
       <ul class="menu w-full rounded-field border border-base-300 bg-base-100 p-1 shadow-sm">
         {data.data.map((chain) => (

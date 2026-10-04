@@ -8,6 +8,7 @@ import {
   cryptocurrencyUpdateSchema,
   listCryptocurrencySelectSchema,
   paginatedCryptocurrencySelectSchema,
+  cryptocurrencyRoutesSchema,
 } from "./cryptocurrency.schema";
 
 export const cryptocurrencyRouter = {
@@ -36,6 +37,14 @@ export const cryptocurrencyRouter = {
     .handler(async ({ input }) => {
       const result = await Cryptocurrency.list(input);
       return result;
+    }),
+
+  /** Transfer routes between the coin's exchanges, as a matrix read-model. */
+  routes: os
+    .input(z.coerce.number())
+    .output(cryptocurrencyRoutesSchema)
+    .handler(async ({ input }) => {
+      return await Cryptocurrency.listRoutes(input);
     }),
 
   findById: os

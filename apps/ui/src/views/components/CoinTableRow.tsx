@@ -1,7 +1,7 @@
 import type { CryptocurrencySelect } from "@arbitrator/lister/types";
 
 import { timeAgo } from "../../utils";
-import { LinkIcon, PencilIcon, TrashIcon } from "./icons";
+import { LinkIcon, PencilIcon, RouteIcon, TrashIcon } from "./icons";
 
 export const CoinTableRow = (props: CryptocurrencySelect) => {
   // const logoUrl = `https://s2.coinmarketcap.com/static/img/coins/64x64/${props.cmcId}.png`;
@@ -67,6 +67,19 @@ export const CoinTableRow = (props: CryptocurrencySelect) => {
             onclick="coin_assignment_dialog.showModal()"
           >
             <LinkIcon />
+          </button>
+          <button
+            type="button"
+            class="btn btn-square btn-outline btn-xs sm:btn-sm"
+            aria-label={`View transfer routes for ${props.name}`}
+            title={`View transfer routes for ${props.name}`}
+            hx-get={`/coins/${props.id}/routes`}
+            hx-target="#coin-route-modal-content"
+            hx-swap="innerHTML"
+            hx-indicator="#coin-route-indicator"
+            onclick="coin_route_modal.showModal()"
+          >
+            <RouteIcon />
           </button>
           <button
             type="button"

@@ -11,6 +11,10 @@ import {
 } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
 import { createPushURL } from "../utils";
+import {
+  CoinRouteHeader,
+  CoinRoutePanel,
+} from "../views/components/CoinRoutePanel";
 import { CoinTableRow } from "../views/components/CoinTableRow";
 import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
 import { PageHeading } from "../views/components/PageHeading";
@@ -120,6 +124,50 @@ export const CryptocurrencyController = new Elysia()
         id: z.coerce.number(),
       }),
       body: cryptocurrencyUpdateSchema,
+    },
+  )
+
+  .get(
+    "/coins/:id/routes",
+    async ({ params, hx }) => {
+      if (!hx.isHTMX) {
+        return redirect("/coins");
+      }
+
+      const [coinError, coin] = await listerClient.cryptocurrency.findById(
+        params.id,
+      );
+      if (coinError || !coin) {
+        hx.triggerEvent({
+          "make-toast": { level: "error", message: "coin not found" },
+        });
+        return status("No Content");
+      }
+
+      const [routesError, routeData] = await listerClient.cryptocurrency.routes(
+        params.id,
+      );
+      if (routesError || !routeData) {
+        hx.triggerEvent({
+          "make-toast": {
+            level: "error",
+            message: "failed to load transfer routes",
+          },
+        });
+        return status("No Content");
+      }
+
+      return (
+        <>
+          <CoinRoutePanel data={routeData} />
+          <CoinRouteHeader coin={coin} oob />
+        </>
+      );
+    },
+    {
+      params: z.object({
+        id: z.coerce.number(),
+      }),
     },
   )
 

@@ -6,6 +6,7 @@ import { capitalizeFirstLetter } from "../../utils";
 import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
 import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
+import { CryptocurrencyRouteModal } from "../components/CryptocurrencyRouteModal";
 import { PlusIcon, SearchIcon } from "../components/icons";
 import { PageButton } from "../components/PageButton";
 import { SortableHeader } from "../components/SortableHeader";
@@ -311,6 +312,7 @@ export const CoinPage = async (props: ListCryptocurrencyInput) => (
   <div class="flex flex-col gap-6">
     <AddCoinModal />
     <CryptocurrencyEditModal />
+    <CryptocurrencyRouteModal />
     <CoinList {...props} />
   </div>
 );

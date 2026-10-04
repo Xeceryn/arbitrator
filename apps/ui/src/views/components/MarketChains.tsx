@@ -94,7 +94,7 @@ export const MarketChains = ({ coinId, marketId, links }: Props) => (
     </section>
 
     <section class="rounded-box bg-base-300/40 p-4">
-      <h4 class="mb-3 text-xs font-semibold tracking-wide uppercase opacity-60">
+      <h4 class="text-xs font-semibold tracking-wide uppercase opacity-60">
         Assigned chains
       </h4>
       {links.length === 0 ? (
