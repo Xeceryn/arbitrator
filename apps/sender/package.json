@@ -2,7 +2,6 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@arbitrator/sender",
   "exports": {
-    "types": "./src/types/index.ts",
     "app": "./src/app.ts"
   },
   "scripts": {

@@ -21,13 +21,14 @@ const exchange = "mexc";
 const threadId = exchange + "-orderbook-" + processId;
 const logger = createLogger(threadId);
 
+import { createLogger } from "@arbitrator/logger";
+
 // import WebSocket from "ws";
 import {
   WorkerMessageType,
   WorkerState,
   type OrderbookWorkerMessage,
 } from "../../types";
-import { createLogger } from "../../utils/logger";
 
 const SymbolStore = new Map<string, number>();
 

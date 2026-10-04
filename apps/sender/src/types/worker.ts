@@ -1,24 +1,10 @@
-import type { SymbolInfo } from "./metadata";
+export { WorkerState } from "@arbitrator/contracts";
 
+/**
+ * Legacy message kinds still referenced by the un-migrated exchange workers.
+ * Migrated workers use the discriminated unions in `@arbitrator/contracts`.
+ */
 export const WorkerMessageType = {
   StateChange: "state-change",
   Data: "data",
 } as const;
-
-export const WorkerState = {
-  Connected: "connected",
-  Closed: "closed",
-  Reconnecting: "reconnecting",
-  Reconnected: "reconnected",
-  Disconnected: "disconnected",
-  Error: "error",
-} as const;
-
-export type WorkerState = (typeof WorkerState)[keyof typeof WorkerState];
-
-export type WorkerMessage = {
-  threadId: string;
-  exchange: string;
-  state: WorkerState;
-  subscriptions: Array<SymbolInfo>;
-};
