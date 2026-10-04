@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.base.json",
+  "include": [
+    "src/app.ts",
+    "src/index.ts",
+    "src/orchestrator/**/*.ts",
+    "src/workers/protocol.ts",
+    "src/workers/orderbooks/binance.ts",
+    "src/workers/orderbooks/gate-io.ts"
+  ]
+}

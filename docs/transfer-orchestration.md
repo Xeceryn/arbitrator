@@ -14,7 +14,7 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 
 ## Status & handoff (read this first)
 
-**Current stage:** Phase 0–2 done; Phase 3 next.
+**Current stage:** Phase 0–3 done; Phase 4 (receiver) next.
 
 - [x] `packages/contracts` filled (subjects, metadata event, raw/normalized
       orderbook, worker control protocol, domain value objects).
@@ -23,12 +23,25 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
       (`market`, `chain_link`, `exchange`, `cryptocurrency`, `chain`).
       `utility.clearDatabase` is dev-only and intentionally left out.
 - [x] pure `reconcile` module + 6 tests (`apps/sender/src/orchestrator/`).
-- [ ] Phase 3 (Elysia orchestrator + worker pool).
+- [x] Phase 3: Elysia app, worker registry (binance + gate), worker pool
+      (`worker_threads` + `workerData` + postMessage), 6 pool tests.
+- [x] sender subscribes `metadata.changed` → debounced reconcile (T11).
+- [ ] Phase 4: receiver normalizer (T12).
+- [ ] Phase 5: UI start/stop via Eden (T13).
+
+**Run / verify:**
+
+- sender: `bun run dev` in `apps/sender` → port 3002. Routes:
+  `POST /exchanges/:slug/start|stop`, `GET /exchanges`, `GET /workers`.
+  `start` returns 501 for an exchange with no adapter.
+- new sender code typecheck: `bunx tsc -p apps/sender/tsconfig.app.json --noEmit`
+  (legacy debt workers are excluded).
+- tests: `bun test apps/sender/src/orchestrator`.
 
 **Only open question:** receiver delivery guarantee — core NATS queue group vs
-JetStream ack/redelivery. See §7. This does not block Phase 3.
+JetStream ack/redelivery. See §7.
 
-**Next action:** Phase 3, task T7 (Elysia app + start/stop/inspect routes).
+**Next action:** Phase 4, task T12 (receiver raw → normalize → publish).
 
 **How to resume with a fresh context:** read this doc top to bottom once, then
 work the checklist in §10 in order. The design rationale lives in §1–§5; the
@@ -314,15 +327,17 @@ Each task ends on a checkable bound.
 
 ### Phase 3 — sender Elysia + worker pool
 
-- [ ] **T7** Elysia app + `derive` + start/stop/inspect routes + Eden type export.
-- [ ] **T8** registry; `start` returns 501 for unimplemented exchanges.
-- [ ] **T9** worker pool + `workerData` + postMessage control protocol.
-- [ ] **T10** adapt binance + gate-io: `workerData`, dynamic subscribe/unsubscribe,
-      publish raw to NATS.
+- [x] **T7** Elysia app (`.decorate` over the singleton orchestrator) +
+      start/stop/inspect routes + `App` type export (`src/app.ts`).
+- [x] **T8** registry; `start` returns 501 for unimplemented exchanges.
+- [x] **T9** worker pool + `workerData` + postMessage control + failure-driven
+      reconcile; 6 pool tests.
+- [x] **T10** adapted binance + gate-io: `workerData`, dynamic
+      subscribe/unsubscribe, publish raw to NATS.
 
 ### Phase 4 — events + receiver
 
-- [ ] **T11** sender subscribes `metadata.changed` → debounced reconcile.
+- [x] **T11** sender subscribes `metadata.changed` → debounced reconcile.
 - [ ] **T12** receiver: raw → normalize → publish; imports contracts only.
 
 ### Phase 5 — UI

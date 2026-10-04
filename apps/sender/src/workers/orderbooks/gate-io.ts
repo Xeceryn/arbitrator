@@ -1,25 +1,19 @@
-declare let self: Worker;
-import { threadId as processId } from "worker_threads";
-
-// NOTE: for debugging purposes when not running as a worker
-// const self = {
-//   postMessage(...args: any[]) {
-//     console.log(args);
-//   },
-// };
+import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
 import { DefaultLogger, WebsocketClient } from "gateio-api";
 
 import {
-  WorkerMessageType,
-  WorkerState,
-  type OrderbookWorkerMessage,
-} from "../../types";
+  bootstrap,
+  createOrderbookPublisher,
+  onCommand,
+  postError,
+  postState,
+  postSubscribed,
+  postUnsubscribed,
+} from "../protocol";
 
-const SymbolStore = new Map<string, number>();
+const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
-const exchange = "gate-io";
-const threadId = exchange + "-orderbook-" + processId;
-
+const publisher = await createOrderbookPublisher(exchange);
 const socketClient = new WebsocketClient(
   {},
   {
@@ -30,111 +24,90 @@ const socketClient = new WebsocketClient(
   },
 );
 
+/** gate pair (e.g. `BTC_USDT`) -> cmcId. */
+const PairStore = new Map<string, number>();
+
+const toLevel = (row: [string, string]): [number, number] => [
+  Number(row[0]),
+  Number(row[1]),
+];
+
+const pairForSymbol = (symbol: string) => `${symbol.toUpperCase()}_USDT`;
+
+const requestForPair = (pair: string) => ({
+  topic: "spot.order_book",
+  payload: [pair, "50", "1000ms"],
+});
+
+function subscribe(symbols: SymbolSubscription[]): void {
+  const requests = symbols.map((item) => {
+    const pair = pairForSymbol(item.symbol);
+    PairStore.set(pair, item.cmcId);
+    return requestForPair(pair);
+  });
+
+  if (requests.length > 0) {
+    socketClient.subscribe(requests, "spotV4");
+  }
+  if (symbols.length > 0) {
+    postSubscribed(symbols.map((item) => item.cmcId));
+  }
+}
+
+function unsubscribe(symbols: SymbolSubscription[]): void {
+  const requests = symbols.map((item) => {
+    const pair = pairForSymbol(item.symbol);
+    PairStore.delete(pair);
+    return requestForPair(pair);
+  });
+
+  if (requests.length > 0) {
+    socketClient.unsubscribe(requests, "spotV4");
+  }
+  postUnsubscribed(symbols.map((item) => item.cmcId));
+}
+
 socketClient.on("open", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
-    threadId,
-    exchange,
-    content: {
-      state: WorkerState.Connected,
-    },
-  };
-  self.postMessage(message);
+  postState(threadId, exchange, WorkerState.Connected);
 });
 
 socketClient.on("update", (message) => {
-  if ("event" in message) {
-    const { event, result } = message;
-    if (event === "update") {
-      const asks = result.asks.map(([price, volume]: [string, string]) => {
-        return [Number(price), Number(volume)];
-      });
-      const bids = result.bids.map(([price, volume]: [string, string]) => {
-        return [Number(price), Number(volume)];
-      });
-      const cmcId = SymbolStore.get(result.s)!;
-      const message: OrderbookWorkerMessage = {
-        type: WorkerMessageType.Data,
-        threadId,
-        exchange,
-        content: {
-          cmcId: cmcId,
-          asks,
-          bids,
-        },
-      };
-      self.postMessage(message);
-      return;
-    }
-  }
+  if (!("event" in message) || message.event !== "update") return;
+  const { result } = message;
+  if (!result.s) return;
 
-  return;
-});
+  const cmcId = PairStore.get(result.s);
+  if (cmcId === undefined) return;
 
-socketClient.on("close", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
-    exchange,
-    threadId,
-    content: {
-      state: WorkerState.Closed,
-    },
-  };
-  self.postMessage(message);
-});
-
-socketClient.on("exception", (_error) => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
-    exchange,
-    threadId,
-    content: {
-      state: WorkerState.Error,
-    },
-  };
-  self.postMessage(message);
+  publisher.publish({
+    cmcId,
+    asks: result.asks.map(toLevel),
+    bids: result.bids.map(toLevel),
+  });
 });
 
 socketClient.on("reconnect", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
-    threadId,
-    exchange,
-    content: {
-      state: WorkerState.Reconnecting,
-    },
-  };
-  self.postMessage(message);
+  postState(threadId, exchange, WorkerState.Reconnecting);
 });
 
 socketClient.on("reconnected", () => {
-  const message: OrderbookWorkerMessage = {
-    type: WorkerMessageType.StateChange,
-    exchange,
-    threadId,
-    content: {
-      state: WorkerState.Connected,
-    },
-  };
-  self.postMessage(message);
+  postState(threadId, exchange, WorkerState.Connected);
 });
 
-const arg = Bun.argv
-  .at(2)!
-  .split(",")
-  .map((s) => {
-    const [id, symbol] = s.split("-");
-    const cmcId = Number(id);
-    return [cmcId, symbol.toUpperCase() + "_USDT"] as [number, string];
-  });
-try {
-  for (const [cmcId, symbol] of arg) {
-    SymbolStore.set(symbol, cmcId);
-    socketClient.subscribe(
-      [{ topic: "spot.order_book", payload: [symbol, "50", "1000ms"] }],
-      "spotV4",
-    );
+socketClient.on("close", () => {
+  postState(threadId, exchange, WorkerState.Closed);
+});
+
+socketClient.on("exception", (error) => {
+  postError(error instanceof Error ? error.message : String(error));
+});
+
+onCommand((command) => {
+  if (command.type === "subscribe") subscribe(command.symbols);
+  if (command.type === "unsubscribe") unsubscribe(command.symbols);
+  if (command.type === "shutdown") {
+    void publisher.close().finally(() => process.exit(0));
   }
-} catch (error) {
-  console.error("error", error);
-}
+});
+
+subscribe(initialSymbols);

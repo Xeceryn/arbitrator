@@ -1,4 +1,4 @@
-import { router } from "@arbitrator/lister/router";
+import type { router } from "@arbitrator/lister/router";
 import { createORPCClient, createSafeClient } from "@orpc/client";
 import {} from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";

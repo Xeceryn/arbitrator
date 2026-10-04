@@ -13,6 +13,16 @@ export const workerStateSchema = z.enum([
 ]);
 export type WorkerState = z.infer<typeof workerStateSchema>;
 
+/** Convenience mirror of `workerStateSchema` for value-position use. */
+export const WorkerState = {
+  Connected: "connected",
+  Closed: "closed",
+  Reconnecting: "reconnecting",
+  Reconnected: "reconnected",
+  Disconnected: "disconnected",
+  Error: "error",
+} as const satisfies Record<string, WorkerState>;
+
 /** A coin to (un)subscribe on one exchange's orderbook stream. */
 export const symbolSubscriptionSchema = z.object({
   cmcId: z.number(),

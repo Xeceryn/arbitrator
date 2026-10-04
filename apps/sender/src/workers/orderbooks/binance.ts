@@ -1,121 +1,96 @@
-// NOTE: for debugging purposes when not running as a worker
-// change the self to log instead of sending message to the parent
-
-const self = {
-  postMessage(...args: any[]) {
-    console.log(args);
-  },
-};
-// declare let self: Worker;
-
-import { threadId as processId } from "worker_threads";
-
-import { connect } from "@nats-io/transport-node";
+import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
 import {
-  WebsocketClient,
   type WsMessagePartialBookDepthEventRaw,
+  WebsocketClient,
 } from "binance";
 
-import { WorkerState, type WorkerMessage } from "../../types";
-import type { OrderbookMessageContent } from "../../types/orderbook";
+import {
+  bootstrap,
+  createOrderbookPublisher,
+  onCommand,
+  postError,
+  postState,
+  postSubscribed,
+  postUnsubscribed,
+} from "../protocol";
 
-const exchange = "binance";
-const threadId = exchange + "-orderbook-" + processId;
+const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
+const publisher = await createOrderbookPublisher(exchange);
+const socketClient = new WebsocketClient({});
+
+/** binance stream topic (also `data.streamName`) -> cmcId. */
 const ChannelStore = new Map<string, number>();
 
-const nc = await connect();
+const toLevel = (row: [string | number, string | number]): [number, number] => [
+  Number(row[0]),
+  Number(row[1]),
+];
 
-const arg = Bun.argv
-  .at(2)!
-  .split(",")
-  .map((s) => {
-    const [id, symbol] = s.split("-");
-    const cmcId = Number(id);
-    // spot_depth_btcusdt_
-    ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
-    return { cmcId, symbol };
-  });
-// const arg = "1-btc,2-eth,3-xrp,4-sol".split(",").map((s) => {
-//   const [id, symbol] = s.split("-");
-//   const cmcId = Number(id);
-//   // spot_depth_btcusdt_
-//   ChannelStore.set(`spot_depth_${symbol!.toLowerCase()}usdt_`, cmcId);
-//   return { cmcId, symbol };
-// });
+const pairForSymbol = (symbol: string) => `${symbol.toUpperCase()}USDT`;
+const topicForPair = (pair: string) => `${pair.toLowerCase()}@depth20@1000ms`;
 
-const socketClient = new WebsocketClient(
-  {},
-  // {
-  //   // ...DefaultLogger,
-  //   // info: () => {},
-  //   // error: () => {},
-  // },
-);
+function subscribe(symbols: SymbolSubscription[]): void {
+  for (const item of symbols) {
+    const pair = pairForSymbol(item.symbol);
+    ChannelStore.set(topicForPair(pair), item.cmcId);
+    void socketClient.subscribePartialBookDepths(pair, 20, 1000, "spot");
+  }
+  if (symbols.length > 0) {
+    postSubscribed(symbols.map((item) => item.cmcId));
+  }
+}
+
+function unsubscribe(symbols: SymbolSubscription[]): void {
+  const topics: string[] = [];
+  for (const item of symbols) {
+    const topic = topicForPair(pairForSymbol(item.symbol));
+    if (ChannelStore.delete(topic)) topics.push(topic);
+  }
+  if (topics.length > 0) {
+    void socketClient.unsubscribe(topics, "main");
+  }
+  postUnsubscribed(symbols.map((item) => item.cmcId));
+}
 
 socketClient.on("open", () => {
-  const message: WorkerMessage = {
-    threadId,
-    exchange,
-    state: WorkerState.Connected,
-  };
-  self.postMessage(message);
+  postState(threadId, exchange, WorkerState.Connected);
 });
 
 socketClient.on("message", (event) => {
   const data = event as WsMessagePartialBookDepthEventRaw;
-  const cmcId = ChannelStore.get(data.wsKey)!;
-  const asks = data.asks.map(([price, volume]) => {
-    return [Number(price), Number(volume)];
-  });
-  const bids = data.bids.map(([price, volume]) => {
-    return [Number(price), Number(volume)];
-  });
+  const cmcId = ChannelStore.get(data.streamName);
+  if (cmcId === undefined) return;
 
-  const message: OrderbookMessageContent = {
-    exchange,
+  publisher.publish({
     cmcId,
-    asks,
-    bids,
-  };
-  self.postMessage(message);
-
-  // nc.publish("orderbook.binance.update", JSON.stringify(message));
+    asks: data.asks.map(toLevel),
+    bids: data.bids.map(toLevel),
+  });
 });
 
 socketClient.on("reconnecting", () => {
-  const message: WorkerMessage = {
-    threadId,
-    exchange,
-    state: WorkerState.Reconnecting,
-  };
-  self.postMessage(message);
+  postState(threadId, exchange, WorkerState.Reconnecting);
 });
 
 socketClient.on("reconnected", () => {
-  const message: WorkerMessage = {
-    threadId,
-    exchange,
-    state: WorkerState.Connected,
-  };
-  self.postMessage(message);
+  postState(threadId, exchange, WorkerState.Connected);
 });
 
 socketClient.on("close", () => {
-  const message: WorkerMessage = {
-    exchange,
-    threadId,
-    state: WorkerState.Closed,
-  };
-  self.postMessage(message);
+  postState(threadId, exchange, WorkerState.Closed);
 });
 
-for (const s of arg) {
-  socketClient.subscribePartialBookDepths(
-    s.symbol!.toUpperCase() + "USDT",
-    // s.symbol! + "usdt",
-    20,
-    1000,
-    "spot",
-  );
-}
+socketClient.on("exception", (error) => {
+  postError(error instanceof Error ? error.message : String(error));
+});
+
+onCommand((command) => {
+  if (command.type === "subscribe") subscribe(command.symbols);
+  if (command.type === "unsubscribe") unsubscribe(command.symbols);
+  if (command.type === "shutdown") {
+    void publisher.close().finally(() => process.exit(0));
+  }
+});
+
+subscribe(initialSymbols);

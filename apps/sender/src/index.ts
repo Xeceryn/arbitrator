@@ -1,30 +1,35 @@
+import { Subjects, metadataChangedSchema } from "@arbitrator/contracts";
 import { createLogger } from "@arbitrator/logger";
-import { RPCHandler } from "@orpc/server/fetch";
-import { CORSPlugin } from "@orpc/server/plugins";
+import { connect } from "@nats-io/transport-node";
 
-import { router } from "./router";
+import { app, orchestrator } from "./app";
 
 const logger = createLogger("arbitrator/sender");
 
-const handler = new RPCHandler(router, {
-  plugins: [new CORSPlugin({ origin: "*" })],
+app.listen(3002, ({ hostname, port }) => {
+  logger.info(`listening on http://${hostname}:${port}`);
 });
 
-Bun.serve({
-  async fetch(request: Request) {
-    console.log(request.method, request.url, request.destination);
-    const { response } = await handler.handle(request, {
-      context: {}, // Provide initial context if needed
-    });
-    if (!response) {
-      return new Response("NOT FOUND", {
-        status: 404,
-      });
-    }
+// Recover any worker topology from a previous life of this process.
+void orchestrator.runReconcile();
 
-    return response;
-  },
-  port: 3002,
-});
+try {
+  const nc = await connect({
+    servers: Bun.env.NATS_URL ?? "nats://localhost:4222",
+    user: Bun.env.NATS_USER,
+    pass: Bun.env.NATS_PASSWORD,
+    name: "arbitrator-sender",
+    maxReconnectAttempts: -1,
+  });
 
-logger.info(`listening on port 3002`);
+  logger.info(`subscribed to ${Subjects.metadataChanged}`);
+  const subscription = nc.subscribe(Subjects.metadataChanged);
+  for await (const message of subscription) {
+    if (!metadataChangedSchema.safeParse(message.json()).success) continue;
+    orchestrator.notifyMetadataChanged();
+  }
+} catch (error: unknown) {
+  logger.warn(
+    `nats subscription failed, metadata events disabled: ${String(error)}`,
+  );
+}
