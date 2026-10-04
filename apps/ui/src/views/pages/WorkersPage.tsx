@@ -1,6 +1,5 @@
-import { listerClient } from "@arbitrator/sdk";
+import type { ExchangeSelect } from "@arbitrator/lister/types";
 
-import { senderClient } from "../../sender.client";
 import { ExchangeWorkerRow } from "../components/ExchangeWorkerRow";
 import { RefreshIcon } from "../components/icons";
 
@@ -12,59 +11,29 @@ type WorkerSnapshot = {
   symbols: SymbolSubscription[];
 };
 
-type SenderStatus = {
+export type SenderStatus = {
   started: string[];
   workers: WorkerSnapshot[];
   supported: string[];
 };
 
-function describeError(error: unknown): string {
-  if (!error) return "request failed";
-  if (typeof error === "object" && error !== null) {
-    const record = error as Record<string, unknown>;
-    const value = record.value;
-    if (value && typeof value === "object" && "message" in value) {
-      return String((value as { message: unknown }).message);
-    }
-    if ("message" in record) return String(record.message);
-  }
-  return String(error);
-}
-
-async function loadStatus() {
-  try {
-    const { data, error } = await senderClient.exchanges.get();
-    if (error || !data) {
-      return { ok: false as const, message: describeError(error) };
-    }
-    return { ok: true as const, status: data as unknown as SenderStatus };
-  } catch (error) {
-    return { ok: false as const, message: describeError(error) };
-  }
-}
-
-async function loadExchanges() {
-  const [error, data] = await listerClient.exchange.list({ limit: -1 });
-  if (error || !data) return null;
-  return data.data;
-}
+export type WorkersData =
+  | { ok: true; status: SenderStatus; exchanges: ExchangeSelect[] }
+  | { ok: false; message: string };
 
 /**
  * The swap unit. `GET /workers/list` and both start/stop endpoints return
- * exactly this `<div id="workers-results">`.
+ * exactly this `<div id="workers-results">`. Pure: the controller loads data.
  */
-export const WorkersResults = async () => {
-  const statusResult = await loadStatus();
-  const exchanges = await loadExchanges();
-
-  if (!statusResult.ok) {
+export const WorkersResults = ({ data }: { data: WorkersData }) => {
+  if (!data.ok) {
     return (
       <div id="workers-results" class="flex flex-col gap-4">
         <div class="alert alert-error" role="alert">
           <div>
             <p class="font-medium">Unable to reach the orchestrator.</p>
             <p class="text-sm opacity-80" safe>
-              {statusResult.message}
+              {data.message}
             </p>
           </div>
         </div>
@@ -72,17 +41,7 @@ export const WorkersResults = async () => {
     );
   }
 
-  if (!exchanges) {
-    return (
-      <div id="workers-results" class="flex flex-col gap-4">
-        <div class="alert alert-error" role="alert">
-          <span>Unable to load exchanges.</span>
-        </div>
-      </div>
-    );
-  }
-
-  const { status } = statusResult;
+  const { status, exchanges } = data;
   const startedSet = new Set(status.started);
   const supportedSet = new Set(status.supported);
   const totalSymbols = status.workers.reduce(
@@ -169,7 +128,7 @@ export const WorkersResults = async () => {
  * Static chrome: the header and refresh button stay put while the results swap.
  * `#workers-indicator` is shared by the refresh and every row's action button.
  */
-export const WorkersPage = () => (
+export const WorkersPage = ({ data }: { data: WorkersData }) => (
   <div class="flex flex-col gap-6">
     <section id="workers-list" class="w-full">
       <div class="card w-full bg-base-100 shadow-xl">
@@ -200,7 +159,7 @@ export const WorkersPage = () => (
               </button>
             </div>
           </header>
-          <WorkersResults />
+          <WorkersResults data={data} />
         </div>
       </div>
     </section>

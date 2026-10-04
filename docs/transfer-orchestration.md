@@ -162,9 +162,11 @@ The receiver imports only subjects + orderbook schemas, never sender internals.
 
 ### 4.1 Framework
 
-Replace `@orpc/server` with `elysia` + `@elysiajs/eden`; export the app type for
-an Eden client. Keep lister on oRPC. `derive` injects `{ orchestrator, logger,
-nats }`; the orchestrator is a plain singleton module.
+Elysia + `@elysiajs/eden`; export the app type for an Eden client. Keep lister
+on oRPC. Shared dependencies are Elysia **plugins**, not module imports:
+`orchestratorPlugin` decorates the orchestrator, `natsPlugin` connects to NATS
+in `onStart` and drains in `onStop`. The UI provides `lister`/`sender` through a
+`clientsPlugin` read from handler context.
 
 Routes: `POST /exchanges/:slug/start`, `POST /exchanges/:slug/stop`,
 `GET /exchanges`, `GET /workers`.

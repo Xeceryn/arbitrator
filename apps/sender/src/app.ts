@@ -2,10 +2,13 @@ import { Elysia } from "elysia";
 
 import { createOrchestrator } from "./orchestrator/bootstrap";
 import type { Orchestrator } from "./orchestrator/service";
+import { natsPlugin } from "./plugins/nats";
+import { orchestratorPlugin } from "./plugins/orchestrator";
 
 export function createApp(orchestrator: Orchestrator) {
   return new Elysia({ name: "arbitrator-sender" })
-    .decorate("orchestrator", orchestrator)
+    .use(orchestratorPlugin(orchestrator))
+    .use(natsPlugin(orchestrator))
     .post("/exchanges/:slug/start", ({ params, orchestrator, set }) => {
       const result = orchestrator.start(params.slug);
       if (!result.ok) {

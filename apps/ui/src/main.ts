@@ -14,6 +14,7 @@ import {
 import { CryptocurrencyController } from "./controllers/coin.controller";
 import { ErrorPageController } from "./controllers/error-page.controller";
 import { HomeController } from "./controllers/home.controller";
+import { clientsPlugin } from "./plugins/clients";
 
 if (!process.argv.includes("--cluster")) {
   await bundleClientSideResources();
@@ -52,6 +53,7 @@ new Elysia()
   })
   .use(staticPlugin({ prefix: "/public", assets: "./public" }))
   .use(serverTiming())
+  .use(clientsPlugin)
   .use(ErrorPageController)
   .use(HomeController)
   .use(CryptocurrencyController)
