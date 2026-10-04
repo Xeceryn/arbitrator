@@ -28,6 +28,8 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 - [x] sender subscribes `metadata.changed` → debounced reconcile (T11).
 - [x] receiver consumer: subscribes `orderbook.normalized.<exchange>` under the
       shared queue group (T12).
+- [x] opportunity persistence: sender reconciles legs via `opportunity.sync`;
+      receiver updates prices/volumes directly in the DB.
 - [x] UI: Workers page (`/workers`) with per-exchange start/stop, Eden client in
       `apps/ui/src/sender.client.ts`, status + worker/coin counts.
 
@@ -148,13 +150,14 @@ listTransferableCoins({ exchangeIds: number[] }): Promise<{
 - `Subjects.metadataChanged` → `metadata.changed`
 - `metadataChangedSchema` — `{ version: 1, entity, action, exchangeIds?,
 cryptocurrencyIds?, chainIds?, marketIds?, occurredAt }`
-- `normalizedOrderbookSchema` — `{ cmcId, asks, bids }` (exchange lives in the
-  subject; workers normalize, there is no raw tier)
+- `normalizedOrderbookSchema` — `{ exchange, cmcId, asks, bids }` (exchange in
+  both subject and payload; workers normalize, there is no raw tier)
 - `workerCommandSchema` / `workerEventSchema` — parent↔worker `postMessage`
   control protocol
 - `symbolSubscriptionSchema`, `workerStateSchema`, `baseCurrencySchema`
 
-The receiver imports only subjects + orderbook schemas, never sender internals.
+The receiver imports only contracts, lister's data layer, and the SDK — never
+sender internals.
 
 ---
 
@@ -241,9 +244,11 @@ orderbook.normalized.<exchange>
   republish.
 - Cluster mode: one process per CPU, all in queue group `ORDERBOOK_UPDATE`, so
   each message is handled by exactly one process.
-- Per message: validate against `normalizedOrderbookSchema` → price
-  conversion/lookup → persist to DB.
-- Conversion/lookup/DB is a follow-up feature.
+- Per message: price conversion → volume search → update the matching
+  `opportunity` legs directly in the database.
+- Opportunity rows are created and deleted by the sender through
+  `opportunity.sync` (level-triggered against the started set + metadata); the
+  receiver only updates prices/volumes, so a removed leg is a zero-row update.
 
 ---
 
@@ -347,7 +352,8 @@ Each task ends on a checkable bound.
 ### Phase 4 — events + receiver
 
 - [x] **T11** sender subscribes `metadata.changed` → debounced reconcile.
-- [x] **T12** receiver: consume `orderbook.normalized.*`; imports contracts only.
+- [x] **T12** receiver: consume `orderbook.normalized.*`; update opportunity
+      prices/volumes directly (sender owns create/delete).
 
 ### Phase 5 — UI
 
@@ -356,7 +362,8 @@ Each task ends on a checkable bound.
 
 ### Follow-ups (out of current scope)
 
-- [ ] Receiver price conversion/lookup + DB persistence.
+- [x] Receiver price conversion + opportunity persistence (receiver writes the
+      DB directly; sender owns create/delete via `opportunity.sync`).
 - [ ] `listTransferableCoins` filters for the future signal row.
 - [ ] Migrate the remaining exchange workers (bitget, bitmart, huobi, indodax,
       kucoin, mexc, pintu) to the contracts protocol. They are the only

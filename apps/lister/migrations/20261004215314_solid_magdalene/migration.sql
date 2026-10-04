@@ -1,0 +1,1 @@
+ALTER TABLE "opportunity" ADD CONSTRAINT "opportunity_cmcId_cryptocurrency_cmcId_fkey" FOREIGN KEY ("cmcId") REFERENCES "cryptocurrency"("cmcId");

@@ -90,6 +90,7 @@ export async function createOrderbookPublisher(
   return {
     publish(update) {
       const event: NormalizedOrderbookEvent = {
+        exchange,
         cmcId: update.cmcId,
         asks: update.asks,
         bids: update.bids,

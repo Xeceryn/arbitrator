@@ -3,15 +3,14 @@ import {
   Subjects,
   type NormalizedOrderbookEvent,
 } from "@arbitrator/contracts";
-import { database } from "@arbitrator/lister/database/connection";
-// import { createLogger } from "@arbitrator/lister/core/opportunity";
+import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
 import { listerClient } from "@arbitrator/sdk";
 import { connect } from "@nats-io/transport-node";
 
 const logger = createLogger("arbitrator/receiver");
 
-const [error, exchanges] = await listerClient.exchange.list({});
+const [error, exchanges] = await listerClient.exchange.list({ limit: -1 });
 if (error) {
   process.exit(1);
 }
@@ -20,13 +19,11 @@ for (const exchange of exchanges.data) {
   exchangeSlugIdMap.set(exchange.slug, exchange.id);
 }
 
-// database.insert(
-
 // PERFORMANCE DEBUG
 let messageCount = 0;
 let conversionCount = 0;
 let searchCount = 0;
-let upsertCount = 0;
+let update = 0;
 
 const nc = await connect({
   servers: Bun.env.NATS_URL ?? "nats://localhost:4222",
@@ -132,9 +129,12 @@ setInterval(() => {
     `searche d ${searchCount} / seconds on process id ${process.pid}`,
   );
 
+  logger.info(`upserted ${update} / seconds  on process id ${process.pid}`);
+
   messageCount = 0;
   conversionCount = 0;
   searchCount = 0;
+  update = 0;
 }, 1000);
 
 // Workers already normalize; this subscribes to the single normalized stream.
@@ -145,37 +145,42 @@ const subscription = nc.subscribe(subject, { queue: OrderbookQueue });
 logger.info(`receiver-${process.pid} listening on ${subject}`);
 
 for await (const message of subscription) {
-  // we don't need zod here, as we are safely know the shape of the message
-  // const parsed = normalizedOrderbookSchema.safeParse(message.json());
-  // // console.log(parsed.data);
-  // if (!parsed.success) {
-  //   logger.warn(`dropping malformed orderbook: ${parsed.error.message}`);
-  //   continue;
-  // }
-
   const orderbook = message.json<NormalizedOrderbookEvent>();
   messageCount += 1;
+
+  // The sender now carries the canonical exchange identity on the payload, so
+  // we never parse subject tokens here.
+  const exchangeId = exchangeSlugIdMap.get(orderbook.exchange);
+  if (exchangeId === undefined) {
+    logger.warn(
+      `dropping orderbook for unknown exchange: ${orderbook.exchange}`,
+    );
+    continue;
+  }
+
   const converted = await convertPrice(orderbook);
   conversionCount += 1;
   const searched = searchOrderbook(converted);
   searchCount += 1;
 
-  // TODO: add exchange id on the message from the sender
-  const exchangeSlug = message.subject.split(".").pop();
-  const exchangeId = exchangeSlugIdMap.get(message.subject);
-
-  // TODO: update only, on the sender side, when we initiate/start an exchange > 2
-  // it's also insert opportunity by transferrable routes, this is required
-  // withdrawEnabled on and despositEnabled on and tradeEnabled on
-  // this is only for one route, e.g the vice verse is not possible
-  // then it's not createing the initial opportunity
-  // and when metadata changes, it's also insert or delete opportunity
+  // The sender owns creating/deleting opportunity rows (`opportunity.sync`), so
+  // here we only update the legs that already exist. A metadata change may have
+  // removed a leg since it was last seen, so a zero-row update is expected.
   //
-  // we only do update here because if the target not found becuase it's deleted
-  // becuase of metadata change, we don't do the update
-  //
-  // so we might need to add additional orpc route for opportunity to create and delete
-  // for the sender, 
-  //
-  // for the receiver we will use database directly
+  // `searchOrderbook` labels the book's sides: bids drive its `buyPrice`, asks
+  // its `sellPrice`. The acquisition side of a leg is the ask paid on the buy
+  // exchange; the disposal side is the bid received on the sell exchange.
+  await Opportunity.updateBuySide({
+    exchangeId,
+    cmcId: searched.cmcId,
+    price: searched.sellPrice,
+    volume: searched.sellVolume,
+  });
+  await Opportunity.updateSellSide({
+    exchangeId,
+    cmcId: searched.cmcId,
+    price: searched.buyPrice,
+    volume: searched.buyVolume,
+  });
+  update += 1;
 }

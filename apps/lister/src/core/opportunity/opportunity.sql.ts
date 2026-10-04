@@ -1,12 +1,16 @@
 import { SQL, sql } from "drizzle-orm";
 import * as pg from "drizzle-orm/pg-core";
 
+import { cryptocurrency } from "../cryptocurrency/cryptocurrency.sql";
 import { exchange } from "../exchange/exchange.sql";
 
 export const opportunity = pg.pgTable("opportunity", {
   id: pg.integer().primaryKey().generatedAlwaysAsIdentity(),
 
-  cmcId: pg.integer().notNull(),
+  cmcId: pg
+    .integer()
+    .notNull()
+    .references(() => cryptocurrency.cmcId),
   buyExchangeId: pg
     .integer()
     .notNull()

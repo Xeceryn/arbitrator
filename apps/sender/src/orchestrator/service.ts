@@ -23,6 +23,11 @@ export type ListerGateway = {
   listTransferableCoins(input: {
     exchangeIds: number[];
   }): Promise<TransferableCoinsResult>;
+  /**
+   * Reconcile persisted opportunities against the started exchanges. Seeds
+   * missing directed legs and removes legs that are no longer transferable.
+   */
+  syncOpportunities(exchangeIds: number[]): Promise<void>;
 };
 
 export type OrchestratorStatus = {
@@ -117,6 +122,8 @@ export class Orchestrator {
           configs: workerAdapters,
         }),
       );
+      // Nothing is arbitrageable: drop every persisted leg.
+      await this.lister.syncOpportunities([]);
       return;
     }
 
@@ -150,6 +157,9 @@ export class Orchestrator {
         workerIdFactory: (slug) => this.pool.nextWorkerId(slug),
       }),
     );
+
+    // Keep persisted legs in lockstep with the started set + current metadata.
+    await this.lister.syncOpportunities(exchangeIds);
   }
 
   private apply(result: ReconcileResult): void {

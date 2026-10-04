@@ -25,5 +25,10 @@ export function createListerGateway(): ListerGateway {
 
       return result as TransferableCoinsResult;
     },
+
+    async syncOpportunities(exchangeIds) {
+      const [error] = await listerClient.opportunity.sync({ exchangeIds });
+      if (error) throw error;
+    },
   };
 }
