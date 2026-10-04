@@ -4,18 +4,29 @@ import {
   type NormalizedOrderbookEvent,
 } from "@arbitrator/contracts";
 import { database } from "@arbitrator/lister/database/connection";
-import { createLogger } from "@arbitrator/lister/core/opp";
+// import { createLogger } from "@arbitrator/lister/core/opportunity";
 import { createLogger } from "@arbitrator/logger";
+import { listerClient } from "@arbitrator/sdk";
 import { connect } from "@nats-io/transport-node";
 
 const logger = createLogger("arbitrator/receiver");
 
-database.insert(
+const [error, exchanges] = await listerClient.exchange.list({});
+if (error) {
+  process.exit(1);
+}
+const exchangeSlugIdMap = new Map<string, number>();
+for (const exchange of exchanges.data) {
+  exchangeSlugIdMap.set(exchange.slug, exchange.id);
+}
+
+// database.insert(
 
 // PERFORMANCE DEBUG
 let messageCount = 0;
 let conversionCount = 0;
 let searchCount = 0;
+let upsertCount = 0;
 
 const nc = await connect({
   servers: Bun.env.NATS_URL ?? "nats://localhost:4222",
@@ -148,8 +159,23 @@ for await (const message of subscription) {
   conversionCount += 1;
   const searched = searchOrderbook(converted);
   searchCount += 1;
-  // console.log(_);
 
-  // The exchange is the last subject token; the payload carries cmcId/asks/bids.
-  // TODO(separate feature): price conversion/lookup + persist to DB.
+  // TODO: add exchange id on the message from the sender
+  const exchangeSlug = message.subject.split(".").pop();
+  const exchangeId = exchangeSlugIdMap.get(message.subject);
+
+  // TODO: update only, on the sender side, when we initiate/start an exchange > 2
+  // it's also insert opportunity by transferrable routes, this is required
+  // withdrawEnabled on and despositEnabled on and tradeEnabled on
+  // this is only for one route, e.g the vice verse is not possible
+  // then it's not createing the initial opportunity
+  // and when metadata changes, it's also insert or delete opportunity
+  //
+  // we only do update here because if the target not found becuase it's deleted
+  // becuase of metadata change, we don't do the update
+  //
+  // so we might need to add additional orpc route for opportunity to create and delete
+  // for the sender, 
+  //
+  // for the receiver we will use database directly
 }
