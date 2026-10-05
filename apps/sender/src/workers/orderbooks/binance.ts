@@ -17,7 +17,14 @@ import {
 const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
 const publisher = await createOrderbookPublisher(exchange);
-const socketClient = new WebsocketClient({});
+const socketClient = new WebsocketClient(
+  {},
+  {
+    info: () => {},
+    trace: () => {},
+    error: () => {},
+  },
+);
 
 /** binance stream topic (also `data.streamName`) -> cmcId. */
 const ChannelStore = new Map<string, number>();

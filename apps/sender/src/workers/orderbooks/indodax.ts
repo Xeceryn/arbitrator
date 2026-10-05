@@ -1,3 +1,5 @@
+import { threadId as nodeThreadId } from "node:worker_threads";
+
 import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
 import { createLogger } from "@arbitrator/logger";
 import WebSocket, { type RawData } from "ws";
@@ -14,7 +16,7 @@ import {
 
 const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
-const logger = createLogger(threadId);
+const logger = createLogger(`${threadId}-${nodeThreadId}`);
 const publisher = await createOrderbookPublisher(exchange);
 
 const WS_URL = "wss://ws3.indodax.com/ws/";
@@ -47,6 +49,8 @@ type IndodaxMessageRaw = {
 const ChannelStore = new Map<string, number>();
 /** Channels subscribed on the current connection; reset on every (re)connect. */
 const SentChannels = new Set<string>();
+/** Subscribe request id -> channel, awaiting the server's ack. */
+const PendingSubscribes = new Map<number, string>();
 
 let socket: WebSocket | undefined;
 let pingTimer: ReturnType<typeof setInterval> | undefined;
@@ -99,7 +103,9 @@ function send(payload: unknown): void {
 function subscribeChannel(channel: string): void {
   if (!authenticated || SentChannels.has(channel)) return;
   SentChannels.add(channel);
-  send({ method: 1, params: { channel }, id: nextRequestId() });
+  const id = nextRequestId();
+  PendingSubscribes.set(id, channel);
+  send({ method: 1, params: { channel }, id });
 }
 
 function unsubscribeChannel(channel: string): void {
@@ -112,9 +118,6 @@ function subscribe(symbols: SymbolSubscription[]): void {
     const channel = channelForSymbol(item.symbol);
     ChannelStore.set(channel, item.cmcId);
     subscribeChannel(channel);
-  }
-  if (symbols.length > 0) {
-    postSubscribed(symbols.map((item) => item.cmcId));
   }
 }
 
@@ -147,6 +150,7 @@ function connect(): void {
     if (socket !== ws) return;
     authenticated = false;
     SentChannels.clear();
+    PendingSubscribes.clear();
     logger.info("socket open, authenticating");
     postState(threadId, exchange, WorkerState.Connected);
 
@@ -168,6 +172,17 @@ function connect(): void {
           authenticated = true;
           for (const channel of ChannelStore.keys()) subscribeChannel(channel);
           continue;
+        }
+
+        // Subscribe ack: mark the channel confirmed and report it upstream.
+        if (typeof parsed?.id === "number") {
+          const acked = PendingSubscribes.get(parsed.id);
+          if (acked !== undefined) {
+            PendingSubscribes.delete(parsed.id);
+            const cmcId = ChannelStore.get(acked);
+            if (cmcId !== undefined) postSubscribed([cmcId]);
+            continue;
+          }
         }
 
         const result = parsed?.result;

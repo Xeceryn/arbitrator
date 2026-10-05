@@ -24,11 +24,6 @@ for (const exchange of exchanges.data) {
 const indodaxExchangeID = exchangeSlugIdMap.get("indodax");
 
 // PERFORMANCE DEBUG
-let messageCount = 0;
-let conversionCount = 0;
-let searchCount = 0;
-let update = 0;
-
 const nc = await connect({
   servers: Bun.env.NATS_URL ?? "nats://localhost:4222",
   user: Bun.env.NATS_USER,
@@ -150,9 +145,7 @@ async function processOrderbook(
   divider?: number,
 ) {
   const converted = await convertPrice(orderbook, divider);
-  if (exchangeId === indodaxExchangeID) conversionCount += 1;
   const searched = searchOrderbook(converted);
-  if (exchangeId === indodaxExchangeID) searchCount += 1;
 
   await Promise.all([
     Opportunity.updateBuySide({
@@ -168,27 +161,7 @@ async function processOrderbook(
       exchangeId,
     }),
   ]);
-  if (exchangeId === indodaxExchangeID) update += 1;
 }
-
-setInterval(() => {
-  logger.info(
-    `received  ${messageCount} / seconds  on process id ${process.pid}`,
-  );
-  logger.info(
-    `converted ${conversionCount} / seconds on process id ${process.pid}`,
-  );
-  logger.info(
-    `searched  ${searchCount} / seconds on process id ${process.pid}`,
-  );
-
-  logger.info(`upserted  ${update} / seconds  on process id ${process.pid}`);
-
-  messageCount = 0;
-  conversionCount = 0;
-  searchCount = 0;
-  update = 0;
-}, 1000);
 
 // Workers already normalize; this subscribes to the single normalized stream.
 // `main.ts` runs one of these per CPU under a shared queue group, so each
@@ -199,8 +172,6 @@ logger.info(`receiver-${process.pid} listening on ${subject}`);
 
 for await (const message of subscription) {
   const orderbook = message.json<NormalizedOrderbookEvent>();
-  if (orderbook.exchange === "indodax") messageCount += 1;
-
   // The sender now carries the canonical exchange identity on the payload, so
   // we never parse subject tokens here.
   const exchangeId = exchangeSlugIdMap.get(orderbook.exchange);
@@ -235,30 +206,5 @@ for await (const message of subscription) {
     }
   }
 
-  // const converted = await convertPrice(orderbook);
-  // conversionCount += 1;
-  // const searched = searchOrderbook(converted);
-  // searchCount += 1;
-
-  // The sender owns creating/deleting opportunity rows (`opportunity.sync`), so
-  // here we only update the legs that already exist. A metadata change may have
-  // removed a leg since it was last seen, so a zero-row update is expected.
-  //
-  // `searchOrderbook` labels the book's sides: bids drive its `buyPrice`, asks
-  // its `sellPrice`. The acquisition side of a leg is the ask paid on the buy
-  // exchange; the disposal side is the bid received on the sell exchange.
-
   await processOrderbook(orderbook, exchangeId);
-  // await Opportunity.updateBuySide({
-  //   exchangeId,
-  //   cmcId: searched.cmcId,
-  //   price: searched.sellPrice,
-  //   volume: searched.sellVolume,
-  // });
-  // await Opportunity.updateSellSide({
-  //   exchangeId,
-  //   cmcId: searched.cmcId,
-  //   price: searched.buyPrice,
-  //   volume: searched.buyVolume,
-  // });
 }
