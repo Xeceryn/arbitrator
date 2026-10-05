@@ -28,7 +28,7 @@ const ChainFilter = (props: ListChainInput) => {
       hx-get="/chain/list"
       hx-target="#chain-list-results"
       hx-swap="outerMorph"
-      hx-trigger="submit, input changed delay:300ms"
+      hx-trigger="submit, input delay:300ms"
       hx-sync="this:replace"
       hx-indicator="#chain-list-indicator"
       class="flex flex-wrap items-center gap-2"

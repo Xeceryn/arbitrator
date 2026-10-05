@@ -75,7 +75,7 @@ export const AssignChainDropdown = ({ coinId, marketId }: Props) => (
     hx-get={`/coins/${coinId}/assignments/${marketId}/available-chains`}
     hx-target={`#available-chains-${marketId}`}
     hx-swap="innerHTML"
-    hx-trigger="load, submit, input changed delay:300ms"
+    hx-trigger="load, submit, input delay:300ms"
     hx-indicator={`#available-chains-indicator-${marketId}`}
   >
     <label class="input input-bordered input-sm w-full">

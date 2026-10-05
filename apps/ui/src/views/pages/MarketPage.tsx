@@ -28,7 +28,7 @@ const MarketFilter = (props: ListExchangeInput) => {
       hx-get="/markets/list"
       hx-target="#market-list-results"
       hx-swap="outerMorph"
-      hx-trigger="submit, input changed delay:300ms"
+      hx-trigger="submit, input delay:300ms"
       hx-sync="this:replace"
       hx-indicator="#market-list-indicator"
       class="flex flex-wrap items-center gap-2"

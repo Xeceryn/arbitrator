@@ -2,6 +2,8 @@ import { os } from "@orpc/server";
 
 import { Opportunity } from "./opportunity";
 import {
+  opportunityListInputSchema,
+  opportunityListOutputSchema,
   opportunitySyncInputSchema,
   opportunitySyncOutputSchema,
 } from "./opportunity.schema";
@@ -19,6 +21,15 @@ const sync = os
     return await Opportunity.sync(input.exchangeIds);
   });
 
+/** Profitable signals (`profitPercentage > 0`) for the signal board. */
+const list = os
+  .input(opportunityListInputSchema)
+  .output(opportunityListOutputSchema)
+  .handler(async ({ input }) => {
+    return await Opportunity.list(input);
+  });
+
 export const opportunityRouter = {
   sync,
+  list,
 };

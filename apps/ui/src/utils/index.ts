@@ -64,3 +64,42 @@ export function timeAgo(date: Date) {
     }
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Signal formatting (en-ID: 1.234.567,89; compact volume: 277,45M)            */
+/* -------------------------------------------------------------------------- */
+
+const priceFormatter = new Intl.NumberFormat("en-ID", {
+  maximumFractionDigits: 2,
+});
+
+/**
+ * Below 1, two decimals would round sub-cent prices to `0`; keep their real
+ * digits instead. At or above 1, two decimals is enough (e.g. `1,23`).
+ */
+const precisePriceFormatter = new Intl.NumberFormat("en-ID", {
+  maximumFractionDigits: 20,
+});
+
+const volumeFormatter = new Intl.NumberFormat("en-ID", {
+  notation: "compact",
+  currency: "IDR",
+  maximumFractionDigits: 2,
+});
+
+/** Full price, e.g. `74.518.227,55`; sub-1 prices keep their significant digits. */
+export function formatPrice(value: number): string {
+  const formatter =
+    Math.abs(value) < 1 ? precisePriceFormatter : priceFormatter;
+  return formatter.format(value);
+}
+
+/** Compact volume, e.g. `277,45M` (K/M/B). */
+export function formatCompact(value: number): string {
+  return volumeFormatter.format(value).replace(/\s+/g, "");
+}
+
+/** Ratio (`0.0085`) as a percentage string (`0.85 %`). */
+export function formatProfitPercentage(ratio: number): string {
+  return `${(ratio * 100).toFixed(2)} %`;
+}

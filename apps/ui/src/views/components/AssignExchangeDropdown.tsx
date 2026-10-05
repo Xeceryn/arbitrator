@@ -77,7 +77,7 @@ export const AssignExchangeDropdown = ({ coinId }: { coinId: number }) => (
     hx-get={`/coins/${coinId}/available-exchanges`}
     hx-target="#available-exchanges"
     hx-swap="innerHTML"
-    hx-trigger="load, submit, input changed delay:300ms"
+    hx-trigger="load, submit, input delay:300ms"
   >
     <label class="input input-bordered w-full">
       <span class="sr-only">Search exchanges</span>

@@ -26,6 +26,10 @@ export const opportunity = pg.pgTable("opportunity", {
       onUpdate: "cascade",
     }),
 
+  /** Per-exchange tickers of the coin on each leg (e.g. `GOLD(PAXG)`, `PAXG`). */
+  buyExchangeSymbol: pg.varchar({ length: 255 }).notNull().default(""),
+  sellExchangeSymbol: pg.varchar({ length: 255 }).notNull().default(""),
+
   buyPrice: pg.doublePrecision().notNull(),
   sellPrice: pg.doublePrecision().notNull(),
 

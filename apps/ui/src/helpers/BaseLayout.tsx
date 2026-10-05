@@ -35,6 +35,9 @@ export const BaseLayout = async ({
           <link rel="preload" href="/public/js/htmx.min.js" as="script" />
           <script src="/public/js/htmx.min.js"></script>
 
+          <link rel="preload" href="/public/js/hx-ws.min.js" as="script" />
+          <script src="/public/js/hx-ws.min.js"></script>
+
           <link
             rel="preload"
             href="/public/js/hyperscript.min.js"
@@ -63,7 +66,7 @@ export const BaseLayout = async ({
           <script src="/public/dist/dropdown.js"></script>
         </head>
         <body
-          hx-indicator=".progress"
+          hx-indicator:inherited=".progress"
           class="bg-base-200 text-base-content antialiased"
         >
           <a

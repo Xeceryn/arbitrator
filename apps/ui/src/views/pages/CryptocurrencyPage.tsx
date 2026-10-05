@@ -32,7 +32,7 @@ const CoinFilter = (props: ListCryptocurrencyInput) => {
       hx-swap="outerMorph"
       /* submit handles the pagination buttons; `input` covers both the text
          field and the <select>s. */
-      hx-trigger="submit, input changed delay:300ms"
+      hx-trigger="submit, input delay:300ms"
       /* abort the in-flight request when a newer one starts */
       hx-sync="this:replace"
       hx-indicator="#coin-list-indicator"

@@ -58,16 +58,26 @@ export type SearchedOrderbook = {
 
 export async function convertPrice(
   orderbook: NormalizedOrderbookEvent,
+  // for a case like currencies like 1mbabydoge, 1000sats etc.
+  divider?: number,
 ): Promise<NormalizedOrderbookEvent> {
   const idrPrice = await getIdrPrice();
 
   const asks = orderbook.asks;
   for (let i = 0, len = asks.length; i < len; i++) {
+    if (divider) {
+      asks[i]![0] *= divider / idrPrice;
+      continue;
+    }
     asks[i]![0] *= idrPrice;
   }
 
   const bids = orderbook.bids;
   for (let i = 0, len = bids.length; i < len; i++) {
+    if (divider) {
+      bids[i]![0] *= divider / idrPrice;
+      continue;
+    }
     bids[i]![0] *= idrPrice;
   }
 
@@ -118,6 +128,34 @@ export function searchOrderbook(
   };
 }
 
+async function processOrderbook(
+  orderbook: NormalizedOrderbookEvent,
+  // for a case like currencies like 1mbabydoge, 1000sats etc.
+  exchangeId: number,
+  divider?: number,
+) {
+  const converted = await convertPrice(orderbook, divider);
+  conversionCount += 1;
+  const searched = searchOrderbook(converted);
+  searchCount += 1;
+
+  await Promise.all([
+    Opportunity.updateBuySide({
+      exchangeId,
+      cmcId: searched.cmcId,
+      price: searched.sellPrice,
+      volume: searched.sellVolume,
+    }),
+    Opportunity.updateSellSide({
+      cmcId: searched.cmcId,
+      price: searched.buyPrice,
+      volume: searched.buyVolume,
+      exchangeId,
+    }),
+  ]);
+  update += 1;
+}
+
 setInterval(() => {
   logger.info(
     `received  ${messageCount} / seconds  on process id ${process.pid}`,
@@ -126,10 +164,10 @@ setInterval(() => {
     `converted ${conversionCount} / seconds on process id ${process.pid}`,
   );
   logger.info(
-    `searche d ${searchCount} / seconds on process id ${process.pid}`,
+    `searched  ${searchCount} / seconds on process id ${process.pid}`,
   );
 
-  logger.info(`upserted ${update} / seconds  on process id ${process.pid}`);
+  logger.info(`upserted  ${update} / seconds  on process id ${process.pid}`);
 
   messageCount = 0;
   conversionCount = 0;
@@ -158,10 +196,29 @@ for await (const message of subscription) {
     continue;
   }
 
-  const converted = await convertPrice(orderbook);
-  conversionCount += 1;
-  const searched = searchOrderbook(converted);
-  searchCount += 1;
+  // binance has some special multipleid volumes, so we need to divide it.
+  if (orderbook.exchange === "binance") {
+    // 1mbabydoge 1 million of babydoge
+    if (orderbook.cmcId === 10407) {
+      await processOrderbook(orderbook, exchangeId, 1_000_000);
+      continue;
+    }
+    // 1000sats 1000 of sats
+    if (orderbook.cmcId === 28194) {
+      await processOrderbook(orderbook, exchangeId, 1000);
+      continue;
+    }
+    // 1000cheems 100 of cheems
+    if (orderbook.cmcId === 33280) {
+      await processOrderbook(orderbook, exchangeId, 1000);
+      continue;
+    }
+  }
+
+  // const converted = await convertPrice(orderbook);
+  // conversionCount += 1;
+  // const searched = searchOrderbook(converted);
+  // searchCount += 1;
 
   // The sender owns creating/deleting opportunity rows (`opportunity.sync`), so
   // here we only update the legs that already exist. A metadata change may have
@@ -170,17 +227,18 @@ for await (const message of subscription) {
   // `searchOrderbook` labels the book's sides: bids drive its `buyPrice`, asks
   // its `sellPrice`. The acquisition side of a leg is the ask paid on the buy
   // exchange; the disposal side is the bid received on the sell exchange.
-  await Opportunity.updateBuySide({
-    exchangeId,
-    cmcId: searched.cmcId,
-    price: searched.sellPrice,
-    volume: searched.sellVolume,
-  });
-  await Opportunity.updateSellSide({
-    exchangeId,
-    cmcId: searched.cmcId,
-    price: searched.buyPrice,
-    volume: searched.buyVolume,
-  });
-  update += 1;
+
+  await processOrderbook(orderbook, exchangeId);
+  // await Opportunity.updateBuySide({
+  //   exchangeId,
+  //   cmcId: searched.cmcId,
+  //   price: searched.sellPrice,
+  //   volume: searched.sellVolume,
+  // });
+  // await Opportunity.updateSellSide({
+  //   exchangeId,
+  //   cmcId: searched.cmcId,
+  //   price: searched.buyPrice,
+  //   volume: searched.buyVolume,
+  // });
 }

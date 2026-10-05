@@ -1,8 +1,10 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, ne } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { database } from "../../database/connection";
 import { chainLink } from "../chain-link/chain-link.sql";
 import { cryptocurrency } from "../cryptocurrency/cryptocurrency.sql";
+import { exchange } from "../exchange/exchange.sql";
 import { market } from "../market/market.sql";
 import { opportunity } from "./opportunity.sql";
 
@@ -14,7 +16,12 @@ export type OpportunityRoute = {
   cmcId: number;
   buyExchangeId: number;
   sellExchangeId: number;
+  /** Per-exchange tickers, carried so the signal UI can label each side. */
+  buyExchangeSymbol: string;
+  sellExchangeSymbol: string;
 };
+
+export type OpportunitySortKey = "profitPercentage" | "profitVolume";
 
 type ChainLinkSide = {
   chainId: number;
@@ -43,6 +50,7 @@ export namespace Opportunity {
         exchangeId: market.exchangeId,
         cryptocurrencyId: market.cryptocurrencyId,
         tradeEnabled: market.tradeEnabled,
+        exchangeSymbol: market.exchangeSymbol,
       })
       .from(market)
       .where(inArray(market.exchangeId, exchangeIds));
@@ -114,6 +122,8 @@ export namespace Opportunity {
                 cmcId,
                 buyExchangeId: a.exchangeId,
                 sellExchangeId: b.exchangeId,
+                buyExchangeSymbol: a.exchangeSymbol,
+                sellExchangeSymbol: b.exchangeSymbol,
               };
               routes.set(routeKey(route), route);
             }
@@ -124,6 +134,8 @@ export namespace Opportunity {
                 cmcId,
                 buyExchangeId: b.exchangeId,
                 sellExchangeId: a.exchangeId,
+                buyExchangeSymbol: b.exchangeSymbol,
+                sellExchangeSymbol: a.exchangeSymbol,
               };
               routes.set(routeKey(route), route);
             }
@@ -138,13 +150,14 @@ export namespace Opportunity {
   /**
    * Level-triggered reconciliation of the opportunity table against the set of
    * started exchanges: create legs that now exist, delete legs that no longer
-   * do. Idempotent — the sender calls it on start/stop and metadata changes.
+   * do, and refresh the exchange tickers when they were renamed. Idempotent —
+   * the sender calls it on start/stop and metadata changes.
    *
    * Rows are seeded with zero prices/volumes; the receiver owns updating them.
    */
   export async function sync(
     exchangeIds: number[],
-  ): Promise<{ created: number; deleted: number }> {
+  ): Promise<{ created: number; updated: number; deleted: number }> {
     const desired = await computeRoutes(exchangeIds);
     const desiredKeys = new Set(desired.map(routeKey));
 
@@ -154,20 +167,34 @@ export namespace Opportunity {
         cmcId: opportunity.cmcId,
         buyExchangeId: opportunity.buyExchangeId,
         sellExchangeId: opportunity.sellExchangeId,
+        buyExchangeSymbol: opportunity.buyExchangeSymbol,
+        sellExchangeSymbol: opportunity.sellExchangeSymbol,
       })
       .from(opportunity);
 
+    const existingByKey = new Map<string, (typeof existing)[number]>();
     const staleIds: number[] = [];
-    const existingKeys = new Set<string>();
     for (const row of existing) {
       const key = routeKey(row);
-      existingKeys.add(key);
+      existingByKey.set(key, row);
       if (!desiredKeys.has(key)) staleIds.push(row.id);
     }
 
-    const missing = desired.filter(
-      (route) => !existingKeys.has(routeKey(route)),
-    );
+    const missing: OpportunityRoute[] = [];
+    const renamed: Array<{ id: number; route: OpportunityRoute }> = [];
+    for (const route of desired) {
+      const row = existingByKey.get(routeKey(route));
+      if (!row) {
+        missing.push(route);
+        continue;
+      }
+      if (
+        row.buyExchangeSymbol !== route.buyExchangeSymbol ||
+        row.sellExchangeSymbol !== route.sellExchangeSymbol
+      ) {
+        renamed.push({ id: row.id, route });
+      }
+    }
 
     if (staleIds.length > 0) {
       await database
@@ -181,6 +208,8 @@ export namespace Opportunity {
           cmcId: route.cmcId,
           buyExchangeId: route.buyExchangeId,
           sellExchangeId: route.sellExchangeId,
+          buyExchangeSymbol: route.buyExchangeSymbol,
+          sellExchangeSymbol: route.sellExchangeSymbol,
           buyPrice: 0,
           sellPrice: 0,
           buyVolume: 0,
@@ -189,7 +218,97 @@ export namespace Opportunity {
       );
     }
 
-    return { created: missing.length, deleted: staleIds.length };
+    for (const { id, route } of renamed) {
+      await database
+        .update(opportunity)
+        .set({
+          buyExchangeSymbol: route.buyExchangeSymbol,
+          sellExchangeSymbol: route.sellExchangeSymbol,
+        })
+        .where(eq(opportunity.id, id));
+    }
+
+    return {
+      created: missing.length,
+      updated: renamed.length,
+      deleted: staleIds.length,
+    };
+  }
+
+  /**
+   * Profitable signals for the signal board: every leg where the sell price
+   * beats the buy price, joined with both exchanges and the coin. The UI
+   * applies exchange hiding and picks `orderBy`/`order`.
+   */
+  export async function list(input: {
+    orderBy: OpportunitySortKey;
+    order: "asc" | "desc";
+  }) {
+    const buyExchange = alias(exchange, "buy_exchange");
+    const sellExchange = alias(exchange, "sell_exchange");
+
+    const column =
+      input.orderBy === "profitVolume"
+        ? opportunity.profitVolume
+        : opportunity.profitPercentage;
+
+    const rows = await database
+      .select({
+        id: opportunity.id,
+        cmcId: opportunity.cmcId,
+        buyExchangeId: opportunity.buyExchangeId,
+        sellExchangeId: opportunity.sellExchangeId,
+        buyExchangeSymbol: opportunity.buyExchangeSymbol,
+        sellExchangeSymbol: opportunity.sellExchangeSymbol,
+        buyPrice: opportunity.buyPrice,
+        sellPrice: opportunity.sellPrice,
+        buyVolume: opportunity.buyVolume,
+        sellVolume: opportunity.sellVolume,
+        profitPercentage: opportunity.profitPercentage,
+        profitVolume: opportunity.profitVolume,
+        buyExchange: {
+          id: buyExchange.id,
+          name: buyExchange.name,
+          slug: buyExchange.slug,
+          logo: buyExchange.logo,
+          baseCurrency: buyExchange.baseCurrency,
+        },
+        sellExchange: {
+          id: sellExchange.id,
+          name: sellExchange.name,
+          slug: sellExchange.slug,
+          logo: sellExchange.logo,
+          baseCurrency: sellExchange.baseCurrency,
+        },
+        coin: {
+          cmcId: cryptocurrency.cmcId,
+          name: cryptocurrency.name,
+          symbol: cryptocurrency.symbol,
+          logo: cryptocurrency.logo,
+        },
+      })
+      .from(opportunity)
+      .innerJoin(buyExchange, eq(opportunity.buyExchangeId, buyExchange.id))
+      .innerJoin(sellExchange, eq(opportunity.sellExchangeId, sellExchange.id))
+      .innerJoin(cryptocurrency, eq(opportunity.cmcId, cryptocurrency.cmcId))
+      .where(
+        and(
+          gt(opportunity.profitPercentage, 0),
+          ne(opportunity.buyPrice, 0),
+          ne(opportunity.sellPrice, 0),
+          ne(opportunity.buyVolume, 0),
+          ne(opportunity.sellVolume, 0),
+        ),
+      )
+      .orderBy(input.order === "asc" ? asc(column) : desc(column));
+
+    // The generated columns are typed nullable by drizzle, but their SQL is
+    // `COALESCE(..., 0)`, so they are always present.
+    return rows.map((row) => ({
+      ...row,
+      profitPercentage: row.profitPercentage ?? 0,
+      profitVolume: row.profitVolume ?? 0,
+    }));
   }
 
   /**

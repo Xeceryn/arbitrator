@@ -1,0 +1,2 @@
+ALTER TABLE "opportunity" ADD COLUMN "buyExchangeSymbol" varchar(255) DEFAULT '' NOT NULL;--> statement-breakpoint
+ALTER TABLE "opportunity" ADD COLUMN "sellExchangeSymbol" varchar(255) DEFAULT '' NOT NULL;

@@ -43,3 +43,55 @@
 .toggle {
   background-image: none;
 }
+
+/*
+  Signal board colours, keyed by the (buy base currency → sell base currency)
+  pair. These are intentionally theme-independent: the pair colour is the
+  signal's meaning, not a surface. Text/volume still carry the information, so
+  colour is never the only cue.
+*/
+.signal-usdt-usdt {
+  --signal-color: #8b5cf6; /* purple */
+}
+.signal-usdt-idr {
+  --signal-color: #dc2626; /* red */
+}
+.signal-idr-usdt {
+  --signal-color: #16a34a; /* green */
+}
+.signal-idr-idr {
+  --signal-color: #d2691e; /* chocolate */
+}
+
+.signal-color {
+  color: var(--signal-color);
+}
+
+.signal-bg {
+  background-color: var(--signal-color);
+  color: #fff;
+}
+
+.signal-ring {
+  border-color: var(--signal-color);
+}
+
+@keyframes signal-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.signal-pulse {
+  animation: signal-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-pulse {
+    animation: none;
+  }
+}
