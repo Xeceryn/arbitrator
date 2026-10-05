@@ -144,7 +144,7 @@ export const SignalController = new Elysia()
         busy: false,
       };
 
-      const timer = setInterval(() => void pushBoard(ws, state), 1000);
+      const timer = setInterval(() => void pushBoard(ws, state), 500);
       connections.set(ws.id, { state, timer });
       void pushBoard(ws, state);
     },

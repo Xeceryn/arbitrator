@@ -293,14 +293,15 @@ export namespace Opportunity {
       .innerJoin(cryptocurrency, eq(opportunity.cmcId, cryptocurrency.cmcId))
       .where(
         and(
-          gt(opportunity.profitPercentage, 0),
+          // gt(opportunity.profitPercentage, 0),
           ne(opportunity.buyPrice, 0),
           ne(opportunity.sellPrice, 0),
           ne(opportunity.buyVolume, 0),
           ne(opportunity.sellVolume, 0),
         ),
       )
-      .orderBy(input.order === "asc" ? asc(column) : desc(column));
+      .orderBy(input.order === "asc" ? asc(column) : desc(column))
+      .limit(60);
 
     // The generated columns are typed nullable by drizzle, but their SQL is
     // `COALESCE(..., 0)`, so they are always present.

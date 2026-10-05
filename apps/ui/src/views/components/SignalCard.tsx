@@ -41,22 +41,22 @@ export const SignalCard = ({ signal }: Props) => {
         sellExchange.baseCurrency,
       )}`}
     >
-      <div class="card-body gap-3 p-4">
-        <header class="flex items-center justify-between gap-2">
-          <div class="flex min-w-0 items-center gap-2">
+      <div class="card-body gap-2 p-2.5">
+        <header class="flex items-center justify-between gap-1.5">
+          <div class="flex min-w-0 items-center gap-1.5">
             <img
               src={coin.logo}
               alt=""
               loading="lazy"
-              class="size-6 rounded-full bg-base-200 object-contain"
+              class="size-5 rounded-full bg-base-200 object-contain"
             />
-            <span class="truncate text-sm font-semibold" safe>
+            <span class="truncate text-xs font-semibold" safe>
               {coin.symbol}
             </span>
-            <span class="badge badge-ghost badge-sm font-mono">ID {cmcId}</span>
+            <span class="badge badge-ghost badge-xs font-mono">ID {cmcId}</span>
           </div>
           <span
-            class="badge badge-outline badge-sm signal-color signal-ring"
+            class="badge badge-outline badge-xs signal-color signal-ring"
             title={signalPairLabel(
               buyExchange.baseCurrency,
               sellExchange.baseCurrency,
@@ -69,7 +69,7 @@ export const SignalCard = ({ signal }: Props) => {
           </span>
         </header>
 
-        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-sm">
+        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-xs">
           <dt class="opacity-60">Buy price</dt>
           <dd class="text-right font-medium tabular-nums">
             {formatPrice(buyPrice)}
@@ -81,10 +81,10 @@ export const SignalCard = ({ signal }: Props) => {
         </dl>
 
         <div class="text-center">
-          <p class="signal-color text-3xl font-bold tabular-nums">
+          <p class="signal-color text-2xl font-bold tabular-nums">
             {formatProfitPercentage(profitPercentage)}
           </p>
-          <p class="text-sm opacity-70">
+          <p class="text-xs opacity-70">
             Profit{" "}
             <span class="font-semibold tabular-nums">
               {formatCompact(profitVolume)}
@@ -92,16 +92,16 @@ export const SignalCard = ({ signal }: Props) => {
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center justify-center gap-2">
+        <div class="flex flex-wrap items-center justify-center gap-1.5">
           <span
-            class="signal-bg rounded-box px-2.5 py-1 text-sm font-semibold"
+            class="signal-bg rounded-box px-2 py-0.5 text-xs font-semibold"
             title={buyExchange.name}
             safe
           >
             {buyExchangeSymbol}
           </span>
           <span
-            class="signal-bg rounded-box px-2.5 py-1 text-sm font-semibold"
+            class="signal-bg rounded-box px-2 py-0.5 text-xs font-semibold"
             title={sellExchange.name}
             safe
           >
@@ -109,33 +109,33 @@ export const SignalCard = ({ signal }: Props) => {
           </span>
         </div>
 
-        <div class="flex items-center justify-center gap-3">
-          <div class="flex w-20 flex-col items-center gap-1">
+        <div class="flex items-center justify-center gap-2">
+          <div class="flex w-14 flex-col items-center gap-0.5">
             <img
               src={buyExchange.logo}
               alt={buyExchange.name}
               loading="lazy"
-              class="size-8 rounded-box bg-base-200 object-contain p-0.5"
+              class="size-6 rounded-box bg-base-200 object-contain p-0.5"
             />
-            <span class="truncate text-xs opacity-70" safe>
+            <span class="truncate text-[0.625rem] opacity-70" safe>
               {buyExchange.name}
             </span>
           </div>
-          <ArrowRightIcon class="signal-color size-5 shrink-0" />
-          <div class="flex w-20 flex-col items-center gap-1">
+          <ArrowRightIcon class="signal-color size-4 shrink-0" />
+          <div class="flex w-14 flex-col items-center gap-0.5">
             <img
               src={sellExchange.logo}
               alt={sellExchange.name}
               loading="lazy"
-              class="size-8 rounded-box bg-base-200 object-contain p-0.5"
+              class="size-6 rounded-box bg-base-200 object-contain p-0.5"
             />
-            <span class="truncate text-xs opacity-70" safe>
+            <span class="truncate text-[0.625rem] opacity-70" safe>
               {sellExchange.name}
             </span>
           </div>
         </div>
 
-        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-3 text-sm">
+        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 text-xs">
           <dt class="opacity-60">Buy volume</dt>
           <dd class="text-right tabular-nums">{formatCompact(buyVolume)}</dd>
           <dt class="opacity-60">Sell volume</dt>

@@ -12,6 +12,9 @@ for (let index = 0; index < 2; index++) {
   );
 }
 
+/**
+ * on parent exit code (SIGTERM etc), 
+ */
 function kill() {
   for (const child of children) {
     child.kill();

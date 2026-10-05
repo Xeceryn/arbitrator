@@ -215,7 +215,7 @@ export const SignalBoard = ({
   return (
     <div
       id="signal-board"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6"
     >
       {data.signals.map((signal) => (
         <SignalCard signal={signal} />
