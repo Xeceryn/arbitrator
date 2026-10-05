@@ -70,12 +70,14 @@ export function timeAgo(date: Date) {
 /* -------------------------------------------------------------------------- */
 
 const priceFormatter = new Intl.NumberFormat("en-ID", {
+  minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
 /**
  * Below 1, two decimals would round sub-cent prices to `0`; keep their real
- * digits instead. At or above 1, two decimals is enough (e.g. `1,23`).
+ * digits instead. At or above 1, two decimals is enough (e.g. `1,23`), and the
+ * trailing zeros are kept (e.g. `2,00`).
  */
 const precisePriceFormatter = new Intl.NumberFormat("en-ID", {
   maximumFractionDigits: 20,

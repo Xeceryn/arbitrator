@@ -1,16 +1,28 @@
-declare let self: Worker;
-import { threadId as processId } from "worker_threads";
-
+import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
 import WebSocket, { type RawData } from "ws";
 
 import {
-  WorkerMessageType,
-  WorkerState,
-  type OrderbookWorkerMessage,
-} from "../../types";
+  bootstrap,
+  createOrderbookPublisher,
+  onCommand,
+  postError,
+  postState,
+  postSubscribed,
+  postUnsubscribed,
+} from "../protocol";
 
-const exchange = "indodax";
-const threadId = exchange + "-orderbook-" + processId;
+const { exchange, threadId, symbols: initialSymbols } = bootstrap();
+
+const publisher = await createOrderbookPublisher(exchange);
+const ChannelStore = new Map<string, number>();
+
+const toLevel = (row: [string | number, string | number]): [number, number] => [
+  Number(row[0]),
+  Number(row[1]),
+];
+
+const pairForSymbol = (symbol: string) => `${symbol.toUpperCase()}USDT`;
+const topicForPair = (pair: string) => `${pair.toLowerCase()}@depth20@1000ms`;
 
 const token =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE5NDY2MTg0MTV9.UR1lBM6Eqh0yWz-PVirw1uPCxe60FdchR8eNVdsskeo";

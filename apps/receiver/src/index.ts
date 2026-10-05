@@ -84,7 +84,7 @@ export async function convertPrice(
   return orderbook;
 }
 
-const SEARCH_VOLUME_TARGET = 2_000_000;
+const SEARCH_VOLUME_TARGET = 10_000_000;
 export function searchOrderbook(
   orderbook: NormalizedOrderbookEvent,
 ): SearchedOrderbook {

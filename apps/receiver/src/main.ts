@@ -1,7 +1,7 @@
-// const cpus = navigator.hardwareConcurrency;
+const cpus = navigator.hardwareConcurrency;
 const children: Bun.Subprocess[] = [];
 
-for (let index = 0; index < 2; index++) {
+for (let index = 0; index < cpus; index++) {
   children.push(
     Bun.spawn({
       cmd: ["bun", "run", "src/index.ts", "--cluster"],
@@ -13,7 +13,7 @@ for (let index = 0; index < 2; index++) {
 }
 
 /**
- * on parent exit code (SIGTERM etc), 
+ * on parent exit code (SIGTERM etc),
  */
 function kill() {
   for (const child of children) {
