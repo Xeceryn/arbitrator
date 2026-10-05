@@ -81,10 +81,12 @@ const precisePriceFormatter = new Intl.NumberFormat("en-ID", {
   maximumFractionDigits: 20,
 });
 
-const volumeFormatter = new Intl.NumberFormat("en-ID", {
+const volumeFormatter = new Intl.NumberFormat("id-ID", {
   notation: "compact",
+  style: "currency",
   currency: "IDR",
-  maximumFractionDigits: 2,
+  // maximumFractionDigits: 2,
+  compactDisplay: "short",
 });
 
 /** Full price, e.g. `74.518.227,55`; sub-1 prices keep their significant digits. */
@@ -96,7 +98,7 @@ export function formatPrice(value: number): string {
 
 /** Compact volume, e.g. `277,45M` (K/M/B). */
 export function formatCompact(value: number): string {
-  return volumeFormatter.format(value).replace(/\s+/g, "");
+  return volumeFormatter.format(value);
 }
 
 /** Ratio (`0.0085`) as a percentage string (`0.85 %`). */

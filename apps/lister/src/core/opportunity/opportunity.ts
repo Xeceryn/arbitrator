@@ -293,7 +293,7 @@ export namespace Opportunity {
       .innerJoin(cryptocurrency, eq(opportunity.cmcId, cryptocurrency.cmcId))
       .where(
         and(
-          // gt(opportunity.profitPercentage, 0),
+          gt(opportunity.profitPercentage, 0),
           ne(opportunity.buyPrice, 0),
           ne(opportunity.sellPrice, 0),
           ne(opportunity.buyVolume, 0),

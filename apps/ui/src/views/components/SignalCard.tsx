@@ -6,7 +6,31 @@ import {
   formatProfitPercentage,
 } from "../../utils";
 import { ArrowRightIcon } from "./icons";
-import { signalColorClass, signalPairLabel } from "./signal";
+import { signalColorClass } from "./signal";
+
+const ExchangeSymbolBadge = (x: {
+  buyExchangeSymbol: string;
+  sellExchangeSymbol: string;
+}) => {
+  if (x.buyExchangeSymbol === x.sellExchangeSymbol) {
+    return (
+      <span class="signal-bg rounded-box px-4 py-2 text-lg font-bold">
+        {x.buyExchangeSymbol}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <span class="signal-bg rounded-box px-4 py-2 text-lg font-bold">
+        {x.buyExchangeSymbol}
+      </span>
+      <span class="signal-bg rounded-box px-4 py-2 text-lg font-bold">
+        {x.sellExchangeSymbol}
+      </span>
+    </>
+  );
+};
 
 type Props = {
   signal: OpportunitySignal;
@@ -36,77 +60,73 @@ export const SignalCard = ({ signal }: Props) => {
   return (
     <article
       id={`signal-card-${cmcId}-${buyExchange.id}-${sellExchange.id}`}
-      class={`card border border-base-300 bg-base-100 shadow-sm ${signalColorClass(
+      class={`card border border-slate-300 bg-slate-100 text-black shadow-sm ${signalColorClass(
         buyExchange.baseCurrency,
         sellExchange.baseCurrency,
       )}`}
     >
-      <div class="card-body gap-2 p-2.5">
+      <div class="card-body gap-2 p-2.5 font-bold">
         <header class="flex items-center justify-between gap-1.5">
           <div class="flex min-w-0 items-center gap-1.5">
             <img
               src={coin.logo}
               alt=""
               loading="lazy"
-              class="size-5 rounded-full bg-base-200 object-contain"
+              class="size-5 rounded-full bg-slate-200 object-contain"
             />
-            <span class="truncate text-xs font-semibold" safe>
+            <span class="truncate text-sm font-bold" safe>
               {coin.symbol}
             </span>
-            <span class="badge badge-ghost badge-xs font-mono">ID {cmcId}</span>
+            <span class="badge badge-sm border-slate-300 bg-slate-200 font-mono font-bold text-gray-900">
+              ID {cmcId}
+            </span>
           </div>
-          <span
-            class="badge badge-outline badge-xs signal-color signal-ring"
-            title={signalPairLabel(
-              buyExchange.baseCurrency,
-              sellExchange.baseCurrency,
-            )}
-          >
-            {signalPairLabel(
-              buyExchange.baseCurrency,
-              sellExchange.baseCurrency,
-            )}
-          </span>
         </header>
 
-        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-xs">
-          <dt class="opacity-60">Buy price</dt>
-          <dd class="text-right font-medium tabular-nums">
+        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-sm font-bold">
+          <dt class="opacity-90">Buy price</dt>
+          <dd class="text-right font-bold tabular-nums">
             {formatPrice(buyPrice)}
           </dd>
-          <dt class="opacity-60">Sell price</dt>
-          <dd class="text-right font-medium tabular-nums">
+          <dt class="opacity-90">Sell price</dt>
+          <dd class="text-right font-bold tabular-nums">
             {formatPrice(sellPrice)}
           </dd>
         </dl>
 
         <div class="text-center">
-          <p class="signal-color text-2xl font-bold tabular-nums">
+          <p class="signal-color text-3xl font-bold tabular-nums">
             {formatProfitPercentage(profitPercentage)}
           </p>
-          <p class="text-xs opacity-70">
+          <p class="text-sm font-bold opacity-90">
             Profit{" "}
-            <span class="font-semibold tabular-nums">
+            <span class="font-bold tabular-nums">
               {formatCompact(profitVolume)}
             </span>
           </p>
         </div>
 
         <div class="flex flex-wrap items-center justify-center gap-1.5">
+          <ExchangeSymbolBadge
+            buyExchangeSymbol={buyExchangeSymbol}
+            sellExchangeSymbol={sellExchangeSymbol}
+          />
+          {/*
           <span
-            class="signal-bg rounded-box px-2 py-0.5 text-xs font-semibold"
+            class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
             title={buyExchange.name}
             safe
           >
             {buyExchangeSymbol}
           </span>
           <span
-            class="signal-bg rounded-box px-2 py-0.5 text-xs font-semibold"
+            class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
             title={sellExchange.name}
             safe
           >
             {sellExchangeSymbol}
           </span>
+					*/}
         </div>
 
         <div class="flex items-center justify-center gap-2">
@@ -115,9 +135,9 @@ export const SignalCard = ({ signal }: Props) => {
               src={buyExchange.logo}
               alt={buyExchange.name}
               loading="lazy"
-              class="size-6 rounded-box bg-base-200 object-contain p-0.5"
+              class="size-6 rounded-box bg-slate-200 object-contain p-0.5"
             />
-            <span class="truncate text-[0.625rem] opacity-70" safe>
+            <span class="truncate text-xs font-bold opacity-90" safe>
               {buyExchange.name}
             </span>
           </div>
@@ -127,19 +147,23 @@ export const SignalCard = ({ signal }: Props) => {
               src={sellExchange.logo}
               alt={sellExchange.name}
               loading="lazy"
-              class="size-6 rounded-box bg-base-200 object-contain p-0.5"
+              class="size-6 rounded-box bg-slate-200 object-contain p-0.5"
             />
-            <span class="truncate text-[0.625rem] opacity-70" safe>
+            <span class="truncate text-xs font-bold opacity-90" safe>
               {sellExchange.name}
             </span>
           </div>
         </div>
 
-        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 text-xs">
-          <dt class="opacity-60">Buy volume</dt>
-          <dd class="text-right tabular-nums">{formatCompact(buyVolume)}</dd>
-          <dt class="opacity-60">Sell volume</dt>
-          <dd class="text-right tabular-nums">{formatCompact(sellVolume)}</dd>
+        <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 text-sm font-bold">
+          <dt class="opacity-90">Buy volume</dt>
+          <dd class="text-right font-bold tabular-nums">
+            {formatCompact(buyVolume)}
+          </dd>
+          <dt class="opacity-90">Sell volume</dt>
+          <dd class="text-right font-bold tabular-nums">
+            {formatCompact(sellVolume)}
+          </dd>
         </dl>
       </div>
     </article>
