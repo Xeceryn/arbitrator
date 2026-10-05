@@ -1,6 +1,11 @@
 import type { ExchangeSelect } from "@arbitrator/lister/types";
 
 import { PlayIcon, StopIcon } from "./icons";
+import {
+  WorkerHealthCell,
+  type WorkerDetail,
+  type WorkerStateCounts,
+} from "./worker-state";
 
 type Props = {
   exchange: ExchangeSelect;
@@ -8,6 +13,9 @@ type Props = {
   supported: boolean;
   workerCount: number;
   symbolCount: number;
+  states: WorkerStateCounts;
+  expectedWorkers: number;
+  workers: WorkerDetail[];
 };
 
 /**
@@ -20,6 +28,9 @@ export const ExchangeWorkerRow = ({
   supported,
   workerCount,
   symbolCount,
+  states,
+  expectedWorkers,
+  workers,
 }: Props) => {
   const status = !supported
     ? { label: "No adapter", className: "badge badge-ghost badge-sm" }
@@ -60,8 +71,31 @@ export const ExchangeWorkerRow = ({
           {status.label}
         </span>
       </td>
-      <td class="hidden text-right tabular-nums sm:table-cell">
-        {workerCount}
+      <WorkerHealthCell
+        slug={exchange.slug}
+        states={states}
+        workers={workers}
+      />
+      <td
+        class="hidden text-right tabular-nums sm:table-cell"
+        title={
+          expectedWorkers > 0
+            ? `${workerCount} live of ${expectedWorkers} expected`
+            : undefined
+        }
+      >
+        <span
+          class={
+            workerCount < expectedWorkers
+              ? "font-semibold text-warning"
+              : undefined
+          }
+        >
+          {workerCount}
+        </span>
+        {expectedWorkers > 0 ? (
+          <span class="opacity-60"> / {expectedWorkers}</span>
+        ) : null}
       </td>
       <td class="hidden text-right tabular-nums sm:table-cell">
         {symbolCount}

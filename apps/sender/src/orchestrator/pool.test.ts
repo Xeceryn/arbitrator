@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 import type { SymbolSubscription } from "@arbitrator/contracts";
 
@@ -6,6 +6,13 @@ import { WorkerPool, type WorkerLike } from "./pool";
 
 const BTC: SymbolSubscription = { cmcId: 1, symbol: "BTC" };
 const ETH: SymbolSubscription = { cmcId: 2, symbol: "ETH" };
+
+const pools: WorkerPool[] = [];
+
+afterEach(() => {
+  for (const pool of pools) pool.terminateAll();
+  pools.length = 0;
+});
 
 class FakeWorker implements WorkerLike {
   readonly messages: unknown[] = [];
@@ -51,7 +58,10 @@ function setup() {
       onWorkerFailure: (workerId, exchangeSlug) =>
         failures.push({ workerId, exchangeSlug }),
     },
+    // Keep respawns near-instant so tests don't wait seconds.
+    1,
   );
+  pools.push(pool);
 
   return { pool, created, failures };
 }
@@ -71,7 +81,7 @@ describe("WorkerPool", () => {
 
     expect(created).toHaveLength(1);
     expect(pool.snapshot()).toEqual([
-      { id, exchangeSlug: "binance", symbols: [BTC] },
+      { id, exchangeSlug: "binance", symbols: [BTC], state: "disconnected" },
     ]);
   });
 
@@ -141,5 +151,84 @@ describe("WorkerPool", () => {
     created[0]?.emit("exit", 0);
 
     expect(failures).toEqual([]);
+  });
+
+  test("reflects the state a worker reports", () => {
+    const { pool, created } = setup();
+    const id = spawnBinance(pool, [BTC]);
+
+    created[0]?.emit("message", {
+      type: "state",
+      threadId: "binance-orderbook",
+      exchange: "binance",
+      state: "reconnecting",
+    });
+
+    expect(pool.snapshot()).toEqual([
+      {
+        id,
+        exchangeSlug: "binance",
+        symbols: [BTC],
+        state: "reconnecting",
+      },
+    ]);
+  });
+
+  test("reads the legacy state-change envelope", () => {
+    const { pool, created } = setup();
+    spawnBinance(pool, [BTC]);
+
+    created[0]?.emit("message", {
+      type: "state-change",
+      threadId: "binance-orderbook",
+      exchange: "binance",
+      content: { state: "connected" },
+    });
+
+    expect(pool.snapshot()[0]?.state).toBe("connected");
+  });
+
+  test("counts unexpected exits as recent failures", () => {
+    const { pool, created } = setup();
+    spawnBinance(pool, [BTC]);
+
+    created[0]?.emit("exit", 1);
+
+    expect(pool.failureCounts()).toEqual({ binance: 1 });
+  });
+
+  test("respawns a worker whose thread exited", async () => {
+    const { pool, created } = setup();
+    spawnBinance(pool, [BTC]);
+
+    created[0]?.emit("exit", 1);
+    await Bun.sleep(20);
+
+    expect(created).toHaveLength(2);
+    expect(pool.snapshot()).toHaveLength(1);
+    expect(pool.snapshot()[0]?.symbols).toEqual([BTC]);
+  });
+
+  test("does not respawn an exchange that is no longer wanted", async () => {
+    const created: FakeWorker[] = [];
+    let wanted = true;
+    const pool = new WorkerPool(
+      () => {
+        const worker = new FakeWorker();
+        created.push(worker);
+        return worker;
+      },
+      { shouldRespawn: () => wanted },
+      1,
+    );
+    pools.push(pool);
+
+    spawnBinance(pool, [BTC]);
+    wanted = false;
+    created[0]?.emit("exit", 1);
+    await Bun.sleep(20);
+
+    expect(created).toHaveLength(1);
+    expect(pool.snapshot()).toEqual([]);
   });
 });

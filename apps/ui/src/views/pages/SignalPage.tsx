@@ -31,27 +31,10 @@ const ORDER_BY_OPTIONS: Array<{ value: SignalOrderBy; label: string }> = [
   { value: "profitVolume", label: "Profit volume" },
 ];
 
-/** Query string handed to the WebSocket so it pushes the matching view. */
-export function signalWsQuery(query: SignalQuery): string {
-  const params = new URLSearchParams();
-  params.set("view", query.view);
-  params.set("orderBy", query.orderBy);
-  params.set("order", query.order);
-  for (const slug of query.hide) params.append("hide", slug);
-  return params.toString();
-}
-
-/** `hx-ws:send` on the form; `hx-trigger` overrides the default `submit`. */
-const sendAttributes: Record<string, string> = {
-  "hx-ws:send": "",
-  "hx-trigger": "change",
-};
-
 /**
- * Filter chrome. It lives inside the WebSocket connect element and sends its
- * values back over the socket (per the htmx ws docs), so changing a filter
- * never reconnects or re-renders the controls — the server just re-pushes the
- * board. Only the board is the swap target, so the form keeps focus.
+ * Filter chrome. Purely client-side now: the socket broadcasts one shared board
+ * and `signal-board.ts` reads these inputs to hide/sort/switch view locally, so
+ * changing a filter never touches the network and the form keeps focus.
  */
 export const SignalControls = ({
   query,
@@ -62,7 +45,7 @@ export const SignalControls = ({
 }) => (
   <form
     id="signal-controls"
-    {...sendAttributes}
+    onsubmit="return false"
     class="flex flex-wrap items-center gap-2"
   >
     <div role="tablist" class="tabs tabs-box">
@@ -159,7 +142,7 @@ const SignalTable = ({ signals }: { signals: OpportunitySignal[] }) => (
           <th class="hidden xl:table-cell">Pair</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody data-signal-list>
         {signals.map((signal) => (
           <SignalTableRow signal={signal} />
         ))}
@@ -172,13 +155,13 @@ const SignalTable = ({ signals }: { signals: OpportunitySignal[] }) => (
  * The swappable board. Root id `signal-board` is stable so the WebSocket's
  * morph diff instead of replacing the DOM every second.
  */
-export const SignalBoard = ({
-  query,
-  data,
-}: {
-  query: SignalQuery;
-  data: SignalsData;
-}) => {
+/**
+ * The swappable board. Root id `signal-board` is stable so the WebSocket morphs
+ * instead of replacing the DOM every tick. It always carries both views; the
+ * client shows one and sorts/filters locally, which is why the WebSocket can
+ * broadcast the exact same HTML to everyone.
+ */
+export const SignalBoard = ({ data }: { data: SignalsData }) => {
   if (!data.ok) {
     return (
       <div id="signal-board" class="alert alert-error" role="alert">
@@ -204,50 +187,30 @@ export const SignalBoard = ({
     );
   }
 
-  if (query.view === "table") {
-    return (
-      <div id="signal-board">
+  return (
+    <div id="signal-board">
+      <div data-signal-panel="card">
+        <div
+          data-signal-list
+          class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"
+        >
+          {data.signals.map((signal) => (
+            <SignalCard signal={signal} />
+          ))}
+        </div>
+      </div>
+      <div data-signal-panel="table" style="display:none">
         <SignalTable signals={data.signals} />
       </div>
-    );
-  }
-
-  return (
-    <div
-      id="signal-board"
-      class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"
-    >
-      {data.signals.map((signal) => (
-        <SignalCard signal={signal} />
-      ))}
     </div>
   );
 };
 
 /**
- * What the WebSocket pushes every second: the board, plus an out-of-band
- * update for the static controls' hidden-exchange count.
- */
-export const SignalBoardPush = ({
-  query,
-  data,
-}: {
-  query: SignalQuery;
-  data: SignalsData;
-}) => (
-  <>
-    <span id="signal-hide-count" hx-swap-oob="true">
-      {query.hide.length > 0 ? ` (${query.hide.length})` : ""}
-    </span>
-    <SignalBoard query={query} data={data} />
-  </>
-);
-
-/**
- * Full signal page. `#signal-live` is the WebSocket owner: it contains both
- * the filter form (`hx-ws:send` finds its connection by `closest`) and the
- * board, but only `#signal-board` is the morph target, so the controls are
- * never disturbed by the per-second push.
+ * Full signal page. `#signal-live` owns the socket; it wraps both the controls
+ * (kept outside the morph target so their state survives) and the board. Only
+ * `#signal-board` is swapped, and `signal-board.ts` re-applies the local
+ * filter/sort/view after every push.
  */
 export const SignalPage = ({
   query,
@@ -259,7 +222,7 @@ export const SignalPage = ({
   exchanges: ExchangeSelect[];
 }) => {
   const wsAttributes: Record<string, string> = {
-    "hx-ws:connect": `/signals/ws?${signalWsQuery(query)}`,
+    "hx-ws:connect": "/signals/ws",
     "hx-target": "#signal-board",
     "hx-swap": "outerMorph",
     "hx-trigger": "load",
@@ -270,24 +233,10 @@ export const SignalPage = ({
       <section id="signals" class="w-full">
         <div class="card w-full bg-base-100 shadow-xl">
           <div class="card-body gap-4 p-4 sm:p-8">
-            <header class="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 class="text-lg font-semibold">Live signals</h2>
-                <p class="max-w-prose text-sm opacity-60">
-                  Profitable transfer routes, refreshed every second. The colour
-                  marks the buy → sell base-currency pair.
-                </p>
-              </div>
-              <span class="badge badge-success gap-2">
-                <span class="signal-pulse inline-block size-2 rounded-full bg-current"></span>
-                Live
-              </span>
-            </header>
-
             <div id="signal-live" {...wsAttributes}>
               <SignalControls query={query} exchanges={exchanges} />
               <div class="mt-4">
-                <SignalBoard query={query} data={data} />
+                <SignalBoard data={data} />
               </div>
             </div>
           </div>

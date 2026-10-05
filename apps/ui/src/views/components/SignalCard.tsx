@@ -14,7 +14,10 @@ const ExchangeSymbolBadge = (x: {
 }) => {
   if (x.buyExchangeSymbol === x.sellExchangeSymbol) {
     return (
-      <span class="signal-bg rounded-box px-4 py-2 text-lg font-bold">
+      <span
+        _="on click call navigator.clipboard.writeText(my innerText)"
+        class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
+      >
         {x.buyExchangeSymbol}
       </span>
     );
@@ -22,10 +25,16 @@ const ExchangeSymbolBadge = (x: {
 
   return (
     <>
-      <span class="signal-bg rounded-box px-4 py-2 text-lg font-bold">
+      <span
+        _="on click call navigator.clipboard.writeText(my innerText)"
+        class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
+      >
         {x.buyExchangeSymbol}
       </span>
-      <span class="signal-bg rounded-box px-4 py-2 text-lg font-bold">
+      <span
+        _="on click call navigator.clipboard.writeText(my innerText)"
+        class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
+      >
         {x.sellExchangeSymbol}
       </span>
     </>
@@ -60,7 +69,12 @@ export const SignalCard = ({ signal }: Props) => {
   return (
     <article
       id={`signal-card-${cmcId}-${buyExchange.id}-${sellExchange.id}`}
-      class={`card border border-slate-300 bg-slate-100 text-black shadow-sm ${signalColorClass(
+      data-signal-node="true"
+      data-buy-slug={buyExchange.slug}
+      data-sell-slug={sellExchange.slug}
+      data-profit-percentage={profitPercentage}
+      data-profit-volume={profitVolume}
+      class={`card border border-slate-300 bg-secondary-content text-black shadow-sm ${signalColorClass(
         buyExchange.baseCurrency,
         sellExchange.baseCurrency,
       )}`}
@@ -72,12 +86,12 @@ export const SignalCard = ({ signal }: Props) => {
               src={coin.logo}
               alt=""
               loading="lazy"
-              class="size-5 rounded-full bg-slate-200 object-contain"
+              class="size-5 rounded-full bg-secondary-content object-contain"
             />
             <span class="truncate text-sm font-bold" safe>
               {coin.symbol}
             </span>
-            <span class="badge badge-sm border-slate-300 bg-slate-200 font-mono font-bold text-gray-900">
+            <span class="badge badge-sm border-slate-300 bg-secondary-content font-mono font-bold text-gray-900">
               ID {cmcId}
             </span>
           </div>

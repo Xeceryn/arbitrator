@@ -75,23 +75,3 @@
 .signal-ring {
   border-color: var(--signal-color);
 }
-
-@keyframes signal-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-.signal-pulse {
-  animation: signal-pulse 2s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .signal-pulse {
-    animation: none;
-  }
-}

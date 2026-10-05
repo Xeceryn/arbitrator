@@ -15,9 +15,13 @@ if (error) {
   process.exit(1);
 }
 const exchangeSlugIdMap = new Map<string, number>();
+/** Exchanges that already quote prices in IDR (e.g. Indodax). */
+const idrExchangeSlugs = new Set<string>();
 for (const exchange of exchanges.data) {
   exchangeSlugIdMap.set(exchange.slug, exchange.id);
+  if (exchange.baseCurrency === "idr") idrExchangeSlugs.add(exchange.slug);
 }
+const indodaxExchangeID = exchangeSlugIdMap.get("indodax");
 
 // PERFORMANCE DEBUG
 let messageCount = 0;
@@ -33,7 +37,7 @@ const nc = await connect({
   maxReconnectAttempts: -1,
 });
 
-const IDR_PRICE = 17950 as const;
+const IDR_PRICE = 17869 as const;
 const CACHED_IDR_TTL = 1000 * 60 * 5;
 let cachedAt: number = 0;
 
@@ -61,6 +65,12 @@ export async function convertPrice(
   // for a case like currencies like 1mbabydoge, 1000sats etc.
   divider?: number,
 ): Promise<NormalizedOrderbookEvent> {
+  // IDR-quoted exchanges (e.g. Indodax) already publish prices in IDR, so there
+  // is nothing to convert: leave the book untouched for search/storage.
+  if (idrExchangeSlugs.has(orderbook.exchange)) {
+    return orderbook;
+  }
+
   const idrPrice = await getIdrPrice();
 
   const asks = orderbook.asks;
@@ -84,12 +94,17 @@ export async function convertPrice(
   return orderbook;
 }
 
-const SEARCH_VOLUME_TARGET = 10_000_000;
+const SEARCH_VOLUME_TARGET = 2_000_000;
 export function searchOrderbook(
   orderbook: NormalizedOrderbookEvent,
 ): SearchedOrderbook {
   const bids = orderbook.bids;
   const asks = orderbook.asks;
+
+  // IDR-quoted exchanges publish `[price, idr_volume]`, so the second value is
+  // already the IDR notional. USDT-quoted books are converted to IDR and carry
+  // base volume, so their product is the IDR notional.
+  const isIdrQuoted = idrExchangeSlugs.has(orderbook.exchange);
 
   let buyVolume = 0;
   let buyPrice = 0;
@@ -97,7 +112,7 @@ export function searchOrderbook(
   for (let i = 0, len = bids.length; i < len; i++) {
     const level = bids[i]!;
 
-    buyVolume += level[0] * level[1];
+    buyVolume += isIdrQuoted ? level[1] : level[0] * level[1];
 
     if (buyVolume >= SEARCH_VOLUME_TARGET) {
       buyPrice = level[0];
@@ -111,7 +126,7 @@ export function searchOrderbook(
   for (let i = 0, len = asks.length; i < len; i++) {
     const level = asks[i]!;
 
-    sellVolume += level[0] * level[1];
+    sellVolume += isIdrQuoted ? level[1] : level[0] * level[1];
 
     if (sellVolume >= SEARCH_VOLUME_TARGET) {
       sellPrice = level[0];
@@ -135,9 +150,9 @@ async function processOrderbook(
   divider?: number,
 ) {
   const converted = await convertPrice(orderbook, divider);
-  conversionCount += 1;
+  if (exchangeId === indodaxExchangeID) conversionCount += 1;
   const searched = searchOrderbook(converted);
-  searchCount += 1;
+  if (exchangeId === indodaxExchangeID) searchCount += 1;
 
   await Promise.all([
     Opportunity.updateBuySide({
@@ -153,7 +168,7 @@ async function processOrderbook(
       exchangeId,
     }),
   ]);
-  update += 1;
+  if (exchangeId === indodaxExchangeID) update += 1;
 }
 
 setInterval(() => {
@@ -184,7 +199,7 @@ logger.info(`receiver-${process.pid} listening on ${subject}`);
 
 for await (const message of subscription) {
   const orderbook = message.json<NormalizedOrderbookEvent>();
-  messageCount += 1;
+  if (orderbook.exchange === "indodax") messageCount += 1;
 
   // The sender now carries the canonical exchange identity on the payload, so
   // we never parse subject tokens here.
@@ -210,6 +225,11 @@ for await (const message of subscription) {
     }
     // 1000cheems 100 of cheems
     if (orderbook.cmcId === 33280) {
+      await processOrderbook(orderbook, exchangeId, 1000);
+      continue;
+    }
+    // 1000cat 1000 of cat
+    if (orderbook.cmcId === 32724) {
       await processOrderbook(orderbook, exchangeId, 1000);
       continue;
     }

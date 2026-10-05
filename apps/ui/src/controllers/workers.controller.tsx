@@ -11,6 +11,7 @@ import {
   WorkersPage,
   WorkersResults,
   WorkersRowUpdate,
+  WorkersStatusUpdate,
 } from "../views/pages/WorkersPage";
 
 const slugParam = z.object({ slug: z.string().min(1) });
@@ -30,11 +31,21 @@ function describeError(error: unknown): string {
 }
 
 /** Tolerate a sender that is older/newer than this UI (missing fields). */
+function numberRecord(value: unknown): Record<string, number> {
+  return value && typeof value === "object"
+    ? (value as Record<string, number>)
+    : {};
+}
+
+/** Tolerate a sender that is older/newer than this UI (missing fields). */
 function normalizeStatus(input: unknown): SenderStatus {
   const record = (input ?? {}) as Partial<SenderStatus>;
   return {
     started: Array.isArray(record.started) ? record.started : [],
     workers: Array.isArray(record.workers) ? record.workers : [],
+    failures: numberRecord(record.failures),
+    desired: numberRecord(record.desired),
+    capacity: numberRecord(record.capacity),
     supported: Array.isArray(record.supported) ? record.supported : [],
   };
 }
@@ -57,6 +68,22 @@ async function loadWorkersData({
     return { ok: true, status: normalizeStatus(data), exchanges: list.data };
   } catch (error) {
     return { ok: false, message: describeError(error) };
+  }
+}
+
+/**
+ * Sender-only status for the poll. Deliberately skips the lister, so the 3s
+ * refresh never re-requests the exchange list.
+ */
+async function loadSenderStatus({
+  sender,
+}: Pick<AppClients, "sender">): Promise<SenderStatus | undefined> {
+  try {
+    const { data, error } = await sender.exchanges.get();
+    if (error || !data) return undefined;
+    return normalizeStatus(data);
+  } catch {
+    return undefined;
   }
 }
 
@@ -105,6 +132,29 @@ export const WorkersController = new Elysia()
   .get("/workers/list", async ({ hx, lister, sender }) => {
     if (!hx.isHTMX) {
       return redirect("/workers");
+    }
+    return <WorkersResults data={await loadWorkersData({ lister, sender })} />;
+  })
+
+  .get("/workers/status", async ({ sender }) => {
+    const status = await loadSenderStatus({ sender });
+    if (!status) return "";
+    return <WorkersStatusUpdate status={status} />;
+  })
+
+  .post("/workers/reconcile", async ({ hx, lister, sender }) => {
+    const { error } = await sender.reconcile.post();
+    if (error) {
+      hx.triggerEvent({
+        "make-toast": { level: "error", message: describeError(error) },
+      });
+    } else {
+      hx.triggerEvent({
+        "make-toast": {
+          level: "success",
+          message: "Reconciled workers from current metadata",
+        },
+      });
     }
     return <WorkersResults data={await loadWorkersData({ lister, sender })} />;
   })

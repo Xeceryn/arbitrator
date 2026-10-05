@@ -21,6 +21,14 @@ export function createApp(orchestrator: Orchestrator) {
       orchestrator.stop(params.slug);
       return { stopped: params.slug };
     })
+    /**
+     * Force a full reconcile from current lister metadata. Safety valve for a
+     * missed `metadata.changed` event (e.g. NATS was down when it fired).
+     */
+    .post("/reconcile", async ({ orchestrator }) => {
+      await orchestrator.runReconcile();
+      return orchestrator.status();
+    })
     .get("/exchanges", ({ orchestrator }) => orchestrator.status())
     .get("/workers", ({ orchestrator }) => ({
       workers: orchestrator.status().workers,

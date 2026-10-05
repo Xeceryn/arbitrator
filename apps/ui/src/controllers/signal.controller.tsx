@@ -7,7 +7,7 @@ import z from "zod";
 import { BaseLayout } from "../helpers/BaseLayout";
 import { PageHeading } from "../views/components/PageHeading";
 import {
-  SignalBoardPush,
+  SignalBoard,
   type SignalQuery,
   SignalPage,
   type SignalsData,
@@ -40,11 +40,6 @@ const DEFAULT_QUERY: SignalQuery = {
   hide: [],
 };
 
-function parseSignalQuery(input: unknown): SignalQuery {
-  const parsed = signalQuerySchema.safeParse(input);
-  return parsed.success ? parsed.data : DEFAULT_QUERY;
-}
-
 /** Profitable signals, minus any leg touching a hidden exchange. */
 async function loadSignals(query: SignalQuery): Promise<SignalsData> {
   const [error, data] = await listerClient.opportunity.list({
@@ -73,32 +68,50 @@ async function loadExchanges(): Promise<ExchangeSelect[]> {
   return data.data;
 }
 
-type ConnectionState = {
-  query: SignalQuery;
-  busy: boolean;
-};
-
-/** One state + interval per connected board; cleared when the socket closes. */
-const connections = new Map<
-  string,
-  { state: ConnectionState; timer: ReturnType<typeof setInterval> }
->();
-
 type Sendable = {
   readyState: number;
   send(data: unknown): unknown;
 };
 
-/** Push the current board; skips while a previous push is still in flight. */
-async function pushBoard(ws: Sendable, state: ConnectionState) {
-  if (state.busy || ws.readyState !== 1) return;
-  state.busy = true;
+/**
+ * Every connected board. One shared timer feeds all of them: the server fetches
+ * and renders the board once per tick, then fans the identical payload out to
+ * each socket. Filtering, sorting and the card/table switch all happen on the
+ * client, so no per-connection state is kept here.
+ */
+const sockets = new Set<Sendable>();
+let timer: ReturnType<typeof setInterval> | null = null;
+let busy = false;
+
+/**
+ * Fetch + render once, then send the same payload to every open socket. Skips
+ * entirely when nobody is connected, and while a previous push is in flight.
+ */
+async function broadcast() {
+  if (busy || sockets.size === 0) return;
+  busy = true;
   try {
-    const data = await loadSignals(state.query);
-    if (ws.readyState !== 1) return;
-    ws.send(<SignalBoardPush query={state.query} data={data} />);
+    const data = await loadSignals(DEFAULT_QUERY);
+    const html = <SignalBoard data={data} />;
+    for (const ws of sockets) {
+      if (ws.readyState === 1) ws.send(html);
+    }
   } finally {
-    state.busy = false;
+    busy = false;
+  }
+}
+
+/** Run one shared interval only while at least one board is connected. */
+function startTimer() {
+  if (timer) return;
+  timer = setInterval(() => void broadcast(), 500);
+  void broadcast();
+}
+
+function stopTimer() {
+  if (sockets.size === 0 && timer) {
+    clearInterval(timer);
+    timer = null;
   }
 }
 
@@ -132,39 +145,19 @@ export const SignalController = new Elysia()
   )
 
   /**
-   * The only WebSocket in the UI. It pushes the board immediately and then
-   * every second; the filter form sends its values back over the same socket
-   * (`hx-ws:send`), which updates the per-connection query and re-pushes.
+   * The only WebSocket in the UI. One shared timer broadcasts a single rendered
+   * board to every connected client; the clients do their own filtering and
+   * sorting, and never send anything back. The timer runs only while at least
+   * one socket is open.
    */
   .ws("/signals/ws", {
-    query: signalQuerySchema,
     open(ws) {
-      const state: ConnectionState = {
-        query: parseSignalQuery(ws.data.query),
-        busy: false,
-      };
-
-      const timer = setInterval(() => void pushBoard(ws, state), 500);
-      connections.set(ws.id, { state, timer });
-      void pushBoard(ws, state);
-    },
-    message(ws, raw) {
-      const entry = connections.get(ws.id);
-      if (!entry) return;
-
-      let values: unknown;
-      try {
-        values = typeof raw === "string" ? JSON.parse(raw) : raw;
-      } catch {
-        return;
-      }
-
-      entry.state.query = parseSignalQuery(values);
-      void pushBoard(ws, entry.state);
+      const wasEmpty = sockets.size === 0;
+      sockets.add(ws);
+      if (wasEmpty) startTimer();
     },
     close(ws) {
-      const entry = connections.get(ws.id);
-      if (entry) clearInterval(entry.timer);
-      connections.delete(ws.id);
+      sockets.delete(ws);
+      stopTimer();
     },
   });

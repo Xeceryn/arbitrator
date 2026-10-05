@@ -64,6 +64,13 @@ export const BaseLayout = async ({
 
           <link rel="preload" href="/public/dist/dropdown.js" as="script" />
           <script src="/public/dist/dropdown.js"></script>
+
+          <link
+            rel="preload"
+            href="/public/dist/signal-board.js"
+            as="script"
+          />
+          <script src="/public/dist/signal-board.js"></script>
         </head>
         <body
           hx-indicator:inherited=".progress"

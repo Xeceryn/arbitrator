@@ -1,3 +1,5 @@
+import { createLogger } from "@arbitrator/logger";
+
 import type { WorkerPool } from "./pool";
 import {
   type DesiredSubscription,
@@ -5,6 +7,8 @@ import {
   reconcile,
 } from "./reconcile";
 import { workerAdapters } from "./registry";
+
+const logger = createLogger("arbitrator/sender/orchestrator");
 
 /** Shape returned by `market.listTransferableCoins`. */
 export type TransferableCoinsResult = {
@@ -33,6 +37,12 @@ export type ListerGateway = {
 export type OrchestratorStatus = {
   started: string[];
   workers: ReturnType<WorkerPool["snapshot"]>;
+  /** Recent unexpected worker deaths per exchange, for the health view. */
+  failures: Record<string, number>;
+  /** Desired subscription count per exchange from the last reconcile. */
+  desired: Record<string, number>;
+  /** Max subscriptions one worker may hold, per exchange. */
+  capacity: Record<string, number>;
   supported: string[];
 };
 
@@ -46,6 +56,8 @@ export class Orchestrator {
   private debounce: ReturnType<typeof setTimeout> | undefined;
   private running = false;
   private pending = false;
+  /** Snapshot of the desired subscriptions used by the last reconcile. */
+  private readonly desiredByExchange = new Map<string, number>();
 
   constructor(
     private readonly pool: WorkerPool,
@@ -74,6 +86,14 @@ export class Orchestrator {
     return {
       started: [...this.started],
       workers: this.pool.snapshot(),
+      failures: this.pool.failureCounts(),
+      desired: Object.fromEntries(this.desiredByExchange),
+      capacity: Object.fromEntries(
+        Object.entries(workerAdapters).map(([slug, adapter]) => [
+          slug,
+          adapter.maxSubscriptionsPerConnection,
+        ]),
+      ),
       supported: Object.keys(workerAdapters),
     };
   }
@@ -82,6 +102,11 @@ export class Orchestrator {
   notifyMetadataChanged(): void {
     if (this.started.size === 0) return;
     this.schedule();
+  }
+
+  /** Whether an exchange is still started, so the pool only respawns live work. */
+  isStarted(slug: string): boolean {
+    return this.started.has(slug);
   }
 
   private schedule(): void {
@@ -114,6 +139,7 @@ export class Orchestrator {
     const started = [...this.started];
 
     if (started.length < 2) {
+      this.desiredByExchange.clear();
       this.apply(
         reconcile({
           startedExchanges: [],
@@ -148,6 +174,14 @@ export class Orchestrator {
       }
     }
 
+    this.desiredByExchange.clear();
+    for (const item of desired) {
+      this.desiredByExchange.set(
+        item.exchangeSlug,
+        (this.desiredByExchange.get(item.exchangeSlug) ?? 0) + 1,
+      );
+    }
+
     this.apply(
       reconcile({
         startedExchanges: started,
@@ -163,6 +197,16 @@ export class Orchestrator {
   }
 
   private apply(result: ReconcileResult): void {
+    if (result.commands.length > 0) {
+      const counts = new Map<string, number>();
+      for (const command of result.commands) {
+        const key = `${command.type} ${command.exchangeSlug}`;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      logger.info(
+        `reconcile: ${[...counts].map(([key, n]) => `${key} x${n}`).join(", ")}`,
+      );
+    }
     this.pool.apply(result.commands);
   }
 }

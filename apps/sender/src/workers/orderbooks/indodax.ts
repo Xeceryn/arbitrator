@@ -1,4 +1,5 @@
 import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
+import { createLogger } from "@arbitrator/logger";
 import WebSocket, { type RawData } from "ws";
 
 import {
@@ -13,209 +14,213 @@ import {
 
 const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
+const logger = createLogger(threadId);
 const publisher = await createOrderbookPublisher(exchange);
-const ChannelStore = new Map<string, number>();
 
-const toLevel = (row: [string | number, string | number]): [number, number] => [
-  Number(row[0]),
-  Number(row[1]),
+const WS_URL = "wss://ws3.indodax.com/ws/";
+// Static token published by Indodax in the market data docs.
+const TOKEN =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE5NDY2MTg0MTV9.UR1lBM6Eqh0yWz-PVirw1uPCxe60FdchR8eNVdsskeo";
+const RECONNECT_DELAY_MS = 2000;
+const PING_INTERVAL_MS = 60_000;
+
+type IndodaxLevelRaw = {
+  price: string;
+  idr_volume: string;
+};
+
+type IndodaxMessageRaw = {
+  id?: number;
+  result?: {
+    channel?: string;
+    data?: {
+      data?: {
+        pair: string;
+        ask?: IndodaxLevelRaw[];
+        bid?: IndodaxLevelRaw[];
+      };
+    };
+  };
+};
+
+/** indodax channel (e.g. `market:order-book-btcidr`) -> cmcId. */
+const ChannelStore = new Map<string, number>();
+/** Channels subscribed on the current connection; reset on every (re)connect. */
+const SentChannels = new Set<string>();
+
+let socket: WebSocket | undefined;
+let pingTimer: ReturnType<typeof setInterval> | undefined;
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+let authenticated = false;
+let authRequestId = 0;
+let requestId = 0;
+let shuttingDown = false;
+
+const nextRequestId = () => {
+  requestId += 1;
+  return requestId;
+};
+
+const channelForSymbol = (symbol: string): string => {
+  const base = symbol.toLowerCase();
+  return `market:order-book-${base.endsWith("idr") ? base : `${base}idr`}`;
+};
+
+const toLevel = (row: IndodaxLevelRaw): [number, number] => [
+  Number(row.price),
+  Number(row.idr_volume),
 ];
 
-const pairForSymbol = (symbol: string) => `${symbol.toUpperCase()}USDT`;
-const topicForPair = (pair: string) => `${pair.toLowerCase()}@depth20@1000ms`;
-
-const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE5NDY2MTg0MTV9.UR1lBM6Eqh0yWz-PVirw1uPCxe60FdchR8eNVdsskeo";
-
-const SymbolStore = new Map();
-// const { IndodaxSubscribeMap } = require("../../utils/IndodaxSubscribeMap");
-const IndodaxSubscribeMap = new Map([
-  [8104, "oneinch"],
-  [7278, "lend"],
-  [17795, "asix"],
-  [1831, "bchabc"],
-  [3602, "bchsv"],
-  [131, "drk"],
-  [20314, "lunav2"],
-  [873, "nem"],
-  [512, "str"],
-  [23635, "bnxnew"],
-  [7080, "galagames"],
-  [21846, "spaceid"],
-  [5786, "lyfel"],
-  [32521, "neirocto"],
-  [32809, "orderly"],
-  [1104, "rep"],
-  [8290, "superverse"],
-  [17751, "threshold"],
-]);
-
-function stream(metadata: [string, number][]) {
-  const socket = new WebSocket("wss://ws3.indodax.com/ws/");
-
-  socket.on("open", () => {
-    const event_change_message: OrderbookWorkerMessage = {
-      type: WorkerMessageType.StateChange,
-      threadId,
-      exchange,
-      content: {
-        state: WorkerState.Connected,
-      },
-    };
-    self.postMessage(event_change_message);
-    socket.send(
-      JSON.stringify({
-        params: {
-          token: token,
-        },
-        id: 1,
-      }),
-    );
-
-    let subscribeId = 1;
-    for (let [channel, cmcId] of metadata) {
-      if (IndodaxSubscribeMap.has(cmcId)) {
-        channel = "market:order-book-" + IndodaxSubscribeMap.get(cmcId) + "idr";
-      }
-      SymbolStore.set(channel, cmcId);
-      socket.send(
-        JSON.stringify({
-          method: 1,
-          params: {
-            channel,
-          },
-          id: subscribeId,
-        }),
-      );
-      subscribeId++;
-    }
-  });
-
-  socket.on("message", (message) => {
-    const parsed = stupidParser(message);
-    if (!parsed) return;
-    if (!("result" in parsed)) return;
-    if ("data" in parsed.result) {
-      const { data, channel } = parsed.result;
-      const { ask, bid } = data.data;
-      const cmcId = SymbolStore.get(channel);
-      const asks = ask.map(({ idr_volume, price }) => [
-        Number(price),
-        Number(idr_volume),
-      ]);
-      const bids = bid.map(({ idr_volume, price }) => [
-        Number(price),
-        Number(idr_volume),
-      ]);
-
-      const message: OrderbookWorkerMessage = {
-        type: WorkerMessageType.Data,
-        threadId,
-        exchange,
-        content: {
-          cmcId: cmcId,
-          asks,
-          bids,
-        },
-      };
-      self.postMessage(message);
-    } else {
-      return;
-    }
-
-    return;
-  });
-
-  const pingInterval = setInterval(() => {
-    socket.send(
-      JSON.stringify({
-        method: 7,
-        id: 3,
-      }),
-    );
-  }, 1000 * 60);
-
-  socket.on("close", () => {
-    clearInterval(pingInterval);
-    const message: OrderbookWorkerMessage = {
-      type: WorkerMessageType.StateChange,
-      exchange,
-      threadId,
-      content: {
-        state: WorkerState.Closed,
-      },
-    };
-    self.postMessage(message);
-
-    setTimeout(() => {
-      const message: OrderbookWorkerMessage = {
-        type: WorkerMessageType.StateChange,
-        threadId,
-        exchange,
-        content: {
-          state: WorkerState.Reconnecting,
-        },
-      };
-      self.postMessage(message);
-      stream(metadata);
-    }, 2000);
-  });
-
-  socket.on("error", (_) => {
-    const message: OrderbookWorkerMessage = {
-      type: WorkerMessageType.StateChange,
-      threadId,
-      exchange,
-      content: {
-        state: WorkerState.Error,
-      },
-    };
-    self.postMessage(message);
-    socket.close();
-  });
-}
-
-function parseArgs(args: string): [string, number][] {
-  if (!args) {
-    console.error("No symbols provided");
-    process.exit(1);
-  }
-
-  return args.split(",").map((meta) => {
-    const [cmcId, symbol] = meta.split("-");
-    if (isNaN(Number(cmcId)) || !symbol) {
-      console.error("Invalid symbol format");
-      process.exit(1);
-    }
-    return ["market:order-book-" + symbol + "idr", Number(cmcId)];
-  });
-}
-
-async function main() {
-  const args = Bun.argv.at(2)!;
-  const symbols = parseArgs(args);
-
-  stream(symbols);
-}
-
-function stupidParser(str: RawData) {
+function parseFrames(raw: RawData): IndodaxMessageRaw[] {
   try {
-    const data = str
-      .toString()
-      .split("\n")
-      .filter((r) => r !== "")
-      .map((r) => JSON.parse(r));
-    return data[0];
-  } catch (error) {
-    return false;
+    const frames: IndodaxMessageRaw[] = [];
+    for (const line of raw.toString().split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed.length === 0) continue;
+      try {
+        frames.push(JSON.parse(trimmed) as IndodaxMessageRaw);
+      } catch {
+        // Ignore a malformed line; keep any valid frames from the same read.
+      }
+    }
+    return frames;
+  } catch {
+    // Never let a malformed frame take the worker down.
+    return [];
   }
-
-  // try {
-  //   const data = JSON.parse(str);
-  //   return data;
-  // } catch (e) {
-  //   return false;
-  // }
 }
 
-main();
+function send(payload: unknown): void {
+  if (socket?.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify(payload));
+  }
+}
+
+function subscribeChannel(channel: string): void {
+  if (!authenticated || SentChannels.has(channel)) return;
+  SentChannels.add(channel);
+  send({ method: 1, params: { channel }, id: nextRequestId() });
+}
+
+function unsubscribeChannel(channel: string): void {
+  if (!SentChannels.delete(channel)) return;
+  send({ method: 2, params: { channel }, id: nextRequestId() });
+}
+
+function subscribe(symbols: SymbolSubscription[]): void {
+  for (const item of symbols) {
+    const channel = channelForSymbol(item.symbol);
+    ChannelStore.set(channel, item.cmcId);
+    subscribeChannel(channel);
+  }
+  if (symbols.length > 0) {
+    postSubscribed(symbols.map((item) => item.cmcId));
+  }
+}
+
+function unsubscribe(symbols: SymbolSubscription[]): void {
+  for (const item of symbols) {
+    const channel = channelForSymbol(item.symbol);
+    if (!ChannelStore.delete(channel)) continue;
+    unsubscribeChannel(channel);
+  }
+  postUnsubscribed(symbols.map((item) => item.cmcId));
+}
+
+function scheduleReconnect(): void {
+  if (shuttingDown || reconnectTimer) return;
+  logger.info(`socket closed, reconnecting in ${RECONNECT_DELAY_MS}ms`);
+  postState(threadId, exchange, WorkerState.Reconnecting);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = undefined;
+    connect();
+  }, RECONNECT_DELAY_MS);
+}
+
+function connect(): void {
+  if (shuttingDown) return;
+
+  const ws = new WebSocket(WS_URL);
+  socket = ws;
+
+  ws.on("open", () => {
+    if (socket !== ws) return;
+    authenticated = false;
+    SentChannels.clear();
+    logger.info("socket open, authenticating");
+    postState(threadId, exchange, WorkerState.Connected);
+
+    authRequestId = nextRequestId();
+    send({ params: { token: TOKEN }, id: authRequestId });
+
+    clearInterval(pingTimer);
+    pingTimer = setInterval(() => {
+      send({ method: 7, id: nextRequestId() });
+    }, PING_INTERVAL_MS);
+  });
+
+  ws.on("message", (raw) => {
+    if (socket !== ws) return;
+    try {
+      for (const parsed of parseFrames(raw)) {
+        // Auth ack: flush every currently-held channel onto this connection.
+        if (parsed.id !== undefined && parsed.id === authRequestId) {
+          authenticated = true;
+          for (const channel of ChannelStore.keys()) subscribeChannel(channel);
+          continue;
+        }
+
+        const result = parsed?.result;
+        const channel = result?.channel;
+        if (typeof channel !== "string") continue;
+
+        const cmcId = ChannelStore.get(channel);
+        if (cmcId === undefined) continue;
+
+        const data = result?.data?.data;
+        if (!data?.ask || !data?.bid) continue;
+
+        publisher.publish({
+          cmcId,
+          asks: data.ask.map(toLevel),
+          bids: data.bid.map(toLevel),
+        });
+      }
+    } catch {
+      // Ignore anything malformed; a bad frame must not crash the worker.
+    }
+  });
+
+  ws.on("close", (code, reason) => {
+    if (socket !== ws) return;
+    clearInterval(pingTimer);
+    pingTimer = undefined;
+    logger.info(`socket closed code=${code} reason=${reason.toString()}`);
+    postState(threadId, exchange, WorkerState.Closed);
+    scheduleReconnect();
+  });
+
+  ws.on("error", (error) => {
+    if (socket !== ws) return;
+    logger.error(
+      `socket error: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    postError(error instanceof Error ? error.message : String(error));
+    ws.close();
+  });
+}
+
+onCommand((command) => {
+  if (command.type === "subscribe") subscribe(command.symbols);
+  if (command.type === "unsubscribe") unsubscribe(command.symbols);
+  if (command.type === "shutdown") {
+    shuttingDown = true;
+    clearInterval(pingTimer);
+    clearTimeout(reconnectTimer);
+    socket?.close();
+    void publisher.close().finally(() => process.exit(0));
+  }
+});
+
+subscribe(initialSymbols);
+connect();

@@ -27,6 +27,14 @@ export const workerAdapters: Record<string, WorkerAdapter> = {
     maxSubscriptionsPerConnection: 100,
     supportsDynamicSubscribe: true,
   },
+  indodax: {
+    slug: "indodax",
+    modulePath: "src/workers/orderbooks/indodax.ts",
+    workerFile: new URL("../workers/orderbooks/indodax.ts", import.meta.url),
+    baseCurrency: "idr",
+    maxSubscriptionsPerConnection: 50,
+    supportsDynamicSubscribe: true,
+  },
 };
 
 export function getWorkerAdapter(slug: string): WorkerAdapter | undefined {

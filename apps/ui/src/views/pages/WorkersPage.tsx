@@ -2,6 +2,11 @@ import type { ExchangeSelect } from "@arbitrator/lister/types";
 
 import { ExchangeWorkerRow } from "../components/ExchangeWorkerRow";
 import { RefreshIcon } from "../components/icons";
+import {
+  countWorkerStates,
+  sumFailures,
+  WorkerHealthCell,
+} from "../components/worker-state";
 
 type SymbolSubscription = { cmcId: number; symbol: string };
 
@@ -9,11 +14,19 @@ type WorkerSnapshot = {
   id: string;
   exchangeSlug: string;
   symbols: SymbolSubscription[];
+  /** Last state the worker reported; absent on an older sender. */
+  state?: string;
 };
 
 export type SenderStatus = {
   started: string[];
   workers: WorkerSnapshot[];
+  /** Recent unexpected worker deaths per exchange slug. */
+  failures?: Record<string, number>;
+  /** Desired subscription count per exchange (last reconcile). */
+  desired?: Record<string, number>;
+  /** Max subscriptions one worker may hold, per exchange. */
+  capacity?: Record<string, number>;
   supported: string[];
 };
 
@@ -34,6 +47,8 @@ export const WorkersStats = ({
     (total, worker) => total + worker.symbols.length,
     0,
   );
+  const states = countWorkerStates(status.workers);
+  states.exited = (states.exited ?? 0) + sumFailures(status.failures);
 
   return (
     <div
@@ -48,6 +63,30 @@ export const WorkersStats = ({
       <div class="stat">
         <div class="stat-title">Worker connections</div>
         <div class="stat-value tabular-nums">{status.workers.length}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Open</div>
+        <div class="stat-value tabular-nums text-success">
+          {states.connected ?? 0}
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Reconnecting</div>
+        <div class="stat-value tabular-nums text-warning">
+          {states.reconnecting ?? 0}
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Errored</div>
+        <div class="stat-value tabular-nums text-error">
+          {states.error ?? 0}
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Exited</div>
+        <div class="stat-value tabular-nums">
+          {states.exited ?? 0}
+        </div>
       </div>
       <div class="stat">
         <div class="stat-title">Streaming coins</div>
@@ -82,6 +121,14 @@ export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
   const own = status.workers.filter(
     (worker) => worker.exchangeSlug === exchange.slug,
   );
+  const states = countWorkerStates(own);
+  states.exited =
+    (states.exited ?? 0) + (status.failures?.[exchange.slug] ?? 0);
+
+  const desired = status.desired?.[exchange.slug] ?? 0;
+  const capacity = status.capacity?.[exchange.slug] ?? 0;
+  const expectedWorkers =
+    capacity > 0 && desired > 0 ? Math.ceil(desired / capacity) : 0;
 
   return {
     exchange,
@@ -92,6 +139,13 @@ export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
       (total, worker) => total + worker.symbols.length,
       0,
     ),
+    states,
+    expectedWorkers,
+    workers: own.map((worker) => ({
+      id: worker.id,
+      state: worker.state,
+      symbolCount: worker.symbols.length,
+    })),
   };
 }
 
@@ -124,9 +178,10 @@ const WorkersTable = ({
     <table class="table w-full table-pin-rows [&_td]:px-2 [&_th]:px-2 sm:[&_td]:px-4 sm:[&_th]:px-4">
       <thead>
         <tr>
-          <th class="w-1/2">Exchange</th>
+          <th class="w-1/3">Exchange</th>
           <th class="hidden w-24 md:table-cell">Base</th>
           <th class="w-28">Status</th>
+          <th>Worker health</th>
           <th class="hidden w-20 text-right sm:table-cell">Workers</th>
           <th class="hidden w-20 text-right sm:table-cell">Coins</th>
           <th class="w-32 text-right">
@@ -141,7 +196,7 @@ const WorkersTable = ({
           ))
         ) : (
           <tr>
-            <td colspan="6" class="py-16 text-center">
+            <td colspan="7" class="py-16 text-center">
               <p class="font-medium">No exchanges yet</p>
               <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
                 Add exchanges under Exchange Management first.
@@ -161,7 +216,14 @@ const WorkersTable = ({
 export const WorkersResults = ({ data }: { data: WorkersData }) => {
   if (!data.ok) {
     return (
-      <div id="workers-results" class="flex flex-col gap-4">
+      <div
+        id="workers-results"
+        hx-get="/workers/list"
+        hx-trigger="every 3s"
+        hx-target="#workers-results"
+        hx-swap="outerHTML"
+        class="flex flex-col gap-4"
+      >
         <div class="alert alert-error" role="alert">
           <div>
             <p class="font-medium">Unable to reach the orchestrator.</p>
@@ -175,11 +237,61 @@ export const WorkersResults = ({ data }: { data: WorkersData }) => {
   }
 
   return (
-    <div id="workers-results" class="flex flex-col gap-4">
+    <div
+      id="workers-results"
+      hx-get="/workers/status"
+      hx-trigger="every 3s"
+      hx-swap="none"
+      class="flex flex-col gap-4"
+    >
       <WorkersStats status={data.status} />
       <WorkersHint status={data.status} />
       <WorkersTable status={data.status} exchanges={data.exchanges} />
     </div>
+  );
+};
+
+/**
+ * Poll payload: only the dynamic parts. It re-fetches the sender's status (not
+ * the lister) and swaps the stats, hint and every exchange's health cell
+ * out-of-band, so the exchange list is never re-requested on the 3s tick.
+ */
+export const WorkersStatusUpdate = ({
+  status,
+}: {
+  status: SenderStatus;
+}) => {
+  const slugs = [
+    ...new Set([
+      ...status.started,
+      ...status.workers.map((worker) => worker.exchangeSlug),
+    ]),
+  ];
+
+  return (
+    <>
+      <WorkersStats status={status} oob />
+      <WorkersHint status={status} oob />
+      {slugs.map((slug) => {
+        const own = status.workers.filter(
+          (worker) => worker.exchangeSlug === slug,
+        );
+        const states = countWorkerStates(own);
+        states.exited = (states.exited ?? 0) + (status.failures?.[slug] ?? 0);
+        return (
+          <WorkerHealthCell
+            slug={slug}
+            states={states}
+            workers={own.map((worker) => ({
+              id: worker.id,
+              state: worker.state,
+              symbolCount: worker.symbols.length,
+            }))}
+            oob
+          />
+        );
+      })}
+    </>
   );
 };
 
@@ -215,6 +327,18 @@ export const WorkersPage = ({ data }: { data: WorkersData }) => (
                 aria-label="Refresh worker status"
               >
                 <RefreshIcon /> Refresh
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                hx-post="/workers/reconcile"
+                hx-target="#workers-results"
+                hx-swap="outerHTML"
+                hx-indicator="#workers-indicator"
+                title="Re-read metadata from the lister and re-pack workers"
+                aria-label="Recompute workers from current metadata"
+              >
+                Recompute
               </button>
             </div>
           </header>

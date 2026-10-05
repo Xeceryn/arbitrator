@@ -29,6 +29,11 @@ export const SignalTableRow = ({ signal }: Props) => {
   return (
     <tr
       id={`signal-row-${cmcId}-${buyExchange.id}-${sellExchange.id}`}
+      data-signal-node="true"
+      data-buy-slug={buyExchange.slug}
+      data-sell-slug={sellExchange.slug}
+      data-profit-percentage={profitPercentage}
+      data-profit-volume={profitVolume}
       class={signalColorClass(
         buyExchange.baseCurrency,
         sellExchange.baseCurrency,
