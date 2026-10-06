@@ -1,4 +1,5 @@
 import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
+import { createLogger } from "@arbitrator/logger";
 import {
   type WsMessagePartialBookDepthEventRaw,
   WebsocketClient,
@@ -16,6 +17,7 @@ import {
 
 const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
+const logger = createLogger(`arbitrator/sender/worker/${exchange}-${threadId}`);
 const publisher = await createOrderbookPublisher(exchange);
 const socketClient = new WebsocketClient(
   {},
@@ -62,6 +64,7 @@ function unsubscribe(symbols: SymbolSubscription[]): void {
 
 socketClient.on("open", () => {
   postState(threadId, exchange, WorkerState.Connected);
+  logger.info("socket open, subscribing");
 });
 
 socketClient.on("message", (event) => {
@@ -78,18 +81,24 @@ socketClient.on("message", (event) => {
 
 socketClient.on("reconnecting", () => {
   postState(threadId, exchange, WorkerState.Reconnecting);
+  logger.info(`socket closed, reconnecting`);
 });
 
 socketClient.on("reconnected", () => {
   postState(threadId, exchange, WorkerState.Connected);
+  logger.info("socket reconnected, resubscribing");
 });
 
 socketClient.on("close", () => {
   postState(threadId, exchange, WorkerState.Closed);
+  logger.info(`socket closed`);
 });
 
 socketClient.on("exception", (error) => {
   postError(error instanceof Error ? error.message : String(error));
+  logger.error(
+    `socket exception: ${error instanceof Error ? error.message : String(error)}`,
+  );
 });
 
 onCommand((command) => {

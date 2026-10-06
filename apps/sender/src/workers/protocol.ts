@@ -2,13 +2,13 @@ import { parentPort, workerData } from "node:worker_threads";
 
 import {
   type NormalizedOrderbookEvent,
-  RoutingKeys,
+  Queues,
   type SymbolSubscription,
   type WorkerCommand,
   type WorkerState,
   workerCommandSchema,
 } from "@arbitrator/contracts";
-import { ensurePublisher, publishNow } from "@arbitrator/messaging";
+import { ensurePublisher, sendToQueueNow } from "@arbitrator/messaging";
 
 /** Payload every orderbook worker is spawned with. */
 export type WorkerBootstrap = {
@@ -78,7 +78,7 @@ export async function createOrderbookPublisher(
 ): Promise<OrderbookPublisher> {
   await ensurePublisher();
 
-  const routingKey = RoutingKeys.orderbookNormalized(exchange);
+  const queue = Queues.orderbookFor(exchange);
 
   return {
     publish(update) {
@@ -88,8 +88,11 @@ export async function createOrderbookPublisher(
         asks: update.asks,
         bids: update.bids,
       };
-      // Fire-and-forget: the next snapshot supersedes a dropped one.
-      publishNow(routingKey, event);
+      // Persistent, direct-to-queue send: the broker keeps snapshots in the
+      // receiver-declared `arbitrator.orderbook.<exchange>` queue even when no
+      // receiver is connected. Still fire-and-forget on the channel; a snapshot
+      // lost to a broken publish is superseded by the next.
+      sendToQueueNow(queue, event, true);
     },
     async close() {
       // The connection is shared per worker thread; the thread exits on

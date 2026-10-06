@@ -1,11 +1,16 @@
 # nginx TLS reverse proxy for @arbitrator/ui (local development)
 
-nginx terminates TLS and proxies to the UI dev server, which keeps running on
-the host at `http://localhost:3000` (`bun run --watch src/main.ts`). Nothing
-in the app changes — you just visit `https://<your-local-domain>` instead.
+nginx terminates TLS and proxies the UI dev server, which keeps running on the
+host at `http://localhost:3000` (`bun run --watch src/main.ts`), and the
+RabbitMQ management UI in its container. Nothing in the app changes — you
+just visit the hostnames below instead.
 
 ```
-browser / client ──https──▶ nginx :443 ──http──▶ bun dev server :3000
+                            ┌─▶ bun dev server :3000   arbitrator.<computer-hostname>.local
+client ──https──▶ nginx :443 ┤
+                            └─▶ rabbitmq:15672        rabbitmq.<computer-hostname>.local
+
+<computer-hostname>.local  ──301──▶  arbitrator.<computer-hostname>.local
 ```
 
 ## Quick start
@@ -14,22 +19,27 @@ browser / client ──https──▶ nginx :443 ──http──▶ bun dev ser
 # 1. Install mkcert (once)
 sudo pacman -S mkcert nss
 
-# 2. Generate the cert (covers arbitrator.test + <hostname>.local + LAN IP)
+# 2. Generate the cert (UI + RabbitMQ + apex names, plus LAN IP)
 ./scripts/local-certs.sh
 
-# 3. Start nginx
+# 3. Start nginx (starts rabbitmq too, since it is the proxy upstream)
 docker compose up -d nginx
 ```
 
-Then run the UI as usual (`bun run dev` in `apps/ui`) and open one of:
+Then run the UI as usual (`bun run dev` in `apps/ui`) and open — replace
+`<computer-hostname>` with the output of `hostname`:
 
-- <https://<computer-hostname>.local> — via mDNS/avahi, no client-side DNS
-  config needed (replace `<computer-hostname>` with the output of `hostname`).
-- <https://arbitrator.test> — add `127.0.0.1 arbitrator.test` (or the LAN IP)
-  to the client's `/etc/hosts` first.
+| URL                                                    | Goes to                              |
+| ------------------------------------------------------ | ------------------------------------ |
+| `https://arbitrator.<computer-hostname>.local`          | UI dev server (`:3000`)              |
+| `https://rabbitmq.<computer-hostname>.local`            | RabbitMQ management UI (`:15672`)    |
+| `https://<computer-hostname>.local`                     | 301 → `arbitrator.<computer-hostname>.local` |
+| `https://arbitrator.test`                               | UI (extra alias; needs `/etc/hosts`)  |
 
-Finally, trust the CA on each client that should see it as secure — see
-[client-trust.md](./client-trust.md).
+Except for `arbitrator.test`, these names resolve over mDNS once the alias
+publisher is installed (see [../avahi/README.md](../avahi/README.md)), so LAN
+clients need no DNS config. Finally, trust the CA on each client that should see
+it as secure — see [client-trust.md](./client-trust.md).
 
 ## About "Let's Encrypt" for local development
 
@@ -94,27 +104,39 @@ echo "127.0.0.1 arbitrator.test" | sudo tee -a /etc/hosts
 
 The host already runs `avahi-daemon`, which publishes
 `<computer-hostname>.local` over multicast DNS, where `<computer-hostname>` is
-the output of `hostname` (also exported as `$MDNS_NAME`). Any device on the
-same network that speaks mDNS can reach this machine without editing hosts or
-configuring the router:
+the output of `hostname` (also exported as `$MDNS_NAME`).
+
+avahi does **not** publish subdomains by itself, so
+`arbitrator.<computer-hostname>.local` and `rabbitmq.<computer-hostname>.local`
+must be published as extra mDNS address records first — see
+[../avahi/README.md](../avahi/README.md). Once published, LAN clients
+(Windows, macOS, iOS) resolve them with no hosts file or router config:
 
 ```bash
-hostname                 # -> use https://<computer-hostname>.local
+cp infra/avahi/arbitrator-aliases.service ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now arbitrator-aliases
+avahi-resolve -n arbitrator.$(hostname).local   # sanity check
 docker compose up -d nginx
 ```
 
-`LOCAL_DOMAIN` and `MDNS_NAME` (set in `.envrc`) are both added to nginx's
-`server_name`, and `scripts/local-certs.sh` puts both in the certificate SAN,
-so `https://<computer-hostname>.local` presents a valid name. Requirements:
+Linux clients (and this host) additionally need `/etc/mdns.allow` (with the
+`mdns` NSS module) or `/etc/hosts` entries, because nss-mdns only resolves
+2-label `.local` names by default — details in
+[../avahi/README.md](../avahi/README.md).
+
+`.envrc` derives `UI_DOMAIN`, `RABBITMQ_DOMAIN` and `MDNS_NAME` from the
+hostname; all of them are added to nginx's `server_name`, and
+`scripts/local-certs.sh` puts them (plus wildcards) in the certificate SAN.
+Requirements:
 
 - Port `443` reachable on the LAN (no host firewall rule needed if `ufw` is
   inactive; otherwise allow it).
 - mDNS not blocked by the network — some corporate/guest Wi-Fi drops multicast.
 - The client must **trust your CA** (same as any mkcert setup).
 
-> mDNS only gives you the host's own `.local` name; you cannot invent
-> `arbitrator.test` this way. Let's Encrypt also cannot issue for `.local`,
-> so public trust requires a real domain (DNS-01 above).
+> mDNS only resolves this host's own `.local` tree; you cannot invent arbitrary
+> domains like `arbitrator.test` this way. Let's Encrypt also cannot issue for
+> `.local`, so public trust requires a real domain (DNS-01 above).
 
 ### Other devices on the LAN
 
@@ -147,13 +169,16 @@ also point this host at dnsmasq, to avoid a resolution loop.
 
 All overridable via environment (see `.envrc`):
 
-| Variable           | Default                       | Purpose                              |
-| ------------------ | ----------------------------- | ------------------------------------ |
-| `LOCAL_DOMAIN`     | `arbitrator.test`             | Primary `server_name` + cert SAN     |
-| `MDNS_NAME`        | `$(hostname).local`           | mDNS name, added to `server_name`/SAN|
-| `UI_UPSTREAM`      | `host.docker.internal:3000`   | Where the UI dev server listens      |
-| `NGINX_HTTP_PORT`  | `80`                          | Published HTTP port (redirects)      |
-| `NGINX_HTTPS_PORT` | `443`                         | Published HTTPS port                 |
+| Variable           | Default                        | Purpose                                  |
+| ------------------ | ------------------------------ | ---------------------------------------- |
+| `LOCAL_DOMAIN`     | `arbitrator.test`              | Extra UI alias + cert SAN                |
+| `MDNS_NAME`        | `$(hostname).local`            | Apex name → 301 to `UI_DOMAIN`           |
+| `UI_DOMAIN`        | `arbitrator.$(hostname).local` | UI vhost (`server_name`)                 |
+| `RABBITMQ_DOMAIN`  | `rabbitmq.$(hostname).local`   | RabbitMQ management vhost                |
+| `UI_UPSTREAM`      | `host.docker.internal:3000`    | Where the UI dev server listens          |
+| `RABBITMQ_UPSTREAM`| `rabbitmq:15672`               | RabbitMQ management backend              |
+| `NGINX_HTTP_PORT`  | `80`                           | Published HTTP port (redirects)          |
+| `NGINX_HTTPS_PORT` | `443`                          | Published HTTPS port                     |
 
 ## Why the UI stays on 3000
 

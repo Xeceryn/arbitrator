@@ -1,0 +1,12 @@
+[Unit]
+Description=Publish mDNS aliases for arbitrator subdomains (arbitrator/rabbitmq.<host>.local)
+
+[Service]
+Type=simple
+ExecStart=%h/work/arbitrator/infra/avahi/publish-aliases.sh
+Restart=always
+RestartSec=2
+KillMode=mixed
+
+[Install]
+WantedBy=default.target

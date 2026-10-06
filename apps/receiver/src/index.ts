@@ -1,11 +1,7 @@
-import {
-  type NormalizedOrderbookEvent,
-  Queues,
-  RoutingKeys,
-} from "@arbitrator/contracts";
+import { type NormalizedOrderbookEvent, Queues } from "@arbitrator/contracts";
 import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
-import { subscribe } from "@arbitrator/messaging";
+import { type Delivery, subscribe } from "@arbitrator/messaging";
 import { listerClient } from "@arbitrator/sdk";
 
 const logger = createLogger("arbitrator/receiver");
@@ -152,32 +148,21 @@ async function processOrderbook(
   ]);
 }
 
-// Workers already normalize; this subscribes to the single normalized stream.
-// `main.ts` runs one of these per CPU on a shared queue, so each message is
-// handled by exactly one process.
-const subscription = subscribe({
-  queue: Queues.orderbook,
-  patterns: [RoutingKeys.orderbookNormalizedAll],
-  prefetch: 64,
-  durable: true,
-  autoDelete: true,
-  maxLength: 50_000,
-});
-logger.info(
-  `receiver-${process.pid} listening on ${RoutingKeys.orderbookNormalizedAll}`,
-);
-
-for await (const delivery of subscription) {
+/**
+ * Handle one orderbook snapshot end to end. Ack only after the DB write
+ * succeeds; a throw leaves the message unacked so the broker redelivers it.
+ */
+async function handle(delivery: Delivery): Promise<void> {
   const orderbook = delivery.json<NormalizedOrderbookEvent>();
-  // The sender now carries the canonical exchange identity on the payload, so
-  // we never parse routing-key tokens here.
+  // The sender carries the canonical exchange identity on the payload, so we
+  // never parse routing-key tokens here.
   const exchangeId = exchangeSlugIdMap.get(orderbook.exchange);
   if (exchangeId === undefined) {
     logger.warn(
       `dropping orderbook for unknown exchange: ${orderbook.exchange}`,
     );
     delivery.ack();
-    continue;
+    return;
   }
 
   // binance has some special multipleid volumes, so we need to divide it.
@@ -194,6 +179,30 @@ for await (const delivery of subscription) {
   }
 
   await processOrderbook(orderbook, exchangeId, divider);
-  // Ack only after the DB write succeeds; a throw leaves it unacked.
   delivery.ack();
 }
+
+// One durable queue per exchange (`arbitrator.orderbook.<exchange>`), declared
+// by the receiver on startup and never auto-deleted. Sender workers send
+// straight to their exchange's queue, so a slow exchange cannot head-of-line
+// block the others and the broker keeps a per-exchange backlog while no
+// receiver is up. `main.ts` runs one of these per CPU, so every process competes
+// on every queue.
+const subscriptions = exchanges.data.map((exchange) => {
+  const queue = Queues.orderbookFor(exchange.slug);
+  const consumer = subscribe({
+    queue,
+    prefetch: 64,
+    durable: true,
+  });
+  logger.info(`receiver-${process.pid} listening on ${queue}`);
+  return consumer;
+});
+
+await Promise.all(
+  subscriptions.map(async (consumer) => {
+    for await (const delivery of consumer) {
+      await handle(delivery);
+    }
+  }),
+);

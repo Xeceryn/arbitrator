@@ -1,7 +1,8 @@
-// const cpus = navigator.hardwareConcurrency;
+const cpus = navigator.hardwareConcurrency;
+// const cpus = 4;
 const children: Bun.Subprocess[] = [];
 
-for (let index = 0; index < 4; index++) {
+for (let index = 0; index < cpus; index++) {
   children.push(
     Bun.spawn({
       cmd: ["bun", "run", "src/index.ts", "--cluster"],

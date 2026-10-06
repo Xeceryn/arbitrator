@@ -1,4 +1,4 @@
-import { threadId as nodeThreadId } from "node:worker_threads";
+// import { threadId as nodeThreadId } from "node:worker_threads";
 
 import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
 import { createLogger } from "@arbitrator/logger";
@@ -16,7 +16,7 @@ import {
 
 const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
-const logger = createLogger(`${threadId}-${nodeThreadId}`);
+const logger = createLogger(`arbitrator/sender/worker/${exchange}-${threadId}`);
 const publisher = await createOrderbookPublisher(exchange);
 
 const WS_URL = "wss://ws3.indodax.com/ws/";

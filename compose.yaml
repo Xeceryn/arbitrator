@@ -21,14 +21,20 @@ services:
       # The UI dev server runs on the host (bun --watch) on port 3000.
       # host.docker.internal points back at the host from inside the container.
       UI_UPSTREAM: ${UI_UPSTREAM:-host.docker.internal:3000}
+      # RabbitMQ management UI, reachable by its compose service name.
+      RABBITMQ_UPSTREAM: ${RABBITMQ_UPSTREAM:-rabbitmq:15672}
+      # Hostnames (see .envrc; *.invalid defaults are inert placeholders).
       LOCAL_DOMAIN: ${LOCAL_DOMAIN:-arbitrator.test}
-      # mDNS name (avahi) so LAN clients can use https://<hostname>.local.
-      MDNS_NAME: ${MDNS_NAME:-}
+      MDNS_NAME: ${MDNS_NAME:-local.invalid}
+      UI_DOMAIN: ${UI_DOMAIN:-arbitrator.invalid}
+      RABBITMQ_DOMAIN: ${RABBITMQ_DOMAIN:-rabbitmq.invalid}
       # Only substitute our variables; leave nginx's own $host, $scheme, etc.
-      NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|LOCAL_DOMAIN|MDNS_NAME)$$"
+      NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|RABBITMQ_UPSTREAM|LOCAL_DOMAIN|MDNS_NAME|UI_DOMAIN|RABBITMQ_DOMAIN)$$"
     ports:
       - "${NGINX_HTTP_PORT:-80}:80"
       - "${NGINX_HTTPS_PORT:-443}:443"
+    depends_on:
+      - rabbitmq
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

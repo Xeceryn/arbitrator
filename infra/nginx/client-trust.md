@@ -1,9 +1,10 @@
 # Installing the certificate on a client
 
-nginx serves `https://<computer-hostname>.local` with a certificate signed by
-**your local mkcert CA**. `<computer-hostname>` is whatever `hostname` prints on
-the nginx host (e.g. `hostname` returns `myhost`, so clients use
-`myhost.local`; it is also exported as `$MDNS_NAME`).
+nginx serves `https://arbitrator.<computer-hostname>.local` (UI) and
+`https://rabbitmq.<computer-hostname>.local` (RabbitMQ management) with a
+certificate signed by **your local mkcert CA**. `<computer-hostname>` is
+whatever `hostname` prints on the nginx host (e.g. `hostname` returns `myhost`,
+so clients use `arbitrator.myhost.local`; it is also exported as `$MDNS_NAME`).
 Every client — browser, phone, API client, CI job — must trust that CA once, or
 it will see a security warning (or refuse to connect).
 
@@ -118,7 +119,8 @@ identify websites"**.
    Management** → install the profile.
 3. **Required extra step:** Settings → **General → About → Certificate Trust
    Settings** → enable full trust for the CA. Without this it stays untrusted.
-4. Safari and most apps will now accept `https://<computer-hostname>.local`.
+4. Safari and most apps will now accept `https://arbitrator.<computer-hostname>.local`
+   (and `https://rabbitmq.<computer-hostname>.local`).
 
 ### Android
 
@@ -155,7 +157,7 @@ Useful for CI and throwaway clients. Point the runtime at the CA file directly.
 | Node.js | `NODE_EXTRA_CA_CERTS=/abs/path/arbitrator-local-ca.crt node app.js` (read at startup) |
 | Bun | `NODE_EXTRA_CA_CERTS=/abs/path/arbitrator-local-ca.crt bun run app.ts` |
 | Deno | `DENO_CERT=/abs/path/arbitrator-local-ca.crt deno run …` or `--cert` |
-| curl | `curl --cacert /abs/path/arbitrator-local-ca.crt https://<computer-hostname>.local` (or `CURL_CA_BUNDLE`) |
+| curl | `curl --cacert /abs/path/arbitrator-local-ca.crt https://arbitrator.<computer-hostname>.local` (or `CURL_CA_BUNDLE`) |
 | Python (requests) | `REQUESTS_CA_BUNDLE=/abs/path/arbitrator-local-ca.crt python app.py` |
 | Python (ssl) | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt python app.py` |
 | Go | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt go run .` |
@@ -169,17 +171,18 @@ Useful for CI and throwaway clients. Point the runtime at the CA file directly.
 
 ```bash
 # From the client, trusting only the exported CA:
-curl --cacert /path/to/arbitrator-local-ca.crt -v https://<computer-hostname>.local
+curl --cacert /path/to/arbitrator-local-ca.crt -v https://arbitrator.<computer-hostname>.local
 
 # What nginx is presenting:
-openssl s_client -connect <computer-hostname>.local:443 \
-  -servername <computer-hostname>.local </dev/null \
+openssl s_client -connect arbitrator.<computer-hostname>.local:443 \
+  -servername arbitrator.<computer-hostname>.local </dev/null \
   | openssl x509 -noout -issuer -subject -ext subjectAltName
 ```
 
 A healthy result: no `certificate verify failed`, issuer is
-`mkcert <user>@<computer-hostname>`, and `<computer-hostname>.local` appears in
-the SAN.
+`mkcert <user>@<computer-hostname>`, and
+`arbitrator.<computer-hostname>.local` (plus `rabbitmq.<computer-hostname>.local`)
+appears in the SAN.
 
 ## Troubleshooting
 
@@ -190,4 +193,6 @@ the SAN.
 | `NET::ERR_CERT_AUTHORITY_INVALID` after re-running the script | nginx not reloaded: `docker compose restart nginx`. |
 | Name `a.b.<computer-hostname>.local` fails | X.509 wildcards are one level deep; add the name to `LOCAL_DOMAIN` and re-run the script. |
 | Worked, then broke after `mkcert -uninstall` / new `CAROOT` | The CA changed; re-export and re-install on every client. |
-| Client on guest/corporate Wi-Fi can't resolve `<computer-hostname>.local` | Multicast mDNS is blocked; use `/etc/hosts` or the dnsmasq path in `README.md`. |
+| Name resolves nowhere (`avahi-resolve` times out) | mDNS aliases not published; install `infra/avahi/arbitrator-aliases.service`. |
+| Resolves on Windows/macOS but not Linux | nss-mdns only resolves 2-label `.local`; use `/etc/hosts` or `mdns` + `/etc/mdns.allow`. See `infra/avahi/README.md`. |
+| Client on guest/corporate Wi-Fi can't resolve `arbitrator.<computer-hostname>.local` | Multicast mDNS is blocked; use `/etc/hosts` or the dnsmasq path in `README.md`. |

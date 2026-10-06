@@ -80,13 +80,19 @@ tracker is §10. Nothing else is required.
 
 **receiver**
 
-- Subscribes `orderbook.normalized.*` (shared queue `Queues.orderbook`), parses,
-  does nothing else. Clustered over `hardwareConcurrency` via `src/main.ts`.
+- Declares one durable queue per exchange (`Queues.orderbookFor(slug)`) and
+consumes every queue; each snapshot is parsed and written to its opportunity
+legs. One independent consumer loop runs per exchange, so a slow exchange cannot
+head-of-line block the others. Clustered over `hardwareConcurrency` via
+`src/main.ts`.
 
-**RabbitMQ** — `rabbitmq:4-management-alpine`; one topic exchange
-(`AMQP_EXCHANGE`, default `arbitrator`) carries both event families. Persistent
-messages and a durable queue for `metadata.changed`; the orderbook queue is
-auto-delete and non-durable.
+**RabbitMQ** — `rabbitmq:4-management-alpine`. Each exchange owns a durable,
+never-auto-deleted queue (`arbitrator.orderbook.<exchange>`); sender workers
+`sendToQueue` straight into it over the default exchange, so there is no
+binding. `metadata.changed` is the only family on the topic exchange
+(`AMQP_EXCHANGE`, default `arbitrator`), with its own durable queue. All messages
+are persistent, so when no receiver is connected the broker holds a per-exchange
+backlog instead of dropping it.
 
 ---
 
@@ -298,9 +304,11 @@ queue, so a sender restart does not miss it.
   `{ cmcId, asks, bids }`; workers normalize, there is no raw tier.
 - **Capacity:** `maxSubscriptionsPerConnection` is the only limit; the
   reconciler opens as many connections as needed and never drops a subscription.
-- **Durability:** `metadata.changed` is persistent on a durable queue;
-  orderbook messages are transient on an auto-delete queue; no churn of healthy
-  subscriptions.
+- **Durability:** every queue (`arbitrator.orderbook.<exchange>` and
+  `metadata.changed`) is durable, never auto-deleted, and carries persistent
+  messages. The receiver declares one orderbook queue per exchange on startup;
+  publishers always publish and the broker holds a per-exchange backlog. No
+  churn of healthy subscriptions.
 - **Lister events:** handler-level publish (no outbox) for now.
 - **Worker registry:** per-exchange config (`maxSubscriptionsPerConnection`);
   exchanges with no adapter return "worker not implemented".

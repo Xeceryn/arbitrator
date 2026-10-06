@@ -13,8 +13,11 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CERT_DIR="${REPO_ROOT}/infra/certs"
-DOMAINS_RAW="${LOCAL_DOMAIN:-arbitrator.test}"
-MDNS_NAME="${MDNS_NAME:-$(hostname).local}"
+HOSTNAME_LOCAL="$(hostname).local"
+# Every hostname nginx may serve: UI, RabbitMQ, the .test alias, and the apex
+# mDNS name (whose wildcard also covers the two subdomains).
+DOMAINS_RAW="${UI_DOMAIN:-arbitrator.${HOSTNAME_LOCAL}} ${RABBITMQ_DOMAIN:-rabbitmq.${HOSTNAME_LOCAL}} ${LOCAL_DOMAIN:-arbitrator.test}"
+MDNS_NAME="${MDNS_NAME:-${HOSTNAME_LOCAL}}"
 
 mkdir -p "${CERT_DIR}"
 

@@ -149,6 +149,31 @@ export function publishNow(
   return publishOn(channel, routingKey, payload, persistent);
 }
 
+/**
+ * Synchronous send straight to a named queue over the default exchange. Used by
+ * the orderbook workers, where each exchange owns its own queue. Returns false
+ * when the channel is not ready yet (and kicks off reconnect).
+ *
+ * The queue must already exist: the receiver declares it on startup, and the
+ * broker silently drops a send to a queue nobody has declared.
+ */
+export function sendToQueueNow(
+  queue: string,
+  payload: unknown,
+  persistent = false,
+): boolean {
+  const channel = publishChannel;
+  if (!channel) {
+    void ensurePublisher().catch(() => {});
+    return false;
+  }
+  return channel.sendToQueue(queue, Buffer.from(JSON.stringify(payload)), {
+    contentType: "application/json",
+    persistent,
+    timestamp: Date.now(),
+  });
+}
+
 // ---------------------------------------------------------------- consume
 export type Delivery = {
   readonly body: Buffer;
@@ -161,8 +186,11 @@ export type Delivery = {
 
 export type SubscribeOptions = {
   queue: string;
-  /** Topic patterns bound to the queue. */
-  patterns: string[];
+  /**
+   * Topic patterns bound to the queue. Omit for a queue fed directly by name
+   * (`sendToQueueNow`), such as the per-exchange orderbook queues.
+   */
+  patterns?: string[];
   prefetch?: number;
   durable?: boolean;
   /**
@@ -182,6 +210,7 @@ type Buffered = { channel: Channel; message: ConsumeMessage };
 
 class ConsumerImpl implements Consumer {
   private readonly options: SubscribeOptions & {
+    patterns: string[];
     prefetch: number;
     durable: boolean;
     autoDelete: boolean;
@@ -196,6 +225,7 @@ class ConsumerImpl implements Consumer {
 
   constructor(options: SubscribeOptions) {
     this.options = {
+      patterns: [],
       prefetch: 32,
       durable: false,
       autoDelete: false,
@@ -229,7 +259,9 @@ class ConsumerImpl implements Consumer {
         this.scheduleRetry();
       });
 
-      await channel.assertExchange(AMQP_EXCHANGE, "topic", { durable: true });
+      if (this.options.patterns.length > 0) {
+        await channel.assertExchange(AMQP_EXCHANGE, "topic", { durable: true });
+      }
       await channel.assertQueue(this.options.queue, {
         durable: this.options.durable,
         autoDelete: this.options.autoDelete,
@@ -249,9 +281,11 @@ class ConsumerImpl implements Consumer {
 
       this.channel = channel;
       this.consumerTag = consumerTag;
-      logger.info(
-        `rabbitmq consuming ${this.options.queue} [${this.options.patterns.join(", ")}]`,
-      );
+      const binding =
+        this.options.patterns.length > 0
+          ? ` [${this.options.patterns.join(", ")}]`
+          : "";
+      logger.info(`rabbitmq consuming ${this.options.queue}${binding}`);
     } catch (error: unknown) {
       logger.warn(
         `rabbitmq subscribe to ${this.options.queue} failed: ${String(error)}`,
