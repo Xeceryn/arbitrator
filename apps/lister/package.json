@@ -20,7 +20,7 @@
   "dependencies": {
     "@arbitrator/contracts": "workspace:*",
     "@arbitrator/logger": "workspace:*",
-    "@nats-io/transport-node": "catalog:core",
+    "@arbitrator/messaging": "workspace:*",
     "@orpc/server": "catalog:core",
     "drizzle-kit": "catalog:tools",
     "drizzle-orm": "catalog:core",

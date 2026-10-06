@@ -21,6 +21,8 @@
       "@arbitrator/logger/*": ["./packages/logger/src/*"],
       "@arbitrator/contracts": ["./packages/contracts/src"],
       "@arbitrator/contracts/*": ["./packages/contracts/src/*"],
+      "@arbitrator/messaging": ["./packages/messaging/src"],
+      "@arbitrator/messaging/*": ["./packages/messaging/src/*"],
       "@arbitrator/sender": ["./apps/sender/src"],
       "@arbitrator/sender/*": ["./apps/sender/src/*"]
     },

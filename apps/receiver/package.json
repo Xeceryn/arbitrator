@@ -8,7 +8,7 @@
     "@arbitrator/contracts": "workspace:*",
     "@arbitrator/lister": "workspace:*",
     "@arbitrator/logger": "workspace:*",
-    "@arbitrator/sdk": "workspace:*",
-    "@nats-io/transport-node": "catalog:core"
+    "@arbitrator/messaging": "workspace:*",
+    "@arbitrator/sdk": "workspace:*"
   }
 }

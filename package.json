@@ -10,7 +10,6 @@
     "catalogs": {
       "core": {
         "@elysiajs/eden": "^1.4.9",
-        "@nats-io/transport-node": "^3.4.0",
         "@orpc/client": "2.0.0-beta.41",
         "@orpc/server": "2.0.0-beta.41",
         "@orpc/contract": "2.0.0-beta.41",

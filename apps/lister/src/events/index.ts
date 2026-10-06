@@ -1,2 +1,2 @@
 export * from "./metadata";
-export * from "./nats";
+export * from "./publisher";

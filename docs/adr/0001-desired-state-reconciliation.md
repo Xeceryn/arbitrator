@@ -24,6 +24,6 @@ cheap and debounced.
 
 - A lost `metadata.changed` event is a latency bug, not a correctness bug.
 - The reconciler is a pure function of `(desired, current, configs)` and is
-  testable without NATS, threads, or a database.
+  testable without a broker, threads, or a database.
 - Subscription churn is avoided by keeping existing assignments stable and only
   moving a symbol when capacity forces it.

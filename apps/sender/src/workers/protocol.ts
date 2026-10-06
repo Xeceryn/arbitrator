@@ -2,13 +2,13 @@ import { parentPort, workerData } from "node:worker_threads";
 
 import {
   type NormalizedOrderbookEvent,
+  RoutingKeys,
   type SymbolSubscription,
-  Subjects,
   type WorkerCommand,
   type WorkerState,
   workerCommandSchema,
 } from "@arbitrator/contracts";
-import { type NatsConnection, connect } from "@nats-io/transport-node";
+import { ensurePublisher, publishNow } from "@arbitrator/messaging";
 
 /** Payload every orderbook worker is spawned with. */
 export type WorkerBootstrap = {
@@ -69,23 +69,16 @@ export type OrderbookPublisher = {
 };
 
 /**
- * Orderbook data leaves the worker directly over NATS (never postMessage). The
- * worker normalizes exchange-specific payloads; the exchange is the subject.
- * One connection per worker keeps the data plane parallel across threads.
+ * Orderbook data leaves the worker directly over RabbitMQ (never postMessage).
+ * The worker normalizes exchange-specific payloads; the exchange is the routing
+ * key. One connection per worker keeps the data plane parallel across threads.
  */
 export async function createOrderbookPublisher(
   exchange: string,
 ): Promise<OrderbookPublisher> {
-  const nc: NatsConnection = await connect({
-    servers: Bun.env.NATS_URL ?? "nats://localhost:4222",
-    user: Bun.env.NATS_USER,
-    pass: Bun.env.NATS_PASSWORD,
-    name: `arbitrator-sender-${exchange}`,
-    maxReconnectAttempts: -1,
-  });
+  await ensurePublisher();
 
-  const subject = Subjects.orderbookNormalized(exchange);
-  const encoder = new TextEncoder();
+  const routingKey = RoutingKeys.orderbookNormalized(exchange);
 
   return {
     publish(update) {
@@ -95,10 +88,12 @@ export async function createOrderbookPublisher(
         asks: update.asks,
         bids: update.bids,
       };
-      nc.publish(subject, encoder.encode(JSON.stringify(event)));
+      // Fire-and-forget: the next snapshot supersedes a dropped one.
+      publishNow(routingKey, event);
     },
     async close() {
-      await nc.drain();
+      // The connection is shared per worker thread; the thread exits on
+      // shutdown, which tears the socket down. Nothing to drain here.
     },
   };
 }

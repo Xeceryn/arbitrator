@@ -1,10 +1,10 @@
 import {
   type MetadataChangedInput,
-  Subjects,
+  RoutingKeys,
   metadataChangedSchema,
 } from "@arbitrator/contracts";
 
-import { publish } from "./nats";
+import { publish } from "./publisher";
 
 /**
  * Emit `metadata.changed` after a committed mutation. Best-effort and
@@ -25,5 +25,7 @@ export async function publishMetadataChanged(
     return false;
   }
 
-  return publish(Subjects.metadataChanged, parsed.data);
+  return publish(RoutingKeys.metadataChanged, parsed.data, {
+    persistent: true,
+  });
 }

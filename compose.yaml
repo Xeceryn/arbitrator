@@ -13,68 +13,24 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-  nats:
-    image: nats:2.12-alpine
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: arbitrator-rabbitmq
     restart: unless-stopped
-    container_name: arbitrator-nats
-    command: ["-c", "/etc/nats/nats-server.conf"]
-    ports:
-      - "4222:4222"
-      - "8222:8222"
-      - "9222:9222"
-    volumes:
-      - ./docker/nats/nats-server.conf:/etc/nats/nats-server.conf
-      - nats-data:/data
-
-  nats-ui:
-    image: ghcr.io/gastbob40/nats-ui:latest
-    container_name: arbitrator-nats-ui
-    ports:
-      - "9387:3000"
-    depends_on:
-      - nats
-    restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3000",
-        ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
     environment:
-      - NODE_ENV=production
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-arbitrator}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-arbitrator}
+    ports:
+      - "5672:5672" # AMQP
+      - "15672:15672" # management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-#   nats:
-#     image: nats:alpine
-#     container_name: nats
-#     ports:
-#       - "4222:4222"
-#       - "8222:8222"
-#       - "6222:6222"
-#     volumes:
-#       - ./docker/nats/nats-server.conf:/etc/nats/nats.conf:ro
-#       - nats-data:/data
-#     command: ["-c", "/etc/nats/nats.conf"]
-#     healthcheck:
-#       test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 3
-#     networks:
-#       - nats-network
-#     restart: unless-stopped
-#
 volumes:
-  nats-data:
+  rabbitmq-data:
   postgres-data:
-
-# networks:
-#   nats-network:
-#     driver: bridge
-#

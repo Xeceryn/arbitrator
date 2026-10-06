@@ -1,12 +1,12 @@
 import {
-  OrderbookQueue,
-  Subjects,
   type NormalizedOrderbookEvent,
+  Queues,
+  RoutingKeys,
 } from "@arbitrator/contracts";
 import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
+import { subscribe } from "@arbitrator/messaging";
 import { listerClient } from "@arbitrator/sdk";
-import { connect } from "@nats-io/transport-node";
 
 const logger = createLogger("arbitrator/receiver");
 
@@ -36,14 +36,6 @@ const exchangeSlugIdMap = new Map<string, number>();
 for (const exchange of exchanges.data) {
   exchangeSlugIdMap.set(exchange.slug, exchange.id);
 }
-
-const nc = await connect({
-  servers: Bun.env.NATS_URL ?? "nats://localhost:4222",
-  user: Bun.env.NATS_USER,
-  pass: Bun.env.NATS_PASSWORD,
-  name: "arbitrator-receiver",
-  maxReconnectAttempts: -1,
-});
 
 // ---------------------------------------------------------------- idr rate
 const IDR_REFRESH_MS = 1000 * 60 * 5;
@@ -81,7 +73,7 @@ setInterval(refreshIdrRate, IDR_REFRESH_MS);
 
 // ---------------------------------------------------------------- stats
 const c = {
-  received: 0, // messages pulled off NATS
+  received: 0, // messages pulled off RabbitMQ
   unknown: 0, // dropped: unknown exchange
   computed: 0, // convert+search runs (one fused pass)
   unchanged: 0, // skipped: same result as last accepted one
@@ -221,41 +213,55 @@ async function write(key: number, job: Job) {
 
 // ---------------------------------------------------------------- subscribe
 // Workers already normalize; this subscribes to the single normalized stream.
-// `main.ts` runs one of these per CPU under a shared queue group, so each
+// `main-concurrent.ts` runs one of these per CPU on a shared queue, so each
 // message is handled by exactly one process.
-const subject = Subjects.orderbookNormalized("*");
-const subscription = nc.subscribe(subject, { queue: OrderbookQueue });
-logger.info(`receiver-${process.pid} listening on ${subject}`);
+const subscription = subscribe({
+  queue: Queues.orderbook,
+  patterns: [RoutingKeys.orderbookNormalizedAll],
+  prefetch: MAX_INFLIGHT,
+  // A live orderbook feed is worthless once nobody is reading it; drop it
+  // rather than grow a durable backlog while every receiver is down. (RabbitMQ
+  // 4 forbids transient non-exclusive queues, so the queue is durable and
+  // auto-deletes when the last consumer leaves.)
+  durable: true,
+  autoDelete: true,
+  maxLength: 50_000,
+});
+logger.info(
+  `receiver-${process.pid} listening on ${RoutingKeys.orderbookNormalizedAll}`,
+);
 
 // Idempotent: Ctrl+C reaches the worker directly AND via the cluster parent,
-// so the same process can get two signals. Draining twice rejects.
+// so the same process can get two signals. Closing twice is a no-op.
 let shuttingDown = false;
 function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   logger.info(`[pid ${process.pid}] ${signal} received, draining`);
-  nc.drain().catch((e) => logger.warn(`drain failed: ${String(e)}`));
+  subscription.close().catch((e) => logger.warn(`drain failed: ${String(e)}`));
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
 // Message handler is fully synchronous: decode, compute, stash. No DB awaits.
-for await (const message of subscription) {
+for await (const delivery of subscription) {
   c.received++;
 
   let ob: NormalizedOrderbookEvent;
   try {
-    ob = message.json<NormalizedOrderbookEvent>();
+    ob = delivery.json<NormalizedOrderbookEvent>();
   } catch {
     c.errors++;
+    delivery.ack(); // poison payload; redelivery cannot fix it
     continue;
   }
 
   // The sender carries the canonical exchange identity on the payload, so we
-  // never parse subject tokens here.
+  // never parse routing-key tokens here.
   const exchangeId = exchangeSlugIdMap.get(ob.exchange);
   if (exchangeId === undefined) {
     c.unknown++;
+    delivery.ack();
     continue;
   }
 
@@ -277,12 +283,16 @@ for await (const message of subscription) {
     prev.bidVol === job.bidVol
   ) {
     c.unchanged++;
+    delivery.ack();
     continue;
   }
 
   lastSeen.set(key, job);
   if (dirty.has(key)) c.coalesced++;
   dirty.set(key, job);
+  // Ack once the snapshot is stashed; the actual DB write is batched below.
+  // DB failures are retried by the next snapshot of the same market.
+  delivery.ack();
 }
 
 // Graceful shutdown: finish pending writes, but never hang forever.

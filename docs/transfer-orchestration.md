@@ -16,18 +16,18 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
 
 **Current stage:** All phases (0–5) implemented.
 
-- [x] `packages/contracts` filled (subjects, metadata event, raw/normalized
-      orderbook, worker control protocol, domain value objects).
+- [x] `packages/contracts` filled (routing keys, metadata event,
+      normalized orderbook, worker control protocol, domain value objects).
 - [x] lister `market.listTransferableCoins` (directed, `tradeEnabled` both sides).
-- [x] lister `events/` NATS publisher, wired into every mutation router
+- [x] lister `events/` RabbitMQ publisher, wired into every mutation router
       (`market`, `chain_link`, `exchange`, `cryptocurrency`, `chain`).
       `utility.clearDatabase` is dev-only and intentionally left out.
 - [x] pure `reconcile` module + 6 tests (`apps/sender/src/orchestrator/`).
 - [x] Phase 3: Elysia app, worker registry (binance + gate), worker pool
       (`worker_threads` + `workerData` + postMessage), 6 pool tests.
 - [x] sender subscribes `metadata.changed` → debounced reconcile (T11).
-- [x] receiver consumer: subscribes `orderbook.normalized.<exchange>` under the
-      shared queue group (T12).
+- [x] receiver consumer: subscribes `orderbook.normalized.*` from the shared
+      queue (T12).
 - [x] opportunity persistence: sender reconciles legs via `opportunity.sync`;
       receiver updates prices/volumes directly in the DB.
 - [x] UI: Workers page (`/workers`) with per-exchange start/stop, Eden client in
@@ -45,11 +45,10 @@ Related: [ADR 0001](./adr/0001-desired-state-reconciliation.md),
   (legacy debt workers are excluded).
 - tests: `bun test apps/sender/src/orchestrator`.
 
-**Only open question:** receiver delivery guarantee — core NATS queue group vs
-JetStream ack/redelivery. See §7.
+**Delivery guarantee:** resolved by moving to RabbitMQ — manual acks bound the
+receiver's in-flight work and a crash redelivers unacked messages. See §7.
 
-**Next action:** none — feature implemented. Only the receiver delivery question
-(§7) remains open.
+**Next action:** none — feature implemented.
 
 **How to resume with a fresh context:** read this doc top to bottom once, then
 work the checklist in §10 in order. The design rationale lives in §1–§5; the
@@ -81,11 +80,13 @@ tracker is §10. Nothing else is required.
 
 **receiver**
 
-- Subscribes `orderbook.*.update` (queue `ORDERBOOK_UPDATE`), parses, does
-  nothing else. Clustered over `hardwareConcurrency` via `src/main.ts`.
+- Subscribes `orderbook.normalized.*` (shared queue `Queues.orderbook`), parses,
+  does nothing else. Clustered over `hardwareConcurrency` via `src/main.ts`.
 
-**NATS** — `nats:2.12-alpine`; JetStream commented out and stays out. Core NATS
-only.
+**RabbitMQ** — `rabbitmq:4-management-alpine`; one topic exchange
+(`AMQP_EXCHANGE`, default `arbitrator`) carries both event families. Persistent
+messages and a durable queue for `metadata.changed`; the orderbook queue is
+auto-delete and non-durable.
 
 ---
 
@@ -130,11 +131,12 @@ listTransferableCoins({ exchangeIds: number[] }): Promise<{
 
 ### 2.2 Metadata change events
 
-- `apps/lister/src/events/nats.ts` — lazy NATS connection; degrades to a logged
-  no-op when NATS is unreachable, so the UI keeps working.
+- `apps/lister/src/events/publisher.ts` — re-exports the shared RabbitMQ
+  publisher; degrades to a logged no-op when the broker is unreachable, so the
+  UI keeps working.
 - `apps/lister/src/events/metadata.ts` — `publishMetadataChanged`, validates
   payload against the contracts schema, never throws.
-- Emitted after successful mutations; coarse payload. Core NATS, no replay. A
+- Emitted after successful mutations; coarse payload, persistent message. A
   lost event is a latency bug, not correctness (sender full-reconciles).
 - Wired: `market.assign/update/unassign`, `chain_link.add/update/remove`.
   Pending: `exchange.*`, `cryptocurrency.*`, `chain.*`.
@@ -143,15 +145,16 @@ listTransferableCoins({ exchangeIds: number[] }): Promise<{
 
 ## 3. `packages/contracts`
 
-`src/subjects.ts`, `src/events.ts`, `src/orderbook.ts`, `src/worker.ts`,
+`src/messaging.ts`, `src/events.ts`, `src/orderbook.ts`, `src/worker.ts`,
 `src/domain.ts`, re-exported from `src/index.ts`.
 
-- `Subjects.orderbookNormalized(exchange)` → `orderbook.normalized.<exchange>`
-- `Subjects.metadataChanged` → `metadata.changed`
+- `RoutingKeys.orderbookNormalized(exchange)` → `orderbook.normalized.<exchange>`
+- `RoutingKeys.metadataChanged` → `metadata.changed`
+- `Queues.orderbook` / `Queues.metadataChanged` — broker queue names
 - `metadataChangedSchema` — `{ version: 1, entity, action, exchangeIds?,
 cryptocurrencyIds?, chainIds?, marketIds?, occurredAt }`
 - `normalizedOrderbookSchema` — `{ exchange, cmcId, asks, bids }` (exchange in
-  both subject and payload; workers normalize, there is no raw tier)
+  both routing key and payload; workers normalize, there is no raw tier)
 - `workerCommandSchema` / `workerEventSchema` — parent↔worker `postMessage`
   control protocol
 - `symbolSubscriptionSchema`, `workerStateSchema`, `baseCurrencySchema`
@@ -167,8 +170,9 @@ sender internals.
 
 Elysia + `@elysiajs/eden`; export the app type for an Eden client. Keep lister
 on oRPC. Shared dependencies are Elysia **plugins**, not module imports:
-`orchestratorPlugin` decorates the orchestrator, `natsPlugin` connects to NATS
-in `onStart` and drains in `onStop`. The UI provides `lister`/`sender` through a
+`orchestratorPlugin` decorates the orchestrator, `eventsPlugin` consumes
+`metadata.changed` in `onStart` and closes its consumer in `onStop`. The UI
+provides `lister`/`sender` through a
 `clientsPlugin` read from handler context.
 
 Routes: `POST /exchanges/:slug/start`, `POST /exchanges/:slug/stop`,
@@ -225,8 +229,8 @@ Scope now: **binance + gate-io only**; rest is debt. Resolves `"gate"` vs
 
 - `node:worker_threads`; args via `workerData` (migrate off `Bun.argv`).
 - Control = `postMessage` (`workerCommandSchema` / `workerEventSchema`).
-- Data = NATS only (`orderbook.normalized.<exchange>`); `postMessage` carries
-  state, acks, errors.
+- Data = RabbitMQ only (`orderbook.normalized.<exchange>`); `postMessage`
+  carries state, acks, errors.
 - Non-dynamic adapters fall back to terminate+respawn; hidden behind one interface.
 - Lifecycle: in-process threads, killed with the sender. A worker that dies on
   its own is respawned and re-subscribed.
@@ -242,8 +246,11 @@ orderbook.normalized.<exchange>
 
 - Workers already normalize; there is no raw tier and the receiver does **not**
   republish.
-- Cluster mode: one process per CPU, all in queue group `ORDERBOOK_UPDATE`, so
-  each message is handled by exactly one process.
+- Cluster mode: one process per CPU, all competing on the shared
+  `Queues.orderbook` queue, so each message is handled by exactly one process.
+- Manual acks with `prefetch`: a message is acked once its snapshot is stashed
+  (or its DB update lands in the non-concurrent path), so a crash redelivers
+  rather than loses it.
 - Per message: price conversion → volume search → update the matching
   `opportunity` legs directly in the database.
 - Opportunity rows are created and deleted by the sender through
@@ -263,13 +270,14 @@ orderbook.normalized.<exchange>
 
 ---
 
-## 7. Open question
+## 7. Delivery guarantee
 
-**Receiver delivery guarantee.** Core NATS queue groups are load-balanced but
-have no ack/redelivery: a crash between receive and DB write loses the message.
-The "acked once" requirement implies JetStream consumers (ack + redelivery) for
-the receiver, while `metadata.changed` stays core NATS. Confirm and, if yes,
-enable JetStream and add `@nats-io/jetstream`.
+**Resolved by RabbitMQ.** The receiver consumes from a shared queue with manual
+acks and a bounded `prefetch`; a crash between receive and DB write leaves the
+message unacked and the broker redelivers it. This replaces the core-NATS
+question (load-balanced but no redelivery) that motivated a possible JetStream
+consumer. `metadata.changed` is published as a persistent message to a durable
+queue, so a sender restart does not miss it.
 
 ---
 
@@ -278,20 +286,21 @@ enable JetStream and add `@nats-io/jetstream`.
 - **Transferability:** directed; one direction suffices; both legs subscribed;
   `tradeEnabled` required on both markets.
 - **Worker runtime:** `worker_threads`; `workerData` for args; `postMessage` for
-  control; NATS for orderbook data only; infinite reconnect in worker.
+  control; RabbitMQ for orderbook data only; infinite reconnect in worker.
 - **Worker lifecycle:** in-process threads, killed with the sender. A worker that
   dies on its own is respawned and re-subscribed.
 - **Metadata changes:** only acted on while workers are running; edits with no
   workers running reconcile on next start.
 - **Adapter scope:** binance + gate-io only; rest is debt.
 - **Receiver:** consumes the normalized stream and processes it; no republish;
-  cluster uses the NATS queue group.
-- **Subjects:** single `orderbook.normalized.<exchange>`; payload
+  cluster competes on the shared RabbitMQ queue.
+- **Routing keys:** single `orderbook.normalized.<exchange>`; payload
   `{ cmcId, asks, bids }`; workers normalize, there is no raw tier.
 - **Capacity:** `maxSubscriptionsPerConnection` is the only limit; the
   reconciler opens as many connections as needed and never drops a subscription.
-- **Durability:** core NATS, no JetStream/replay for `metadata.changed`; no
-  churn of healthy subscriptions.
+- **Durability:** `metadata.changed` is persistent on a durable queue;
+  orderbook messages are transient on an auto-delete queue; no churn of healthy
+  subscriptions.
 - **Lister events:** handler-level publish (no outbox) for now.
 - **Worker registry:** per-exchange config (`maxSubscriptionsPerConnection`);
   exchanges with no adapter return "worker not implemented".
@@ -316,8 +325,9 @@ Each task ends on a checkable bound.
 
 ### Phase 0 — contracts + transport
 
-- [x] **T1** `packages/contracts` exports Subjects + zod schemas; typecheck passes;
-      no service imports another service's internal paths across the boundary.
+- [x] **T1** `packages/contracts` exports routing keys + zod schemas; typecheck
+      passes; no service imports another service's internal paths across the
+      boundary.
 - [x] **T2** lister `events/` publisher exists; `publishMetadataChanged` validates
       before send and never throws.
 - [x] **T3** events wired into every mutation that can change transferability:
@@ -347,13 +357,14 @@ Each task ends on a checkable bound.
 - [x] **T9** worker pool + `workerData` + postMessage control + failure-driven
       reconcile; 6 pool tests.
 - [x] **T10** adapted binance + gate-io: `workerData`, dynamic
-      subscribe/unsubscribe, publish normalized orderbook to NATS.
+      subscribe/unsubscribe, publish normalized orderbook to RabbitMQ.
 
 ### Phase 4 — events + receiver
 
 - [x] **T11** sender subscribes `metadata.changed` → debounced reconcile.
-- [x] **T12** receiver: consume `orderbook.normalized.*`; update opportunity
-      prices/volumes directly (sender owns create/delete).
+- [x] **T12** receiver: consume `orderbook.normalized.*`; manual ack after the
+      snapshot is handled; update opportunity prices/volumes directly (sender
+      owns create/delete).
 
 ### Phase 5 — UI
 

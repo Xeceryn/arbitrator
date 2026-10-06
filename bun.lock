@@ -23,7 +23,7 @@
       "dependencies": {
         "@arbitrator/contracts": "workspace:*",
         "@arbitrator/logger": "workspace:*",
-        "@nats-io/transport-node": "catalog:core",
+        "@arbitrator/messaging": "workspace:*",
         "@orpc/server": "catalog:core",
         "drizzle-kit": "catalog:tools",
         "drizzle-orm": "catalog:core",
@@ -51,8 +51,10 @@
       "name": "@arbitrator/receiver",
       "dependencies": {
         "@arbitrator/contracts": "workspace:*",
+        "@arbitrator/lister": "workspace:*",
         "@arbitrator/logger": "workspace:*",
-        "@nats-io/transport-node": "catalog:core",
+        "@arbitrator/messaging": "workspace:*",
+        "@arbitrator/sdk": "workspace:*",
       },
     },
     "apps/sender": {
@@ -60,10 +62,10 @@
       "dependencies": {
         "@arbitrator/contracts": "workspace:*",
         "@arbitrator/logger": "workspace:*",
+        "@arbitrator/messaging": "workspace:*",
         "@arbitrator/sdk": "workspace:*",
         "@bufbuild/buf": "^1.72.0",
         "@bufbuild/protobuf": "^2.13.0",
-        "@nats-io/transport-node": "catalog:core",
         "@orpc/server": "catalog:core",
         "amqplib": "catalog:core",
         "binance": "^3.6.1",
@@ -139,6 +141,17 @@
         "winston": "catalog:tools",
       },
     },
+    "packages/messaging": {
+      "name": "@arbitrator/messaging",
+      "version": "0.0.0",
+      "dependencies": {
+        "@arbitrator/logger": "workspace:*",
+        "amqplib": "catalog:core",
+      },
+      "devDependencies": {
+        "@types/amqplib": "catalog:types",
+      },
+    },
     "packages/sdk": {
       "name": "@arbitrator/sdk",
       "version": "0.0.0",
@@ -158,7 +171,6 @@
   "catalogs": {
     "core": {
       "@elysiajs/eden": "^1.4.9",
-      "@nats-io/transport-node": "^3.4.0",
       "@orpc/client": "2.0.0-beta.41",
       "@orpc/contract": "2.0.0-beta.41",
       "@orpc/server": "2.0.0-beta.41",
@@ -201,6 +213,8 @@
     "@arbitrator/lister": ["@arbitrator/lister@workspace:apps/lister"],
 
     "@arbitrator/logger": ["@arbitrator/logger@workspace:packages/logger"],
+
+    "@arbitrator/messaging": ["@arbitrator/messaging@workspace:packages/messaging"],
 
     "@arbitrator/potential": ["@arbitrator/potential@workspace:apps/potential"],
 
@@ -319,14 +333,6 @@
     "@kitajs/html": ["@kitajs/html@4.2.13", "", { "dependencies": { "csstype": "^3.1.3" } }, "sha512-o+8e61EsoLDPTP7rsPkYolca1YFybHuxU2Lr5fWDZCUkYT/6uBlVkvnZUdCXMQKentJL9dxwpR8/xK2Q+U4LhA=="],
 
     "@kitajs/ts-html-plugin": ["@kitajs/ts-html-plugin@4.1.4", "", { "dependencies": { "chalk": "^5.6.2", "tslib": "^2.8.1", "yargs": "^18.0.0" }, "peerDependencies": { "@kitajs/html": "^4.2.10", "typescript": "^5.9.3" }, "bin": { "xss-scan": "dist/cli.js", "ts-html-plugin": "dist/cli.js" } }, "sha512-xK5mNrhnIy73kJFKx5yVGChJyWFRGmIaE0sjlVxVYllk5dyaEYVCrIh1N8AfnseEHka8gAqzPGW95HlkhDvnJA=="],
-
-    "@nats-io/nats-core": ["@nats-io/nats-core@3.4.0", "", { "dependencies": { "@nats-io/nkeys": "2.0.3", "@nats-io/nuid": "3.0.0" } }, "sha512-QMDM86EUNm+wudlKC67HLar/KHHQUvJGLfb4jbahje3pUk3K9afeck9fwsxBZF0eUFox6T/TA6m/t+lQqf+QsQ=="],
-
-    "@nats-io/nkeys": ["@nats-io/nkeys@2.0.3", "", { "dependencies": { "tweetnacl": "^1.0.3" } }, "sha512-JVt56GuE6Z89KUkI4TXUbSI9fmIfAmk6PMPknijmuL72GcD+UgIomTcRWiNvvJKxA01sBbmIPStqJs5cMRBC3A=="],
-
-    "@nats-io/nuid": ["@nats-io/nuid@3.0.0", "", {}, "sha512-QbXZDrxmYlrn5AD06gYcUTmEHwxn96HBQMIk7XTjDlEcx6FPzVBBPjp4AMRh1lEv6B4iJ6Xb/Uz61JugPXFRQg=="],
-
-    "@nats-io/transport-node": ["@nats-io/transport-node@3.4.0", "", { "dependencies": { "@nats-io/nats-core": "3.4.0", "@nats-io/nkeys": "2.0.3", "@nats-io/nuid": "3.0.0" } }, "sha512-hH7u7ejIBTFEJIZ8rIcMrHJI6wl+HhpO5sVFs1+ppmXa8RuB2+Lh1+UwTzZ5xTNNm1TKcRkYy+2qCV56qp8RxA=="],
 
     "@orpc/client": ["@orpc/client@2.0.0-beta.41", "", { "dependencies": { "@orpc/shared": "2.0.0-beta.41", "@standard-server/core": "~0.10.0", "@standard-server/fetch": "~0.10.0", "@standard-server/peer": "~0.10.0" } }, "sha512-0P6UxBpL6+0+lNu/gct5d9OibW94xp97UReblQVjqsWks7g8GOjzNRvP6b8MIGz1qpCKaNMOFAUdMJVF+BflJw=="],
 
@@ -843,8 +849,6 @@
     "triple-beam": ["triple-beam@1.4.1", "", {}, "sha512-aZbgViZrg1QNcG+LULa7nhZpJTZSLm/mXnHXnbAbjmN5aSa0y7V+wvv6+4WaBtpISJzThKy+PIPxc1Nq1EJ9mg=="],
 
     "tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
-
-    "tweetnacl": ["tweetnacl@1.0.3", "", {}, "sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw=="],
 
     "type-fest": ["type-fest@5.10.0", "", { "dependencies": { "tagged-tag": "^1.0.0" } }, "sha512-NoSdpq/WEiAg5sjmBkmV/hfxv6HJH4NqPNrqjtSO5CwRmpsDfaf4begxW34KdJykH/l1yHtwBWQkCRdoXO8mPA=="],
 

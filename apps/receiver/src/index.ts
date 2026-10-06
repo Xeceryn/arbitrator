@@ -1,12 +1,12 @@
 import {
-  OrderbookQueue,
-  Subjects,
   type NormalizedOrderbookEvent,
+  Queues,
+  RoutingKeys,
 } from "@arbitrator/contracts";
 import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
+import { subscribe } from "@arbitrator/messaging";
 import { listerClient } from "@arbitrator/sdk";
-import { connect } from "@nats-io/transport-node";
 
 const logger = createLogger("arbitrator/receiver");
 
@@ -21,17 +21,6 @@ for (const exchange of exchanges.data) {
   exchangeSlugIdMap.set(exchange.slug, exchange.id);
   if (exchange.baseCurrency === "idr") idrExchangeSlugs.add(exchange.slug);
 }
-const indodaxExchangeID = exchangeSlugIdMap.get("indodax");
-
-// PERFORMANCE DEBUG
-const nc = await connect({
-  servers: Bun.env.NATS_URL ?? "nats://localhost:4222",
-  user: Bun.env.NATS_USER,
-  pass: Bun.env.NATS_PASSWORD,
-  name: "arbitrator-receiver",
-  maxReconnectAttempts: -1,
-});
-
 const IDR_PRICE = 17869 as const;
 const CACHED_IDR_TTL = 1000 * 60 * 5;
 let cachedAt: number = 0;
@@ -164,47 +153,47 @@ async function processOrderbook(
 }
 
 // Workers already normalize; this subscribes to the single normalized stream.
-// `main.ts` runs one of these per CPU under a shared queue group, so each
-// message is handled by exactly one process.
-const subject = Subjects.orderbookNormalized("*");
-const subscription = nc.subscribe(subject, { queue: OrderbookQueue });
-logger.info(`receiver-${process.pid} listening on ${subject}`);
+// `main.ts` runs one of these per CPU on a shared queue, so each message is
+// handled by exactly one process.
+const subscription = subscribe({
+  queue: Queues.orderbook,
+  patterns: [RoutingKeys.orderbookNormalizedAll],
+  prefetch: 64,
+  durable: true,
+  autoDelete: true,
+  maxLength: 50_000,
+});
+logger.info(
+  `receiver-${process.pid} listening on ${RoutingKeys.orderbookNormalizedAll}`,
+);
 
-for await (const message of subscription) {
-  const orderbook = message.json<NormalizedOrderbookEvent>();
+for await (const delivery of subscription) {
+  const orderbook = delivery.json<NormalizedOrderbookEvent>();
   // The sender now carries the canonical exchange identity on the payload, so
-  // we never parse subject tokens here.
+  // we never parse routing-key tokens here.
   const exchangeId = exchangeSlugIdMap.get(orderbook.exchange);
   if (exchangeId === undefined) {
     logger.warn(
       `dropping orderbook for unknown exchange: ${orderbook.exchange}`,
     );
+    delivery.ack();
     continue;
   }
 
   // binance has some special multipleid volumes, so we need to divide it.
+  let divider: number | undefined;
   if (orderbook.exchange === "binance") {
     // 1mbabydoge 1 million of babydoge
-    if (orderbook.cmcId === 10407) {
-      await processOrderbook(orderbook, exchangeId, 1_000_000);
-      continue;
-    }
+    if (orderbook.cmcId === 10407) divider = 1_000_000;
     // 1000sats 1000 of sats
-    if (orderbook.cmcId === 28194) {
-      await processOrderbook(orderbook, exchangeId, 1000);
-      continue;
-    }
+    else if (orderbook.cmcId === 28194) divider = 1000;
     // 1000cheems 100 of cheems
-    if (orderbook.cmcId === 33280) {
-      await processOrderbook(orderbook, exchangeId, 1000);
-      continue;
-    }
+    else if (orderbook.cmcId === 33280) divider = 1000;
     // 1000cat 1000 of cat
-    if (orderbook.cmcId === 32724) {
-      await processOrderbook(orderbook, exchangeId, 1000);
-      continue;
-    }
+    else if (orderbook.cmcId === 32724) divider = 1000;
   }
 
-  await processOrderbook(orderbook, exchangeId);
+  await processOrderbook(orderbook, exchangeId, divider);
+  // Ack only after the DB write succeeds; a throw leaves it unacked.
+  delivery.ack();
 }
