@@ -1,0 +1,20 @@
+.git
+.gitignore
+
+# dependencies
+node_modules
+**/node_modules
+
+# build output (regenerated inside the image)
+**/dist
+**/*.tsbuildinfo
+
+# local tooling / secrets / infra
+.env
+.env.*
+.prompts
+.agents
+docs
+coverage
+*.log
+logs

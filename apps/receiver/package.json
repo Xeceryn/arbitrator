@@ -2,7 +2,9 @@
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@arbitrator/receiver",
   "scripts": {
-    "dev": "bun run src/main.ts"
+    "dev": "bun run src/main.ts",
+    "start": "bun run src/main.ts",
+    "build": "bun build --target=bun ./src/main.ts ./src/index.ts --outdir=./dist"
   },
   "dependencies": {
     "@arbitrator/contracts": "workspace:*",

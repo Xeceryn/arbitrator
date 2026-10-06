@@ -5,7 +5,9 @@
     "app": "./src/app.ts"
   },
   "scripts": {
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "build": "bun build --target=bun ./src/index.ts --outdir=./dist"
   },
   "dependencies": {
     "@arbitrator/contracts": "workspace:*",
