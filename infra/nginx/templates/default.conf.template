@@ -1,0 +1,65 @@
+# Never proxy to an empty/undefined upstream.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ""      close;
+}
+
+upstream ui_upstream {
+    server ${UI_UPSTREAM};
+    keepalive 16;
+}
+
+# HTTP -> HTTPS. Also serves the ACME challenge webroot so certbot
+# HTTP-01 (or a reverse proxy doing it for you) can validate.
+server {
+    listen      80;
+    listen      [::]:80;
+    server_name ${LOCAL_DOMAIN} ${MDNS_NAME} localhost;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen      443 ssl;
+    listen      [::]:443 ssl;
+    http2       on;
+    server_name ${LOCAL_DOMAIN} ${MDNS_NAME} localhost;
+
+    # Replace these with the Let's Encrypt files if you use DNS-01.
+    # mkcert/local-CA output is written to the same two paths.
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    ssl_protocols             TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache         shared:SSL:10m;
+    ssl_session_timeout       1d;
+    ssl_session_tickets       off;
+
+    # Uncomment once you are happy with the cert and always want HTTPS.
+    # add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # Elysia/htmx streams HTML; also covers SSE and websocket upgrades.
+    proxy_http_version 1.1;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host  $host;
+    proxy_set_header Upgrade           $http_upgrade;
+    proxy_set_header Connection        $connection_upgrade;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+    proxy_buffering    off;
+    proxy_cache        off;
+
+    location / {
+        proxy_pass http://ui_upstream;
+    }
+}

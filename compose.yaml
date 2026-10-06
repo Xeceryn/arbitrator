@@ -13,6 +13,29 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: arbitrator-nginx
+    restart: unless-stopped
+    environment:
+      # The UI dev server runs on the host (bun --watch) on port 3000.
+      # host.docker.internal points back at the host from inside the container.
+      UI_UPSTREAM: ${UI_UPSTREAM:-host.docker.internal:3000}
+      LOCAL_DOMAIN: ${LOCAL_DOMAIN:-arbitrator.test}
+      # mDNS name (avahi) so LAN clients can use https://<hostname>.local.
+      MDNS_NAME: ${MDNS_NAME:-}
+      # Only substitute our variables; leave nginx's own $host, $scheme, etc.
+      NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|LOCAL_DOMAIN|MDNS_NAME)$$"
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./infra/nginx/templates:/etc/nginx/templates:ro
+      - ./infra/certs:/etc/nginx/certs:ro
+      - ./infra/certbot/www:/var/www/certbot:ro
+
   rabbitmq:
     image: rabbitmq:4-management-alpine
     container_name: arbitrator-rabbitmq

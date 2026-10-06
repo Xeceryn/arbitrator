@@ -33,3 +33,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Finder (MacOS) folder config
 .DS_Store
 .prompts
+
+# locally generated TLS material (never commit keys/CA roots)
+infra/certs/*
+!infra/certs/.gitkeep
+infra/certbot/*
+!infra/certbot/www/
+!infra/certbot/www/.gitkeep
