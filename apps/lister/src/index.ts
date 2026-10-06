@@ -1,10 +1,8 @@
-import { createLogger } from "@arbitrator/logger";
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin } from "@orpc/server/plugins";
 
+import { logger } from "./logger";
 import { router } from "./router";
-
-const logger = createLogger("arbitrator/lister");
 
 const handler = new RPCHandler(router, {
   plugins: [new CORSPlugin({ origin: "*" })],
@@ -26,9 +24,7 @@ Bun.serve({
       return response;
     } catch (error) {
       console.log(error);
-      return new Response("INTERNAL SERVER ERROR", {
-        status: 500,
-      });
+      return new Response("INTERNAL SERVER ERROR", { status: 500 });
     }
   },
   port: 3001,

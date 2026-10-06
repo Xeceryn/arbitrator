@@ -1,6 +1,7 @@
 import { SQL } from "bun";
 import { drizzle } from "drizzle-orm/bun-sql";
 
+import { logger } from "../logger";
 import { relations } from "./relations";
 
 const url = () => {
@@ -9,7 +10,16 @@ const url = () => {
     "postgres://postgres:postgres@localhost:5432/arbitrator"
   );
 };
-export const postgresConnection = new SQL(url());
+export const postgresConnection = new SQL({
+  adapter: "postgres",
+  url: url(),
+  onconnect() {
+    logger.info("postgresql connected");
+  },
+  onclose() {
+    logger.info("postgresql disconnected");
+  },
+});
 
 export const database = drizzle({
   client: postgresConnection,

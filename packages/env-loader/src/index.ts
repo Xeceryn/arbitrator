@@ -20,8 +20,8 @@ const envSchema = z.object({
     .transform((val) => parseInt(val, 10))
     .pipe(z.number().min(1).max(65535))
     .default(5432),
-  LISTER_POSTGRES_USER: z.string().default("sulthonuladib"),
-  LISTER_POSTGRES_PASSWORD: z.string().default("123456"),
+  LISTER_POSTGRES_USER: z.string().default("postgres"),
+  LISTER_POSTGRES_PASSWORD: z.string().default("postgres"),
   LISTER_POSTGRES_DB: z.string().default("lister"),
 
   // Database configuration
