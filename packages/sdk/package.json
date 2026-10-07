@@ -1,19 +1,19 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "@arbitrator/sdk",
-  "version": "0.0.0",
-  "description": "Arbitrator SDK",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@arbitrator/lister": "workspace:*",
-    "@arbitrator/sdk": "workspace:*",
-    "@orpc/client": "catalog:core",
-    "@orpc/server": "catalog:core"
-  }
+    "$schema": "https://json.schemastore.org/package.json",
+    "name": "@arbitrator/sdk",
+    "version": "0.0.0",
+    "description": "Arbitrator SDK",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@arbitrator/lister": "workspace:*",
+        "@arbitrator/sdk": "workspace:*",
+        "@orpc/client": "catalog:core",
+        "@orpc/server": "catalog:core"
+    }
 }

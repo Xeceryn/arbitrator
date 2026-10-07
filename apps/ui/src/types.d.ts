@@ -1,9 +1,9 @@
 declare namespace JSX {
-  interface HtmlTag {
-    // For hyperscript to work properly with JSX types
-    classes?: string;
-    _?: string;
-  }
+    interface HtmlTag {
+        // For hyperscript to work properly with JSX types
+        classes?: string;
+        _?: string;
+    }
 }
 
 // declare global {

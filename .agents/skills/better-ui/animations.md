@@ -18,11 +18,11 @@ Users change intent mid-interaction. Animations that cannot be interrupted make 
 ```css
 /* Good: interruptible transition for a toggle */
 .drawer {
-  transform: translateX(-100%);
-  transition: transform 200ms ease-out;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
 }
 .drawer.open {
-  transform: translateX(0);
+    transform: translateX(0);
 }
 
 /* Clicking again mid-animation smoothly reverses, no jank */
@@ -31,7 +31,7 @@ Users change intent mid-interaction. Animations that cannot be interrupted make 
 ```css
 /* Bad: keyframe animation for interactive element */
 .drawer.open {
-  animation: slideIn 200ms ease-out forwards;
+    animation: slideIn 200ms ease-out forwards;
 }
 
 /* Closing mid-animation snaps or restarts, feels broken */
@@ -49,13 +49,13 @@ Not every button needs it. Add a `static` prop that disables the scale where the
 
 ```css
 .button {
-  transition-property: scale;
-  transition-duration: 150ms;
-  transition-timing-function: ease-out;
+    transition-property: scale;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
 }
 
 .button:active {
-  scale: 0.96;
+    scale: 0.96;
 }
 ```
 
@@ -63,7 +63,7 @@ Not every button needs it. Add a `static` prop that disables the scale where the
 
 ```tsx
 <button className="transition-transform duration-150 ease-out active:scale-[0.96]">
-  Click me
+    Click me
 </button>
 ```
 
@@ -109,14 +109,14 @@ Use `initial={false}` on `AnimatePresence` to stop enter animations firing on fi
 ```tsx
 // Good: icon doesn't animate in on mount, only on state change
 <AnimatePresence initial={false} mode="popLayout">
-  <motion.span
-    key={isActive ? "active" : "inactive"}
-    initial={{ opacity: 0, scale: 0.25, filter: "blur(4px)" }}
-    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-    exit={{ opacity: 0, scale: 0.25, filter: "blur(4px)" }}
-  >
-    <Icon />
-  </motion.span>
+    <motion.span
+        key={isActive ? "active" : "inactive"}
+        initial={{ opacity: 0, scale: 0.25, filter: "blur(4px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        exit={{ opacity: 0, scale: 0.25, filter: "blur(4px)" }}
+    >
+        <Icon />
+    </motion.span>
 </AnimatePresence>
 ```
 
@@ -149,30 +149,30 @@ Inject a stylesheet that turns off every transition, force a reflow so the new c
 import { useEffect } from "react";
 
 export function DisableThemeTransitions() {
-  useEffect(() => {
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    useEffect(() => {
+        const mql = window.matchMedia("(prefers-color-scheme: dark)");
 
-    const handleChange = () => {
-      const style = document.createElement("style");
-      style.append(
-        document.createTextNode(
-          "*,*::before,*::after{transition:none !important}",
-        ),
-      );
-      document.head.append(style);
+        const handleChange = () => {
+            const style = document.createElement("style");
+            style.append(
+                document.createTextNode(
+                    "*,*::before,*::after{transition:none !important}",
+                ),
+            );
+            document.head.append(style);
 
-      const _flushReflow = document.body.offsetHeight;
+            const _flushReflow = document.body.offsetHeight;
 
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => style.remove());
-      });
-    };
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => style.remove());
+            });
+        };
 
-    mql.addEventListener("change", handleChange);
-    return () => mql.removeEventListener("change", handleChange);
-  }, []);
+        mql.addEventListener("change", handleChange);
+        return () => mql.removeEventListener("change", handleChange);
+    }, []);
 
-  return null;
+    return null;
 }
 ```
 
@@ -191,12 +191,12 @@ Motion is a budget, not a garnish. Three rules decide whether an animation belon
 ```css
 /* Good: high-frequency hover gets a minimal transition */
 .row:hover {
-  background-color: var(--surface-hover);
-  transition: background-color 100ms ease-out;
+    background-color: var(--surface-hover);
+    transition: background-color 100ms ease-out;
 }
 
 /* Bad: every hover replays a full entrance */
 .row:hover .row-icon {
-  animation: bounceIn 500ms;
+    animation: bounceIn 500ms;
 }
 ```

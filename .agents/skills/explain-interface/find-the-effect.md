@@ -16,37 +16,38 @@ Run these through whatever browser tooling is available: `evaluate_script` in th
 
 ```js
 const dead = (v) =>
-  !v || v === "none" || v === "normal" || v === "1" || v === "blur(0px)";
+    !v || v === "none" || v === "normal" || v === "1" || v === "blur(0px)";
 const PROPS = [
-  "backgroundImage",
-  "filter",
-  "backdropFilter",
-  "mixBlendMode",
-  "maskImage",
-  "boxShadow",
-  "opacity",
+    "backgroundImage",
+    "filter",
+    "backdropFilter",
+    "mixBlendMode",
+    "maskImage",
+    "boxShadow",
+    "opacity",
 ];
 const hits = [];
 for (const el of document.querySelectorAll("*")) {
-  for (const pseudo of [null, "::before", "::after"]) {
-    const s = getComputedStyle(el, pseudo);
-    const found = {};
-    for (const p of PROPS) {
-      const v = p === "maskImage" ? s.maskImage || s.webkitMaskImage : s[p];
-      if (!dead(v)) found[p] = String(v).slice(0, 200);
+    for (const pseudo of [null, "::before", "::after"]) {
+        const s = getComputedStyle(el, pseudo);
+        const found = {};
+        for (const p of PROPS) {
+            const v =
+                p === "maskImage" ? s.maskImage || s.webkitMaskImage : s[p];
+            if (!dead(v)) found[p] = String(v).slice(0, 200);
+        }
+        if (!Object.keys(found).length) continue;
+        if (Object.keys(found).length === 1 && found.opacity) continue; // opacity alone is not an effect
+        const r = el.getBoundingClientRect();
+        hits.push({
+            tag: el.tagName.toLowerCase(),
+            pseudo: pseudo ?? "element",
+            cls: (el.className?.toString?.() ?? "").slice(0, 90),
+            z: getComputedStyle(el).zIndex,
+            box: `${Math.round(r.width)}x${Math.round(r.height)} @ y${Math.round(r.top)}`,
+            found,
+        });
     }
-    if (!Object.keys(found).length) continue;
-    if (Object.keys(found).length === 1 && found.opacity) continue; // opacity alone is not an effect
-    const r = el.getBoundingClientRect();
-    hits.push({
-      tag: el.tagName.toLowerCase(),
-      pseudo: pseudo ?? "element",
-      cls: (el.className?.toString?.() ?? "").slice(0, 90),
-      z: getComputedStyle(el).zIndex,
-      box: `${Math.round(r.width)}x${Math.round(r.height)} @ y${Math.round(r.top)}`,
-      found,
-    });
-  }
 }
 ({ total: hits.length, hits });
 ```
@@ -64,20 +65,20 @@ Where the layer search comes back empty for the region you care about, the effec
 
 ```js
 [...document.querySelectorAll("canvas, svg, video, img")].map((el) => {
-  const r = el.getBoundingClientRect();
-  return {
-    tag: el.tagName.toLowerCase(),
-    box: `${Math.round(r.width)}x${Math.round(r.height)} @ y${Math.round(r.top)}`,
-    ctx:
-      el.tagName === "CANVAS"
-        ? el.getContext("webgl2")
-          ? "webgl2"
-          : el.getContext("webgl")
-            ? "webgl"
-            : "2d-or-taken"
-        : null,
-    src: (el.currentSrc || el.getAttribute("src") || "").slice(0, 90),
-  };
+    const r = el.getBoundingClientRect();
+    return {
+        tag: el.tagName.toLowerCase(),
+        box: `${Math.round(r.width)}x${Math.round(r.height)} @ y${Math.round(r.top)}`,
+        ctx:
+            el.tagName === "CANVAS"
+                ? el.getContext("webgl2")
+                    ? "webgl2"
+                    : el.getContext("webgl")
+                      ? "webgl"
+                      : "2d-or-taken"
+                : null,
+        src: (el.currentSrc || el.getAttribute("src") || "").slice(0, 90),
+    };
 });
 ```
 
@@ -89,20 +90,20 @@ Where the page is large, sample what actually paints at a point instead of walki
 
 ```js
 (x, y) =>
-  document
-    .elementsFromPoint(x, y)
-    .slice(0, 8)
-    .map((el) => {
-      const s = getComputedStyle(el);
-      return {
-        tag: el.tagName.toLowerCase(),
-        cls: (el.className?.toString?.() ?? "").slice(0, 70),
-        bg: s.backgroundImage.slice(0, 80),
-        filter: s.filter,
-        backdrop: s.backdropFilter,
-        blend: s.mixBlendMode,
-      };
-    });
+    document
+        .elementsFromPoint(x, y)
+        .slice(0, 8)
+        .map((el) => {
+            const s = getComputedStyle(el);
+            return {
+                tag: el.tagName.toLowerCase(),
+                cls: (el.className?.toString?.() ?? "").slice(0, 70),
+                bg: s.backgroundImage.slice(0, 80),
+                filter: s.filter,
+                backdrop: s.backdropFilter,
+                blend: s.mixBlendMode,
+            };
+        });
 ```
 
 `elementsFromPoint` returns front to back, which is the paint stack at that pixel, reversed. It is the fastest way to answer "what is actually behind this".
@@ -111,11 +112,11 @@ Where the page is large, sample what actually paints at a point instead of walki
 
 ```js
 [...document.getAnimations()].slice(0, 20).map((a) => ({
-  target: a.effect?.target?.tagName?.toLowerCase(),
-  cls: (a.effect?.target?.className?.toString?.() ?? "").slice(0, 60),
-  name: a.animationName ?? a.transitionProperty ?? "(js)",
-  duration: a.effect?.getTiming?.().duration,
-  easing: a.effect?.getTiming?.().easing,
+    target: a.effect?.target?.tagName?.toLowerCase(),
+    cls: (a.effect?.target?.className?.toString?.() ?? "").slice(0, 60),
+    name: a.animationName ?? a.transitionProperty ?? "(js)",
+    duration: a.effect?.getTiming?.().duration,
+    easing: a.effect?.getTiming?.().easing,
 }));
 ```
 

@@ -16,20 +16,20 @@ Use only noninteractive content in the `hover-3d` wrapper. To make the complete 
 
 ```html
 <div class="hover-3d my-12 mx-2">
-  <figure class="max-w-100 rounded-2xl">
-    <img
-      src="https://img.daisyui.com/images/stock/creditcard.webp"
-      alt="Tailwind CSS 3D card"
-    />
-  </figure>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
+    <figure class="max-w-100 rounded-2xl">
+        <img
+            src="https://img.daisyui.com/images/stock/creditcard.webp"
+            alt="Tailwind CSS 3D card"
+        />
+    </figure>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
 </div>
 ```
 

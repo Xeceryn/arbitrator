@@ -14,8 +14,8 @@ Use an indicator to put an element at the corner of another element.
 
 ```html
 <div class="indicator">
-  <span class="indicator-item">{indicator content}</span>
-  <div>{main content}</div>
+    <span class="indicator-item">{indicator content}</span>
+    <div>{main content}</div>
 </div>
 ```
 

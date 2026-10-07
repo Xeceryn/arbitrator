@@ -1,18 +1,18 @@
 import { describe, expect, test } from "bun:test";
 
 import {
-  type DesiredSubscription,
-  type WorkerAdapterConfig,
-  type WorkerSnapshot,
-  reconcile,
+    type DesiredSubscription,
+    type WorkerAdapterConfig,
+    type WorkerSnapshot,
+    reconcile,
 } from "./reconcile";
 
 const binance: WorkerAdapterConfig = {
-  slug: "binance",
-  modulePath: "src/workers/orderbooks/binance.ts",
-  baseCurrency: "usdt",
-  maxSubscriptionsPerConnection: 2,
-  supportsDynamicSubscribe: true,
+    slug: "binance",
+    modulePath: "src/workers/orderbooks/binance.ts",
+    baseCurrency: "usdt",
+    maxSubscriptionsPerConnection: 2,
+    supportsDynamicSubscribe: true,
 };
 
 const gate: WorkerAdapterConfig = { ...binance, slug: "gate" };
@@ -20,141 +20,153 @@ const gate: WorkerAdapterConfig = { ...binance, slug: "gate" };
 const configs = { binance, gate };
 
 function coins(exchangeSlug: string, cmcIds: number[]): DesiredSubscription[] {
-  return cmcIds.map((cmcId) => ({
-    exchangeSlug,
-    cmcId,
-    symbol: `COIN${cmcId}`,
-  }));
+    return cmcIds.map((cmcId) => ({
+        exchangeSlug,
+        cmcId,
+        symbol: `COIN${cmcId}`,
+    }));
 }
 
 describe("reconcile", () => {
-  test("fewer than two started exchanges tears everything down", () => {
-    const currentWorkers: WorkerSnapshot[] = [
-      {
-        id: "binance:0",
-        exchangeSlug: "binance",
-        symbols: [{ cmcId: 1, symbol: "COIN1" }],
-      },
-    ];
+    test("fewer than two started exchanges tears everything down", () => {
+        const currentWorkers: WorkerSnapshot[] = [
+            {
+                id: "binance:0",
+                exchangeSlug: "binance",
+                symbols: [{ cmcId: 1, symbol: "COIN1" }],
+            },
+        ];
 
-    const result = reconcile({
-      startedExchanges: ["binance"],
-      desired: coins("binance", [1, 2]),
-      currentWorkers,
-      configs,
+        const result = reconcile({
+            startedExchanges: ["binance"],
+            desired: coins("binance", [1, 2]),
+            currentWorkers,
+            configs,
+        });
+
+        expect(result.commands).toEqual([
+            {
+                type: "terminate",
+                workerId: "binance:0",
+                exchangeSlug: "binance",
+            },
+        ]);
+        expect(result.nextWorkers).toEqual([]);
     });
 
-    expect(result.commands).toEqual([
-      { type: "terminate", workerId: "binance:0", exchangeSlug: "binance" },
-    ]);
-    expect(result.nextWorkers).toEqual([]);
-  });
+    test("spawns one worker per exchange for two started exchanges", () => {
+        const desired = [...coins("binance", [1, 2]), ...coins("gate", [1, 2])];
 
-  test("spawns one worker per exchange for two started exchanges", () => {
-    const desired = [...coins("binance", [1, 2]), ...coins("gate", [1, 2])];
+        const result = reconcile({
+            startedExchanges: ["binance", "gate"],
+            desired,
+            currentWorkers: [],
+            configs,
+        });
 
-    const result = reconcile({
-      startedExchanges: ["binance", "gate"],
-      desired,
-      currentWorkers: [],
-      configs,
+        const spawns = result.commands.filter((c) => c.type === "spawn");
+        expect(spawns).toHaveLength(2);
+        expect(result.nextWorkers).toHaveLength(2);
     });
 
-    const spawns = result.commands.filter((c) => c.type === "spawn");
-    expect(spawns).toHaveLength(2);
-    expect(result.nextWorkers).toHaveLength(2);
-  });
+    test("is idempotent: re-running against projected state emits nothing", () => {
+        const desired = [...coins("binance", [1, 2]), ...coins("gate", [1, 2])];
 
-  test("is idempotent: re-running against projected state emits nothing", () => {
-    const desired = [...coins("binance", [1, 2]), ...coins("gate", [1, 2])];
+        const first = reconcile({
+            startedExchanges: ["binance", "gate"],
+            desired,
+            currentWorkers: [],
+            configs,
+        });
+        const second = reconcile({
+            startedExchanges: ["binance", "gate"],
+            desired,
+            currentWorkers: first.nextWorkers,
+            configs,
+        });
 
-    const first = reconcile({
-      startedExchanges: ["binance", "gate"],
-      desired,
-      currentWorkers: [],
-      configs,
-    });
-    const second = reconcile({
-      startedExchanges: ["binance", "gate"],
-      desired,
-      currentWorkers: first.nextWorkers,
-      configs,
-    });
-
-    expect(second.commands).toEqual([]);
-    expect(second.nextWorkers).toEqual(first.nextWorkers);
-  });
-
-  test("spawns additional workers to cover every coin", () => {
-    const result = reconcile({
-      startedExchanges: ["binance", "gate"],
-      desired: [...coins("binance", [1, 2, 3]), ...coins("gate", [1])],
-      currentWorkers: [],
-      configs,
+        expect(second.commands).toEqual([]);
+        expect(second.nextWorkers).toEqual(first.nextWorkers);
     });
 
-    // binance: 3 coins at 2 per connection -> 2 workers; gate: 1 worker.
-    expect(result.commands.filter((c) => c.type === "spawn")).toHaveLength(3);
+    test("spawns additional workers to cover every coin", () => {
+        const result = reconcile({
+            startedExchanges: ["binance", "gate"],
+            desired: [...coins("binance", [1, 2, 3]), ...coins("gate", [1])],
+            currentWorkers: [],
+            configs,
+        });
 
-    const binanceCoins = result.nextWorkers
-      .filter((worker) => worker.exchangeSlug === "binance")
-      .flatMap((worker) => worker.symbols.map((symbol) => symbol.cmcId))
-      .sort((a, b) => a - b);
-    expect(binanceCoins).toEqual([1, 2, 3]);
-  });
+        // binance: 3 coins at 2 per connection -> 2 workers; gate: 1 worker.
+        expect(result.commands.filter((c) => c.type === "spawn")).toHaveLength(
+            3,
+        );
 
-  test("unsubscribes a coin when metadata drops it", () => {
-    const currentWorkers: WorkerSnapshot[] = [
-      {
-        id: "binance:0",
-        exchangeSlug: "binance",
-        symbols: [
-          { cmcId: 1, symbol: "COIN1" },
-          { cmcId: 2, symbol: "COIN2" },
-        ],
-      },
-    ];
-
-    const result = reconcile({
-      startedExchanges: ["binance", "gate"],
-      desired: [...coins("binance", [1]), ...coins("gate", [1, 2])],
-      currentWorkers,
-      configs,
+        const binanceCoins = result.nextWorkers
+            .filter((worker) => worker.exchangeSlug === "binance")
+            .flatMap((worker) => worker.symbols.map((symbol) => symbol.cmcId))
+            .sort((a, b) => a - b);
+        expect(binanceCoins).toEqual([1, 2, 3]);
     });
 
-    const unsubscribe = result.commands.find((c) => c.type === "unsubscribe");
-    expect(unsubscribe).toEqual({
-      type: "unsubscribe",
-      workerId: "binance:0",
-      exchangeSlug: "binance",
-      symbols: [{ cmcId: 2, symbol: "COIN2" }],
+    test("unsubscribes a coin when metadata drops it", () => {
+        const currentWorkers: WorkerSnapshot[] = [
+            {
+                id: "binance:0",
+                exchangeSlug: "binance",
+                symbols: [
+                    { cmcId: 1, symbol: "COIN1" },
+                    { cmcId: 2, symbol: "COIN2" },
+                ],
+            },
+        ];
+
+        const result = reconcile({
+            startedExchanges: ["binance", "gate"],
+            desired: [...coins("binance", [1]), ...coins("gate", [1, 2])],
+            currentWorkers,
+            configs,
+        });
+
+        const unsubscribe = result.commands.find(
+            (c) => c.type === "unsubscribe",
+        );
+        expect(unsubscribe).toEqual({
+            type: "unsubscribe",
+            workerId: "binance:0",
+            exchangeSlug: "binance",
+            symbols: [{ cmcId: 2, symbol: "COIN2" }],
+        });
     });
-  });
 
-  test("stops an exchange by terminating its workers only", () => {
-    const currentWorkers: WorkerSnapshot[] = [
-      {
-        id: "binance:0",
-        exchangeSlug: "binance",
-        symbols: [{ cmcId: 1, symbol: "COIN1" }],
-      },
-      {
-        id: "gate:1",
-        exchangeSlug: "gate",
-        symbols: [{ cmcId: 1, symbol: "COIN1" }],
-      },
-    ];
+    test("stops an exchange by terminating its workers only", () => {
+        const currentWorkers: WorkerSnapshot[] = [
+            {
+                id: "binance:0",
+                exchangeSlug: "binance",
+                symbols: [{ cmcId: 1, symbol: "COIN1" }],
+            },
+            {
+                id: "gate:1",
+                exchangeSlug: "gate",
+                symbols: [{ cmcId: 1, symbol: "COIN1" }],
+            },
+        ];
 
-    const result = reconcile({
-      startedExchanges: ["binance"],
-      desired: [...coins("binance", [1]), ...coins("gate", [1])],
-      currentWorkers,
-      configs,
+        const result = reconcile({
+            startedExchanges: ["binance"],
+            desired: [...coins("binance", [1]), ...coins("gate", [1])],
+            currentWorkers,
+            configs,
+        });
+
+        expect(result.commands).toEqual([
+            {
+                type: "terminate",
+                workerId: "binance:0",
+                exchangeSlug: "binance",
+            },
+            { type: "terminate", workerId: "gate:1", exchangeSlug: "gate" },
+        ]);
     });
-
-    expect(result.commands).toEqual([
-      { type: "terminate", workerId: "binance:0", exchangeSlug: "binance" },
-      { type: "terminate", workerId: "gate:1", exchangeSlug: "gate" },
-    ]);
-  });
 });

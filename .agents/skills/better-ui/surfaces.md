@@ -17,20 +17,20 @@ The rule matters most when nested surfaces sit close together. Past `24px` of pa
 ```css
 /* Good: concentric radii */
 .card {
-  border-radius: 20px; /* 12 + 8 */
-  padding: 8px;
+    border-radius: 20px; /* 12 + 8 */
+    padding: 8px;
 }
 .card-inner {
-  border-radius: 12px;
+    border-radius: 12px;
 }
 
 /* Bad: same radius on both */
 .card {
-  border-radius: 12px;
-  padding: 8px;
+    border-radius: 12px;
+    padding: 8px;
 }
 .card-inner {
-  border-radius: 12px;
+    border-radius: 12px;
 }
 ```
 
@@ -66,21 +66,21 @@ Where an icon makes symmetric padding look unbalanced, use slightly less on the 
 ```css
 /* Good: less padding on icon side */
 .button-with-icon {
-  padding-inline-start: 16px;
-  padding-inline-end: 14px; /* trailing icon side = text side - 2px */
+    padding-inline-start: 16px;
+    padding-inline-end: 14px; /* trailing icon side = text side - 2px */
 }
 
 /* Bad: equal padding looks like icon is pushed too far right */
 .button-with-icon {
-  padding-inline: 16px;
+    padding-inline: 16px;
 }
 ```
 
 ```tsx
 // Tailwind
 <button className="ps-4 pe-3.5 flex items-center gap-2">
-  <span>Continue</span>
-  <ArrowRightIcon />
+    <span>Continue</span>
+    <ArrowRightIcon />
 </button>
 ```
 
@@ -91,12 +91,12 @@ Play icons are triangular and their geometric center is not their visual center.
 ```css
 /* Good: optically centered */
 .play-button svg {
-  transform: translateX(2px); /* physical correction to the glyph itself */
+    transform: translateX(2px); /* physical correction to the glyph itself */
 }
 
 /* Bad: geometrically centered but looks off */
 .play-button svg {
-  /* no adjustment */
+    /* no adjustment */
 }
 ```
 
@@ -110,7 +110,7 @@ Some icons carry uneven visual weight. The best fix is adjusting the SVG directl
 
 // Fallback: adjust with margin
 <span className="translate-x-px">
-  <StarIcon />
+    <StarIcon />
 </span>
 ```
 
@@ -126,12 +126,14 @@ Three layers. The first acts as a 1px border ring, the second adds subtle lift, 
 
 ```css
 :root {
-  --shadow-border:
-    0px 0px 0px 1px oklch(0 0 0 / 0.06), 0px 1px 2px -1px oklch(0 0 0 / 0.06),
-    0px 2px 4px 0px oklch(0 0 0 / 0.04);
-  --shadow-border-hover:
-    0px 0px 0px 1px oklch(0 0 0 / 0.08), 0px 1px 2px -1px oklch(0 0 0 / 0.08),
-    0px 2px 4px 0px oklch(0 0 0 / 0.06);
+    --shadow-border:
+        0px 0px 0px 1px oklch(0 0 0 / 0.06),
+        0px 1px 2px -1px oklch(0 0 0 / 0.06),
+        0px 2px 4px 0px oklch(0 0 0 / 0.04);
+    --shadow-border-hover:
+        0px 0px 0px 1px oklch(0 0 0 / 0.08),
+        0px 1px 2px -1px oklch(0 0 0 / 0.08),
+        0px 2px 4px 0px oklch(0 0 0 / 0.06);
 }
 ```
 
@@ -152,14 +154,14 @@ Apply the variable and add `transition-[box-shadow]` for a smooth hover:
 
 ```css
 .card {
-  box-shadow: var(--shadow-border);
-  transition-property: box-shadow;
-  transition-duration: 150ms;
-  transition-timing-function: ease-out;
+    box-shadow: var(--shadow-border);
+    transition-property: box-shadow;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
 }
 
 .card:hover {
-  box-shadow: var(--shadow-border-hover);
+    box-shadow: var(--shadow-border-hover);
 }
 ```
 
@@ -188,8 +190,8 @@ Add a `1px` outline at low opacity to images for consistent depth, especially wh
 
 ```css
 img {
-  outline: 1px solid oklch(0 0 0 / 0.1);
-  outline-offset: -1px; /* draw the ring just inside the image edge */
+    outline: 1px solid oklch(0 0 0 / 0.1);
+    outline-offset: -1px; /* draw the ring just inside the image edge */
 }
 ```
 
@@ -197,8 +199,8 @@ img {
 
 ```css
 img {
-  outline: 1px solid oklch(1 0 0 / 0.1);
-  outline-offset: -1px;
+    outline: 1px solid oklch(1 0 0 / 0.1);
+    outline-offset: -1px;
 }
 ```
 
@@ -206,9 +208,9 @@ img {
 
 ```tsx
 <img
-  className="outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
-  src={src}
-  alt={alt}
+    className="outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
+    src={src}
+    alt={alt}
 />
 ```
 

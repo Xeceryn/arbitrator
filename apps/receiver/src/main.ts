@@ -7,28 +7,28 @@ const children: Bun.Subprocess[] = [];
 const worker = Bun.env.RECEIVER_WORKER ?? "src/index.ts";
 
 for (let index = 0; index < cpus; index++) {
-  children.push(
-    Bun.spawn({
-      cmd: ["bun", "run", worker, "--cluster"],
-      stdout: "inherit",
-      stderr: "inherit",
-      stdin: "inherit",
-    }),
-  );
+    children.push(
+        Bun.spawn({
+            cmd: ["bun", "run", worker, "--cluster"],
+            stdout: "inherit",
+            stderr: "inherit",
+            stdin: "inherit",
+        }),
+    );
 }
 
 /**
  * on parent exit code (SIGTERM etc),
  */
 function kill() {
-  for (const child of children) {
-    child.kill();
-  }
+    for (const child of children) {
+        child.kill();
+    }
 }
 
 function shutdown() {
-  kill();
-  process.exit(0);
+    kill();
+    process.exit(0);
 }
 
 process.on("SIGINT", shutdown);

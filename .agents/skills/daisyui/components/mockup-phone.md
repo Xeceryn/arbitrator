@@ -13,8 +13,8 @@ A phone mockup shows an iPhone mockup.
 
 ```html
 <div class="mockup-phone">
-  <div class="mockup-phone-camera"></div>
-  <div class="mockup-phone-display">{CONTENT}</div>
+    <div class="mockup-phone-camera"></div>
+    <div class="mockup-phone-display">{CONTENT}</div>
 </div>
 ```
 

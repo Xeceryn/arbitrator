@@ -17,7 +17,7 @@ A tooltip shows a message when the pointer is on an element.
 
 ```html
 <div class="tooltip {MODIFIER}" data-tip="Tooltip text">
-  <button class="btn">Hover me</button>
+    <button class="btn">Hover me</button>
 </div>
 ```
 

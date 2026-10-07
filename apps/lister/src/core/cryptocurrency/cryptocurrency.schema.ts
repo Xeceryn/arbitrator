@@ -1,13 +1,13 @@
 import {
-  createSelectSchema,
-  createUpdateSchema,
-  createInsertSchema,
+    createSelectSchema,
+    createUpdateSchema,
+    createInsertSchema,
 } from "drizzle-zod";
 import z from "zod";
 
 import {
-  createPaginationInputSchema,
-  createPaginatedOutputSchema,
+    createPaginationInputSchema,
+    createPaginatedOutputSchema,
 } from "../../common/pagination.schema";
 import { chainSelectSchema } from "../chain/chain.schema";
 import { exchangeSelectSchema } from "../exchange/exchange.schema";
@@ -15,39 +15,39 @@ import { cryptocurrency } from "./cryptocurrency.sql";
 
 export const cryptocurrencySelectSchema = createSelectSchema(cryptocurrency);
 export const cryptocurrencyInsertSchema = createInsertSchema(
-  cryptocurrency,
+    cryptocurrency,
 ).omit({
-  createdAt: true,
-  updatedAt: true,
+    createdAt: true,
+    updatedAt: true,
 });
 
 export const cryptocurrencyUpdateSchema = createUpdateSchema(cryptocurrency, {
-  cmcId: z.coerce.number().optional(),
+    cmcId: z.coerce.number().optional(),
 }).omit({
-  logo: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export const cryptocurrencySearchByKeysSchema = z.keyof(
-  cryptocurrencySelectSchema.omit({
+    logo: true,
     createdAt: true,
     updatedAt: true,
-    logo: true,
-  }),
+});
+export const cryptocurrencySearchByKeysSchema = z.keyof(
+    cryptocurrencySelectSchema.omit({
+        createdAt: true,
+        updatedAt: true,
+        logo: true,
+    }),
 );
 export const cryptocurrencyOrderByKeysSchema = z.keyof(
-  cryptocurrencySelectSchema.omit({
-    logo: true,
-  }),
+    cryptocurrencySelectSchema.omit({
+        logo: true,
+    }),
 );
 export const listCryptocurrencySelectSchema = createPaginationInputSchema({
-  searchByKeys: cryptocurrencySearchByKeysSchema,
-  orderByKeys: cryptocurrencyOrderByKeysSchema,
-  defaultSearchBy: "symbol",
-  defaultOrderBy: "cmcId",
+    searchByKeys: cryptocurrencySearchByKeysSchema,
+    orderByKeys: cryptocurrencyOrderByKeysSchema,
+    defaultSearchBy: "symbol",
+    defaultOrderBy: "cmcId",
 });
 export const paginatedCryptocurrencySelectSchema = createPaginatedOutputSchema(
-  cryptocurrencySelectSchema,
+    cryptocurrencySelectSchema,
 );
 
 /**
@@ -55,9 +55,9 @@ export const paginatedCryptocurrencySelectSchema = createPaginatedOutputSchema(
  * trading is enabled for that market.
  */
 export const cryptocurrencyRouteEndpointSchema = z.object({
-  marketId: z.number(),
-  exchange: exchangeSelectSchema,
-  tradeEnabled: z.boolean(),
+    marketId: z.number(),
+    exchange: exchangeSelectSchema,
+    tradeEnabled: z.boolean(),
 });
 
 /**
@@ -65,9 +65,9 @@ export const cryptocurrencyRouteEndpointSchema = z.object({
  * `chain` and `to` can deposit it on the same chain.
  */
 export const cryptocurrencyRouteSchema = z.object({
-  chain: chainSelectSchema,
-  from: cryptocurrencyRouteEndpointSchema,
-  to: cryptocurrencyRouteEndpointSchema,
+    chain: chainSelectSchema,
+    from: cryptocurrencyRouteEndpointSchema,
+    to: cryptocurrencyRouteEndpointSchema,
 });
 
 /**
@@ -76,6 +76,6 @@ export const cryptocurrencyRouteSchema = z.object({
  * it between them (`routes`).
  */
 export const cryptocurrencyRoutesSchema = z.object({
-  exchanges: z.array(cryptocurrencyRouteEndpointSchema),
-  routes: z.array(cryptocurrencyRouteSchema),
+    exchanges: z.array(cryptocurrencyRouteEndpointSchema),
+    routes: z.array(cryptocurrencyRouteSchema),
 });

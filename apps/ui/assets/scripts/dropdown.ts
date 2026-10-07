@@ -6,6 +6,8 @@
  * toggle the `<details>`, so without this the menu stays open over the page.
  */
 document.addEventListener("click", (event) => {
-  const option = (event.target as Element | null)?.closest("[data-set-theme]");
-  option?.closest("details")?.removeAttribute("open");
+    const option = (event.target as Element | null)?.closest(
+        "[data-set-theme]",
+    );
+    option?.closest("details")?.removeAttribute("open");
 });

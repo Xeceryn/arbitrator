@@ -10,11 +10,11 @@ export const orderbookLevelSchema = z.tuple([z.number(), z.number()]);
  * payload on the wire.
  */
 export const normalizedOrderbookSchema = z.object({
-  exchange: z.string(),
-  cmcId: z.number(),
-  asks: z.array(orderbookLevelSchema),
-  bids: z.array(orderbookLevelSchema),
+    exchange: z.string(),
+    cmcId: z.number(),
+    asks: z.array(orderbookLevelSchema),
+    bids: z.array(orderbookLevelSchema),
 });
 export type NormalizedOrderbookEvent = z.infer<
-  typeof normalizedOrderbookSchema
+    typeof normalizedOrderbookSchema
 >;

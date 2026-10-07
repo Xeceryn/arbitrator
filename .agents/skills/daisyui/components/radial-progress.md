@@ -12,12 +12,12 @@ Use the radial progress component to show task progress or the passage of time.
 
 ```html
 <div
-  class="radial-progress"
-  style="--value:70;"
-  aria-valuenow="70"
-  role="progressbar"
+    class="radial-progress"
+    style="--value:70;"
+    aria-valuenow="70"
+    role="progressbar"
 >
-  70%
+    70%
 </div>
 ```
 

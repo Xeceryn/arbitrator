@@ -1,12 +1,12 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "@arbitrator/logger",
-  "version": "0.0.0",
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "dependencies": {
-    "winston": "catalog:tools"
-  }
+    "$schema": "https://json.schemastore.org/package.json",
+    "name": "@arbitrator/logger",
+    "version": "0.0.0",
+    "type": "module",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "dependencies": {
+        "winston": "catalog:tools"
+    }
 }

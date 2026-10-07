@@ -13,8 +13,8 @@ A browser mockup is a box in the form of a browser window.
 
 ```html
 <div class="mockup-browser">
-  <div class="mockup-browser-toolbar">{toolbar content}</div>
-  <div>{CONTENT}</div>
+    <div class="mockup-browser-toolbar">{toolbar content}</div>
+    <div>{CONTENT}</div>
 </div>
 ```
 

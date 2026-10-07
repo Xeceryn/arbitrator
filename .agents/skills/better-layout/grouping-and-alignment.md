@@ -15,28 +15,28 @@ The structural rule is that the gap between groups is at least 2× the gap withi
 ```css
 /* Good: spacing alone communicates the grouping */
 .field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
 /* Bad: uniform spacing plus lines to compensate */
 .form > * {
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--separator);
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--separator);
 }
 ```
 
 ```html
 <!-- Good: Tailwind -->
 <div class="space-y-6">
-  <div class="space-y-2">…field group…</div>
-  <div class="space-y-2">…field group…</div>
+    <div class="space-y-2">…field group…</div>
+    <div class="space-y-2">…field group…</div>
 </div>
 ```
 
@@ -68,21 +68,21 @@ Pick a small set of alignment edges and put everything on them, because the eye 
 ```css
 /* Good: one shared leading edge, one indent step */
 .section {
-  padding-inline: 24px;
+    padding-inline: 24px;
 }
 .section .child {
-  margin-inline-start: 16px;
+    margin-inline-start: 16px;
 }
 
 /* Bad: three unrelated leading edges in one column */
 .header {
-  padding-inline-start: 20px;
+    padding-inline-start: 20px;
 }
 .list-item {
-  padding-inline-start: 14px;
+    padding-inline-start: 14px;
 }
 .footer {
-  padding-inline-start: 24px;
+    padding-inline-start: 24px;
 }
 ```
 
@@ -121,15 +121,15 @@ Readers scan top-to-bottom and leading-to-trailing. Place content accordingly:
 ```html
 <!-- Good: primary fact first, detail demoted -->
 <div>
-  <p class="text-2xl font-semibold">$4,320.00</p>
-  <p class="text-sm text-zinc-500">Available balance</p>
+    <p class="text-2xl font-semibold">$4,320.00</p>
+    <p class="text-sm text-zinc-500">Available balance</p>
 </div>
 
 <!-- Bad: the key fact is buried below the fold of the card -->
 <div>
-  <p class="text-sm">Account 4402 · Opened 2019 · Standard tier</p>
-  <p class="text-sm">Last statement: June 30</p>
-  <p class="text-sm">Balance: $4,320.00</p>
+    <p class="text-sm">Account 4402 · Opened 2019 · Standard tier</p>
+    <p class="text-sm">Last statement: June 30</p>
+    <p class="text-sm">Balance: $4,320.00</p>
 </div>
 ```
 

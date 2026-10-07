@@ -17,17 +17,17 @@ A megamenu is a large horizontal menu. Each item opens a popover that shows a la
 ```html
 <button class="btn sm:hidden" popovertarget="my-megamenu-1">Menu</button>
 <div
-  class="megamenu max-sm:megamenu-vertical {MODIFIER} p-2 border border-base-300"
-  id="my-megamenu-1"
-  popover
+    class="megamenu max-sm:megamenu-vertical {MODIFIER} p-2 border border-base-300"
+    id="my-megamenu-1"
+    popover
 >
-  <span class="megamenu-active"></span>
+    <span class="megamenu-active"></span>
 
-  <button popovertarget="item-1">button 1</button>
-  <div id="item-1" popover>{CONTENT}</div>
+    <button popovertarget="item-1">button 1</button>
+    <div id="item-1" popover>{CONTENT}</div>
 
-  <button popovertarget="item-2">button 2</button>
-  <div id="item-2" popover>{CONTENT}</div>
+    <button popovertarget="item-2">button 2</button>
+    <div id="item-2" popover>{CONTENT}</div>
 </div>
 ```
 
@@ -36,41 +36,41 @@ Example of `megamenu-wide` with many menu items:
 ```html
 <button class="btn sm:hidden" popovertarget="my-megamenu-2">Menu</button>
 <div
-  class="megamenu max-sm:megamenu-vertical megamenu-wide w-full p-2 border border-base-300"
-  id="my-megamenu-2"
-  popover
+    class="megamenu max-sm:megamenu-vertical megamenu-wide w-full p-2 border border-base-300"
+    id="my-megamenu-2"
+    popover
 >
-  <span class="megamenu-active"></span>
-  <button popovertarget="c1">One</button>
-  <div id="c1" popover>
-    <div class="flex max-sm:flex-col items-start">
-      <ul class="menu w-full md:menu-horizontal">
-        <li>
-          <a>first column menu item</a>
-          <ul>
-            <li><a>sub menu item</a></li>
-          </ul>
-        </li>
-        <li>
-          <a>second column menu item</a>
-          <ul>
-            <li><a>sub menu item</a></li>
-          </ul>
-        </li>
-        <li>
-          <a>third column menu item</a>
-          <ul>
-            <li><a>sub menu item</a></li>
-          </ul>
-        </li>
-      </ul>
-      <img
-        src="{image-url}"
-        class="md:max-w-sm max-md:w-auto"
-        alt="sample image at the end of the megamenu"
-      />
+    <span class="megamenu-active"></span>
+    <button popovertarget="c1">One</button>
+    <div id="c1" popover>
+        <div class="flex max-sm:flex-col items-start">
+            <ul class="menu w-full md:menu-horizontal">
+                <li>
+                    <a>first column menu item</a>
+                    <ul>
+                        <li><a>sub menu item</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a>second column menu item</a>
+                    <ul>
+                        <li><a>sub menu item</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a>third column menu item</a>
+                    <ul>
+                        <li><a>sub menu item</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <img
+                src="{image-url}"
+                class="md:max-w-sm max-md:w-auto"
+                alt="sample image at the end of the megamenu"
+            />
+        </div>
     </div>
-  </div>
 </div>
 ```
 

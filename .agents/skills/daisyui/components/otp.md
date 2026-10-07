@@ -15,18 +15,18 @@ An OTP is a one-time password component that lets a user enter a verification co
 
 ```html
 <label class="otp {MODIFIER}">
-  <span></span>
-  <span></span>
-  <span></span>
-  <span></span>
-  <input
-    type="text"
-    autocomplete="one-time-code"
-    inputmode="numeric"
-    maxlength="4"
-    pattern="[0-9]{4}"
-    required
-  />
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <input
+        type="text"
+        autocomplete="one-time-code"
+        inputmode="numeric"
+        maxlength="4"
+        pattern="[0-9]{4}"
+        required
+    />
 </label>
 ```
 

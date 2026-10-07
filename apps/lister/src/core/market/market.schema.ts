@@ -1,7 +1,7 @@
 import {
-  createInsertSchema,
-  createSelectSchema,
-  createUpdateSchema,
+    createInsertSchema,
+    createSelectSchema,
+    createUpdateSchema,
 } from "drizzle-zod";
 import z from "zod";
 
@@ -10,26 +10,26 @@ import { exchangeSelectSchema } from "../exchange/exchange.schema";
 import { market } from "./market.sql";
 
 export const marketInsertSchema = createInsertSchema(market).omit({
-  createdAt: true,
-  updatedAt: true,
+    createdAt: true,
+    updatedAt: true,
 });
 
 export const marketUpdateSchema = createUpdateSchema(market).omit({
-  createdAt: true,
-  updatedAt: true,
+    createdAt: true,
+    updatedAt: true,
 });
 
 export const marketSelectSchema = createSelectSchema(market);
 
 export const marketFilterExistsSchema = marketSelectSchema.pick({
-  exchangeId: true,
-  cryptocurrencyId: true,
+    exchangeId: true,
+    cryptocurrencyId: true,
 });
 
 /** A market row with its exchange and cryptocurrency embedded. */
 export const marketWithRelationsSchema = marketSelectSchema.extend({
-  exchange: exchangeSelectSchema,
-  cryptocurrency: cryptocurrencySelectSchema,
+    exchange: exchangeSelectSchema,
+    cryptocurrency: cryptocurrencySelectSchema,
 });
 
 /**
@@ -37,35 +37,35 @@ export const marketWithRelationsSchema = marketSelectSchema.extend({
  * coin's symbol; `tradeEnabled` defaults to enabled.
  */
 export const marketAssignSchema = marketInsertSchema
-  .pick({ exchangeId: true, cryptocurrencyId: true })
-  .extend({
-    exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
-    tradeEnabled: marketInsertSchema.shape.tradeEnabled.default(true),
-  });
+    .pick({ exchangeId: true, cryptocurrencyId: true })
+    .extend({
+        exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
+        tradeEnabled: marketInsertSchema.shape.tradeEnabled.default(true),
+    });
 
 /** Editable fields of an assignment, keyed by the (exchange, coin) pair. */
 export const marketUpdatePayloadSchema = marketSelectSchema
-  .pick({ exchangeId: true, cryptocurrencyId: true })
-  .extend({
-    tradeEnabled: marketInsertSchema.shape.tradeEnabled.optional(),
-    exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
-  });
+    .pick({ exchangeId: true, cryptocurrencyId: true })
+    .extend({
+        tradeEnabled: marketInsertSchema.shape.tradeEnabled.optional(),
+        exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
+    });
 
 /** A coin plus the market metadata for one exchange. */
 export const cryptocurrencyWithMarketSchema = cryptocurrencySelectSchema.extend(
-  {
-    marketId: z.number(),
-    tradeEnabled: z.boolean(),
-    exchangeSymbol: z.string(),
-  },
+    {
+        marketId: z.number(),
+        tradeEnabled: z.boolean(),
+        exchangeSymbol: z.string(),
+    },
 );
 
 export const exchangeWithCryptocurrenciesSchema = exchangeSelectSchema.extend({
-  cryptocurrencies: z.array(cryptocurrencyWithMarketSchema),
+    cryptocurrencies: z.array(cryptocurrencyWithMarketSchema),
 });
 
 export const listExchangeWithMetadataSchema = exchangeSelectSchema.extend({
-  cryptocurrencies: z.array(cryptocurrencySelectSchema),
+    cryptocurrencies: z.array(cryptocurrencySelectSchema),
 });
 
 export type MarketInsert = z.infer<typeof marketInsertSchema>;
@@ -82,31 +82,31 @@ export type MarketFilterExists = z.infer<typeof marketFilterExistsSchema>;
 
 /** A coin an exchange's worker must subscribe to. */
 export const transferableSubscriptionSchema = z.object({
-  exchangeId: z.number(),
-  cmcId: z.number(),
-  symbol: z.string(),
+    exchangeId: z.number(),
+    cmcId: z.number(),
+    symbol: z.string(),
 });
 
 /** Provenance for why a pair is included: which chain, one direction. */
 export const transferableRouteSchema = z.object({
-  aExchangeId: z.number(),
-  bExchangeId: z.number(),
-  cmcId: z.number(),
-  chainId: z.number(),
+    aExchangeId: z.number(),
+    bExchangeId: z.number(),
+    cmcId: z.number(),
+    chainId: z.number(),
 });
 
 export const transferableExchangeSchema = exchangeSelectSchema.pick({
-  id: true,
-  slug: true,
-  baseCurrency: true,
+    id: true,
+    slug: true,
+    baseCurrency: true,
 });
 
 export const listTransferableCoinsInputSchema = z.object({
-  exchangeIds: z.array(z.number()).min(2),
+    exchangeIds: z.array(z.number()).min(2),
 });
 
 export const transferableCoinsSchema = z.object({
-  exchanges: z.array(transferableExchangeSchema),
-  subscriptions: z.array(transferableSubscriptionSchema),
-  routes: z.array(transferableRouteSchema),
+    exchanges: z.array(transferableExchangeSchema),
+    subscriptions: z.array(transferableSubscriptionSchema),
+    routes: z.array(transferableRouteSchema),
 });

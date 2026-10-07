@@ -15,14 +15,14 @@ A hairline icon beside semibold text reads as broken; a heavy icon beside regula
 ```html
 <!-- Good: stroke tuned to the label weight -->
 <button class="flex items-center gap-2 font-semibold">
-  <PlusIcon stroke-width="2" class="size-4" />
-  New project
+    <PlusIcon stroke-width="2" class="size-4" />
+    New project
 </button>
 
 <!-- Bad: default 1.5px stroke against a bold label -->
 <button class="flex items-center gap-2 font-bold">
-  <PlusIcon stroke-width="1.5" class="size-4" />
-  New project
+    <PlusIcon stroke-width="1.5" class="size-4" />
+    New project
 </button>
 ```
 
@@ -42,25 +42,25 @@ Never ship separate assets for default, hover, selected and disabled states. Use
 
 ```css
 .icon-button {
-  color: oklch(0.552 0.016 285.938);
+    color: oklch(0.552 0.016 285.938);
 }
 .icon-button:hover {
-  color: oklch(0.21 0.006 285.885);
+    color: oklch(0.21 0.006 285.885);
 }
 .icon-button[aria-pressed="true"] {
-  color: oklch(0.623 0.188 259.815);
+    color: oklch(0.623 0.188 259.815);
 }
 .icon-button:disabled {
-  opacity: 0.4;
+    opacity: 0.4;
 }
 ```
 
 ```html
 <!-- Tailwind -->
 <button
-  class="text-zinc-500 hover:text-zinc-900 aria-pressed:text-blue-600 disabled:opacity-40"
+    class="text-zinc-500 hover:text-zinc-900 aria-pressed:text-blue-600 disabled:opacity-40"
 >
-  <BookmarkIcon />
+    <BookmarkIcon />
 </button>
 ```
 
@@ -108,7 +108,7 @@ Under `dir="rtl"`, flip icons whose meaning is tied to reading direction, and le
 ```css
 /* Good: mirror only direction-dependent icons */
 [dir="rtl"] .icon-directional {
-  scale: -1 1;
+    scale: -1 1;
 }
 ```
 

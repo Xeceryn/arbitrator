@@ -18,7 +18,7 @@ Popover API:
 ```html
 <button popovertarget="{id}" style="anchor-name:--{anchor}">{button}</button>
 <ul class="dropdown" popover id="{id}" style="position-anchor:--{anchor}">
-  {CONTENT}
+    {CONTENT}
 </ul>
 ```
 
@@ -26,10 +26,10 @@ The `details` and `summary` elements open and close only when the user clicks th
 
 ```html
 <details class="dropdown">
-  <summary>Button</summary>
-  <ul class="dropdown-content">
-    {CONTENT}
-  </ul>
+    <summary>Button</summary>
+    <ul class="dropdown-content">
+        {CONTENT}
+    </ul>
 </details>
 ```
 

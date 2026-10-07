@@ -7,9 +7,9 @@ The calendar component includes styles for different calendar libraries.
 #### Class names
 
 - component
-  - `cally (for Cally web component)`
-  - `react-day-picker (for the DayPicker component)`
-  - `vc (for Vanilla Calendar Pro)`
+    - `cally (for Cally web component)`
+    - `react-day-picker (for the DayPicker component)`
+    - `vc (for Vanilla Calendar Pro)`
 
 #### Syntax
 
@@ -42,16 +42,16 @@ CDN alternative:
 
 ```html
 <script
-  src="https://cdn.jsdelivr.net/npm/vanilla-calendar-pro/index.js"
-  defer
+    src="https://cdn.jsdelivr.net/npm/vanilla-calendar-pro/index.js"
+    defer
 ></script>
 <div id="calendar" class="vc"></div>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const { Calendar } = window.VanillaCalendarPro;
-    const calendar = new Calendar("#calendar");
-    calendar.init();
-  });
+    document.addEventListener("DOMContentLoaded", () => {
+        const { Calendar } = window.VanillaCalendarPro;
+        const calendar = new Calendar("#calendar");
+        calendar.init();
+    });
 </script>
 ```
 

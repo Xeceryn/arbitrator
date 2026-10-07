@@ -4,7 +4,7 @@
 @plugin '@tailwindcss/aspect-ratio';
 @plugin '@tailwindcss/forms';
 @plugin 'daisyui' {
-  themes: all;
+    themes: all;
 }
 
 /*
@@ -26,14 +26,14 @@
 /* } */
 
 .progress {
-  display: none;
+    display: none;
 }
 
 .htmx-request.progress {
-  position: absolute;
-  display: block;
-  z-index: 1000;
-  top: 0;
+    position: absolute;
+    display: block;
+    z-index: 1000;
+    top: 0;
 }
 
 /*
@@ -41,7 +41,7 @@
   toggle is already a switch, so drop that background image.
 */
 .toggle {
-  background-image: none;
+    background-image: none;
 }
 
 /*
@@ -51,27 +51,27 @@
   colour is never the only cue.
 */
 .signal-usdt-usdt {
-  --signal-color: #8b5cf6; /* purple */
+    --signal-color: #8b5cf6; /* purple */
 }
 .signal-usdt-idr {
-  --signal-color: #dc2626; /* red */
+    --signal-color: #dc2626; /* red */
 }
 .signal-idr-usdt {
-  --signal-color: #16a34a; /* green */
+    --signal-color: #16a34a; /* green */
 }
 .signal-idr-idr {
-  --signal-color: #d2691e; /* chocolate */
+    --signal-color: #d2691e; /* chocolate */
 }
 
 .signal-color {
-  color: var(--signal-color);
+    color: var(--signal-color);
 }
 
 .signal-bg {
-  background-color: var(--signal-color);
-  color: #fff;
+    background-color: var(--signal-color);
+    color: #fff;
 }
 
 .signal-ring {
-  border-color: var(--signal-color);
+    border-color: var(--signal-color);
 }

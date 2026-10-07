@@ -17,15 +17,15 @@ Borderless controls need more clearance, because nothing marks where one target 
 ```html
 <!-- Good: bordered buttons at 12px, icon buttons given room -->
 <div class="flex gap-3">
-  <button class="rounded-lg border px-4 py-2">Cancel</button>
-  <button class="rounded-lg bg-blue-600 px-4 py-2 text-white">Save</button>
+    <button class="rounded-lg border px-4 py-2">Cancel</button>
+    <button class="rounded-lg bg-blue-600 px-4 py-2 text-white">Save</button>
 </div>
 
 <!-- Bad: three borderless icon buttons packed at 4px -->
 <div class="flex gap-1">
-  <button><TrashIcon /></button>
-  <button><ArchiveIcon /></button>
-  <button><ShareIcon /></button>
+    <button><TrashIcon /></button>
+    <button><ArchiveIcon /></button>
+    <button><ShareIcon /></button>
 </div>
 ```
 
@@ -38,20 +38,20 @@ In content layouts, buttons pressed against the viewport look like system chrome
 ```css
 /* Good: inset action bar */
 .action-bar {
-  padding-inline: 16px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    padding-inline: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 .action-bar button {
-  width: 100%;
-  border-radius: 12px;
+    width: 100%;
+    border-radius: 12px;
 }
 
 /* Bad: button glued to all three edges */
 .action-bar button {
-  width: 100vw;
-  border-radius: 0;
-  position: fixed;
-  bottom: 0;
+    width: 100vw;
+    border-radius: 0;
+    position: fixed;
+    bottom: 0;
 }
 ```
 
@@ -69,26 +69,26 @@ In the peeking-scroller recipe, the container's padding creates the peek and sna
 
 ```css
 .scroller {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-inline: 24px;
-  scroll-padding-inline: 24px;
-  scroll-snap-type: x mandatory;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-inline: 24px;
+    scroll-padding-inline: 24px;
+    scroll-snap-type: x mandatory;
 }
 .scroller > * {
-  flex: 0 0 calc(100% - 48px - 24px); /* container minus margins minus peek */
-  scroll-snap-align: start;
+    flex: 0 0 calc(100% - 48px - 24px); /* container minus margins minus peek */
+    scroll-snap-align: start;
 }
 ```
 
 ```html
 <!-- Tailwind: the 80% width keeps the next card's leading 16-32px visible -->
 <div
-  class="flex gap-3 overflow-x-auto px-6 [scroll-padding-inline:1.5rem] snap-x snap-mandatory"
+    class="flex gap-3 overflow-x-auto px-6 [scroll-padding-inline:1.5rem] snap-x snap-mandatory"
 >
-  <div class="w-[80%] shrink-0 snap-start">…</div>
-  <div class="w-[80%] shrink-0 snap-start">…</div>
+    <div class="w-[80%] shrink-0 snap-start">…</div>
+    <div class="w-[80%] shrink-0 snap-start">…</div>
 </div>
 ```
 
@@ -102,14 +102,14 @@ The two layers behave differently at the edges:
 ```css
 /* Good: full-bleed media inside a constrained article */
 .article {
-  display: grid;
-  grid-template-columns: 1fr min(65ch, calc(100% - 48px)) 1fr;
+    display: grid;
+    grid-template-columns: 1fr min(65ch, calc(100% - 48px)) 1fr;
 }
 .article > * {
-  grid-column: 2;
+    grid-column: 2;
 }
 .article > .full-bleed {
-  grid-column: 1 / -1;
+    grid-column: 1 / -1;
 }
 ```
 
@@ -117,9 +117,9 @@ Sticky headers and floating action buttons account for safe areas:
 
 ```css
 .fab {
-  position: fixed;
-  inset-inline-end: calc(16px + env(safe-area-inset-right));
-  bottom: calc(16px + env(safe-area-inset-bottom));
+    position: fixed;
+    inset-inline-end: calc(16px + env(safe-area-inset-right));
+    bottom: calc(16px + env(safe-area-inset-bottom));
 }
 ```
 
@@ -134,19 +134,19 @@ Breakpoints belong to the content, not the device catalog:
 ```css
 /* Good: component adapts to its container */
 .card-list {
-  container-type: inline-size;
+    container-type: inline-size;
 }
 @container (max-width: 400px) {
-  .card {
-    grid-template-columns: 1fr;
-  }
+    .card {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Bad: viewport media query breaks the card inside a narrow sidebar */
 @media (max-width: 768px) {
-  .card {
-    grid-template-columns: 1fr;
-  }
+    .card {
+        grid-template-columns: 1fr;
+    }
 }
 ```
 
@@ -166,14 +166,14 @@ Layouts fail in two directions. Content grows, and viewports shrink.
 ```css
 /* Good: label defines the size */
 .button {
-  padding-inline: 16px;
-  white-space: nowrap;
+    padding-inline: 16px;
+    white-space: nowrap;
 }
 
 /* Bad: German will overflow or truncate */
 .button {
-  width: 96px;
-  overflow: hidden;
+    width: 96px;
+    overflow: hidden;
 }
 ```
 

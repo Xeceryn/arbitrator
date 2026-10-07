@@ -14,8 +14,8 @@ Use the collapse component to show and hide content.
 
 ```html
 <div tabindex="0" class="collapse {MODIFIER}">
-  <div class="collapse-title">{title}</div>
-  <div class="collapse-content">{CONTENT}</div>
+    <div class="collapse-title">{title}</div>
+    <div class="collapse-content">{CONTENT}</div>
 </div>
 ```
 

@@ -15,7 +15,7 @@ Use a select component to select a value from a list of options.
 
 ```html
 <select class="select {MODIFIER}">
-  <option>Option</option>
+    <option>Option</option>
 </select>
 ```
 

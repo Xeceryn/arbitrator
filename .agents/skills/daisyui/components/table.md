@@ -14,18 +14,18 @@ Use a table to show data in rows and columns.
 
 ```html
 <div class="overflow-x-auto">
-  <table class="table {MODIFIER}">
-    <thead>
-      <tr>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <th></th>
-      </tr>
-    </tbody>
-  </table>
+    <table class="table {MODIFIER}">
+        <thead>
+            <tr>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th></th>
+            </tr>
+        </tbody>
+    </table>
 </div>
 ```
 

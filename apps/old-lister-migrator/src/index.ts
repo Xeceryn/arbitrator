@@ -22,7 +22,7 @@ import { listerClient } from "@arbitrator/sdk";
 
 const result = await listerClient.cryptocurrency.list({});
 if (result.error) {
-  console.log(result.error.message);
+    console.log(result.error.message);
 }
 if (result.definedError) {
 }

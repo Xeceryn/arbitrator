@@ -12,7 +12,7 @@ A countdown gives a transition effect when a number changes from 0 through 999.
 
 ```html
 <span class="countdown">
-  <span style="--value:{number};">number</span>
+    <span style="--value:{number};">number</span>
 </span>
 ```
 

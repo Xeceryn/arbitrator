@@ -16,12 +16,12 @@ Use cards to group and show content.
 
 ```html
 <div class="card {MODIFIER}">
-  <figure><img src="{image-url}" alt="{alt-text}" /></figure>
-  <div class="card-body">
-    <h2 class="card-title">{title}</h2>
-    <p>{CONTENT}</p>
-    <div class="card-actions">{actions}</div>
-  </div>
+    <figure><img src="{image-url}" alt="{alt-text}" /></figure>
+    <div class="card-body">
+        <h2 class="card-title">{title}</h2>
+        <p>{CONTENT}</p>
+        <div class="card-actions">{actions}</div>
+    </div>
 </div>
 ```
 

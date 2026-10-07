@@ -8,13 +8,13 @@ type BaseCurrency = OpportunitySignal["buyExchange"]["baseCurrency"];
  * carried by text as well as colour.
  */
 export function signalColorClass(
-  buy: BaseCurrency,
-  sell: BaseCurrency,
+    buy: BaseCurrency,
+    sell: BaseCurrency,
 ): string {
-  return `signal-${buy}-${sell}`;
+    return `signal-${buy}-${sell}`;
 }
 
 /** Textual cue for the pair, so colour is never the only carrier. */
 export function signalPairLabel(buy: BaseCurrency, sell: BaseCurrency): string {
-  return `${buy.toUpperCase()} → ${sell.toUpperCase()}`;
+    return `${buy.toUpperCase()} → ${sell.toUpperCase()}`;
 }

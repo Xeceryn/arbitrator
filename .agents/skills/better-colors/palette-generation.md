@@ -39,17 +39,17 @@ The output format is the project's choice. For a ramp the interpolation space is
 
 ```css
 :root {
-  --brand-50: #eff6ff;
-  --brand-100: #dbeafe;
-  --brand-200: #bfdbfe;
-  --brand-300: #93c5fd;
-  --brand-400: #60a5fa;
-  --brand-500: #3b82f6;
-  --brand-600: #2563eb;
-  --brand-700: #1d4ed8;
-  --brand-800: #1e40af;
-  --brand-900: #1e3a8a;
-  --brand-950: #172554;
+    --brand-50: #eff6ff;
+    --brand-100: #dbeafe;
+    --brand-200: #bfdbfe;
+    --brand-300: #93c5fd;
+    --brand-400: #60a5fa;
+    --brand-500: #3b82f6;
+    --brand-600: #2563eb;
+    --brand-700: #1d4ed8;
+    --brand-800: #1e40af;
+    --brand-900: #1e3a8a;
+    --brand-950: #172554;
 }
 ```
 
@@ -70,13 +70,13 @@ Swap the semantic roles first, then tune the values:
 
 ```css
 :root {
-  --color-bg: var(--brand-50);
-  --color-text: var(--brand-950);
+    --color-bg: var(--brand-50);
+    --color-text: var(--brand-950);
 }
 
 .dark {
-  --color-bg: var(--brand-950);
-  --color-text: var(--brand-50);
+    --color-bg: var(--brand-950);
+    --color-text: var(--brand-50);
 }
 ```
 
@@ -96,8 +96,8 @@ Pick one and use it throughout:
 
 ```css
 :root {
-  color-scheme: light dark;
-  --color-bg: light-dark(#ffffff, #172554);
+    color-scheme: light dark;
+    --color-bg: light-dark(#ffffff, #172554);
 }
 ```
 

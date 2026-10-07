@@ -11,20 +11,20 @@ Prefer the browser's unmodified focus indicator, which adapts to platform and fo
 ```css
 /* Best: keep the browser ring, just give it breathing room */
 :focus-visible {
-  outline-offset: 2px;
+    outline-offset: 2px;
 }
 
 /* Custom ring when the design requires one: use the project's verified token */
 :focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
 }
 ```
 
 ```tsx
 // Tailwind: use the project's focus token or established focus-ring utility
 <button className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">
-  Save
+    Save
 </button>
 ```
 
@@ -40,20 +40,20 @@ Target `<main id="main">` and visually hide the link until focused:
 
 ```css
 .skip-link {
-  position: absolute;
-  inset-inline-start: -999px;
+    position: absolute;
+    inset-inline-start: -999px;
 }
 .skip-link:focus {
-  inset-inline-start: 16px;
-  top: 16px;
+    inset-inline-start: 16px;
+    top: 16px;
 }
 ```
 
 ```html
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
-  <header>…</header>
-  <main id="main">…</main>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header>…</header>
+    <main id="main">…</main>
 </body>
 ```
 
@@ -71,16 +71,16 @@ Composite widgets, meaning tabs, menus, toolbars and radio groups, occupy one Ta
 
 ```tsx
 <div role="tablist">
-  {tabs.map((tab, i) => (
-    <button
-      role="tab"
-      tabIndex={i === activeIndex ? 0 : -1}
-      aria-selected={i === activeIndex}
-      onKeyDown={handleArrowKeys} // ArrowLeft/ArrowRight move activeIndex, wrapping
-    >
-      {tab.label}
-    </button>
-  ))}
+    {tabs.map((tab, i) => (
+        <button
+            role="tab"
+            tabIndex={i === activeIndex ? 0 : -1}
+            aria-selected={i === activeIndex}
+            onKeyDown={handleArrowKeys} // ArrowLeft/ArrowRight move activeIndex, wrapping
+        >
+            {tab.label}
+        </button>
+    ))}
 </div>
 ```
 
@@ -93,8 +93,8 @@ Modals must trap focus. Put `inert` on everything behind the dialog, which remov
 document.getElementById("app-content").inert = true;
 const dialog = dialogRef.current;
 (
-  dialog.querySelector("[autofocus]") ??
-  dialog.querySelector("button, [href], input, select, textarea")
+    dialog.querySelector("[autofocus]") ??
+    dialog.querySelector("button, [href], input, select, textarea")
 )?.focus();
 
 // On close

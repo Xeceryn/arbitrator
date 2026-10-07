@@ -17,14 +17,14 @@ Never use `transition: all` or Tailwind's `transition-all`. Always name the exac
 ```css
 /* Good: only transition what changes */
 .button {
-  transition-property: scale, background-color;
-  transition-duration: 150ms;
-  transition-timing-function: ease-out;
+    transition-property: scale, background-color;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
 }
 
 /* Bad: transition everything */
 .button {
-  transition: all 150ms ease-out;
+    transition: all 150ms ease-out;
 }
 ```
 
@@ -53,22 +53,22 @@ It helps most for `scale`, `rotation` and movement through `transform`. For othe
 ```css
 /* Good: specific property that benefits from GPU compositing */
 .animated-card {
-  will-change: transform;
+    will-change: transform;
 }
 
 /* Good: multiple compositor-friendly properties */
 .animated-card {
-  will-change: transform, opacity;
+    will-change: transform, opacity;
 }
 
 /* Bad: never use will-change: all */
 .animated-card {
-  will-change: all;
+    will-change: all;
 }
 
 /* Bad: properties that can't be GPU-composited anyway */
 .animated-card {
-  will-change: background-color, padding;
+    will-change: background-color, padding;
 }
 ```
 

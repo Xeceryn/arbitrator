@@ -4,28 +4,28 @@ export const baseCurrencySchema = z.enum(["usdt", "idr"]);
 export type BaseCurrency = z.infer<typeof baseCurrencySchema>;
 
 export const workerStateSchema = z.enum([
-  "connected",
-  "closed",
-  "reconnecting",
-  "reconnected",
-  "disconnected",
-  "error",
+    "connected",
+    "closed",
+    "reconnecting",
+    "reconnected",
+    "disconnected",
+    "error",
 ]);
 export type WorkerState = z.infer<typeof workerStateSchema>;
 
 /** Convenience mirror of `workerStateSchema` for value-position use. */
 export const WorkerState = {
-  Connected: "connected",
-  Closed: "closed",
-  Reconnecting: "reconnecting",
-  Reconnected: "reconnected",
-  Disconnected: "disconnected",
-  Error: "error",
+    Connected: "connected",
+    Closed: "closed",
+    Reconnecting: "reconnecting",
+    Reconnected: "reconnected",
+    Disconnected: "disconnected",
+    Error: "error",
 } as const satisfies Record<string, WorkerState>;
 
 /** A coin to (un)subscribe on one exchange's orderbook stream. */
 export const symbolSubscriptionSchema = z.object({
-  cmcId: z.number(),
-  symbol: z.string(),
+    cmcId: z.number(),
+    symbol: z.string(),
 });
 export type SymbolSubscription = z.infer<typeof symbolSubscriptionSchema>;

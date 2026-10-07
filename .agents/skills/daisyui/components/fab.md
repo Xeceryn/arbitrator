@@ -16,7 +16,7 @@ One FAB in a screen corner:
 
 ```html
 <div class="fab">
-  <button class="btn btn-lg btn-circle">{IconOriginal}</button>
+    <button class="btn btn-lg btn-circle">{IconOriginal}</button>
 </div>
 ```
 
@@ -24,12 +24,12 @@ A FAB that opens three other buttons vertically in a page corner:
 
 ```html
 <div class="fab">
-  <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
-    {IconOriginal}
-  </div>
-  <button class="btn btn-lg btn-circle">{Icon1}</button>
-  <button class="btn btn-lg btn-circle">{Icon2}</button>
-  <button class="btn btn-lg btn-circle">{Icon3}</button>
+    <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
+        {IconOriginal}
+    </div>
+    <button class="btn btn-lg btn-circle">{Icon1}</button>
+    <button class="btn btn-lg btn-circle">{Icon2}</button>
+    <button class="btn btn-lg btn-circle">{Icon3}</button>
 </div>
 ```
 
@@ -37,12 +37,12 @@ A FAB that opens three other buttons vertically in a page corner. Each button ha
 
 ```html
 <div class="fab">
-  <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
-    {IconOriginal}
-  </div>
-  <div>{Label1}<button class="btn btn-lg btn-circle">{Icon1}</button></div>
-  <div>{Label2}<button class="btn btn-lg btn-circle">{Icon2}</button></div>
-  <div>{Label3}<button class="btn btn-lg btn-circle">{Icon3}</button></div>
+    <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
+        {IconOriginal}
+    </div>
+    <div>{Label1}<button class="btn btn-lg btn-circle">{Icon1}</button></div>
+    <div>{Label2}<button class="btn btn-lg btn-circle">{Icon2}</button></div>
+    <div>{Label3}<button class="btn btn-lg btn-circle">{Icon3}</button></div>
 </div>
 ```
 
@@ -50,12 +50,12 @@ A FAB with rectangular buttons. These buttons can contain more content than circ
 
 ```html
 <div class="fab">
-  <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
-    {IconOriginal}
-  </div>
-  <button class="btn btn-lg">{Label1}</button>
-  <button class="btn btn-lg">{Label2}</button>
-  <button class="btn btn-lg">{Label3}</button>
+    <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
+        {IconOriginal}
+    </div>
+    <button class="btn btn-lg">{Label1}</button>
+    <button class="btn btn-lg">{Label2}</button>
+    <button class="btn btn-lg">{Label3}</button>
 </div>
 ```
 
@@ -63,15 +63,15 @@ A FAB with a close button. When the FAB is open, the close button replaces the o
 
 ```html
 <div class="fab">
-  <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
-    {IconOriginal}
-  </div>
-  <div class="fab-close">
-    Close <span class="btn btn-circle btn-lg btn-error">×</span>
-  </div>
-  <div>{Label1}<button class="btn btn-lg btn-circle">{Icon1}</button></div>
-  <div>{Label2}<button class="btn btn-lg btn-circle">{Icon2}</button></div>
-  <div>{Label3}<button class="btn btn-lg btn-circle">{Icon3}</button></div>
+    <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
+        {IconOriginal}
+    </div>
+    <div class="fab-close">
+        Close <span class="btn btn-circle btn-lg btn-error">×</span>
+    </div>
+    <div>{Label1}<button class="btn btn-lg btn-circle">{Icon1}</button></div>
+    <div>{Label2}<button class="btn btn-lg btn-circle">{Icon2}</button></div>
+    <div>{Label3}<button class="btn btn-lg btn-circle">{Icon3}</button></div>
 </div>
 ```
 
@@ -79,17 +79,17 @@ A FAB with a main-action button. When the FAB is open, the main-action button re
 
 ```html
 <div class="fab">
-  <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
-    {IconOriginal}
-  </div>
-  <div class="fab-main-action">
-    {LabelMainAction}<button class="btn btn-circle btn-secondary btn-lg">
-      {IconMainAction}
-    </button>
-  </div>
-  <div>{Label1}<button class="btn btn-lg btn-circle">{Icon1}</button></div>
-  <div>{Label2}<button class="btn btn-lg btn-circle">{Icon2}</button></div>
-  <div>{Label3}<button class="btn btn-lg btn-circle">{Icon3}</button></div>
+    <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
+        {IconOriginal}
+    </div>
+    <div class="fab-main-action">
+        {LabelMainAction}<button class="btn btn-circle btn-secondary btn-lg">
+            {IconMainAction}
+        </button>
+    </div>
+    <div>{Label1}<button class="btn btn-lg btn-circle">{Icon1}</button></div>
+    <div>{Label2}<button class="btn btn-lg btn-circle">{Icon2}</button></div>
+    <div>{Label3}<button class="btn btn-lg btn-circle">{Icon3}</button></div>
 </div>
 ```
 
@@ -97,15 +97,15 @@ A flower FAB. It opens the buttons in a quarter-circle arrangement instead of a 
 
 ```html
 <div class="fab fab-flower">
-  <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
-    {IconOriginal}
-  </div>
-  <button class="fab-main-action btn btn-circle btn-lg">
-    {IconMainAction}
-  </button>
-  <button class="btn btn-lg btn-circle">{Icon1}</button>
-  <button class="btn btn-lg btn-circle">{Icon2}</button>
-  <button class="btn btn-lg btn-circle">{Icon3}</button>
+    <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
+        {IconOriginal}
+    </div>
+    <button class="fab-main-action btn btn-circle btn-lg">
+        {IconMainAction}
+    </button>
+    <button class="btn btn-lg btn-circle">{Icon1}</button>
+    <button class="btn btn-lg btn-circle">{Icon2}</button>
+    <button class="btn btn-lg btn-circle">{Icon3}</button>
 </div>
 ```
 
@@ -113,21 +113,21 @@ A flower FAB with tooltips. A quarter circle has no space for a text label. Thus
 
 ```html
 <div class="fab fab-flower">
-  <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
-    {IconOriginal}
-  </div>
-  <button class="fab-main-action btn btn-circle btn-lg">
-    {IconMainAction}
-  </button>
-  <div class="tooltip tooltip-left" data-tip="{Label1}">
-    <button class="btn btn-lg btn-circle">{Icon1}</button>
-  </div>
-  <div class="tooltip tooltip-left" data-tip="{Label2}">
-    <button class="btn btn-lg btn-circle">{Icon2}</button>
-  </div>
-  <div class="tooltip tooltip-left" data-tip="{Label3}">
-    <button class="btn btn-lg btn-circle">{Icon3}</button>
-  </div>
+    <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">
+        {IconOriginal}
+    </div>
+    <button class="fab-main-action btn btn-circle btn-lg">
+        {IconMainAction}
+    </button>
+    <div class="tooltip tooltip-left" data-tip="{Label1}">
+        <button class="btn btn-lg btn-circle">{Icon1}</button>
+    </div>
+    <div class="tooltip tooltip-left" data-tip="{Label2}">
+        <button class="btn btn-lg btn-circle">{Icon2}</button>
+    </div>
+    <div class="tooltip tooltip-left" data-tip="{Label3}">
+        <button class="btn btn-lg btn-circle">{Icon3}</button>
+    </div>
 </div>
 ```
 

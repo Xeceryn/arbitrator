@@ -14,7 +14,7 @@ A rating is a set of radio buttons that lets the user give a rating.
 
 ```html
 <div class="rating {MODIFIER}">
-  <input type="radio" name="rating-1" class="mask mask-star" />
+    <input type="radio" name="rating-1" class="mask mask-star" />
 </div>
 ```
 
@@ -22,9 +22,9 @@ For a read-only, noninteractive rating, use `<div>` elements instead of radio in
 
 ```html
 <div class="rating">
-  <div class="mask mask-star" aria-label="1 star"></div>
-  <div class="mask mask-star" aria-label="2 star" aria-current="true"></div>
-  <div class="mask mask-star" aria-label="3 star"></div>
+    <div class="mask mask-star" aria-label="1 star"></div>
+    <div class="mask mask-star" aria-label="2 star" aria-current="true"></div>
+    <div class="mask mask-star" aria-label="3 star"></div>
 </div>
 ```
 

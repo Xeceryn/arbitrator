@@ -26,11 +26,11 @@ The complete pattern:
 ```html
 <label for="email">Email</label>
 <input
-  id="email"
-  type="email"
-  autocomplete="email"
-  aria-invalid="true"
-  aria-describedby="email-error"
+    id="email"
+    type="email"
+    autocomplete="email"
+    aria-invalid="true"
+    aria-describedby="email-error"
 />
 <p id="email-error">Enter a valid email address.</p>
 ```

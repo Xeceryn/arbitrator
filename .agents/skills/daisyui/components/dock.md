@@ -21,8 +21,8 @@ The content is a list of buttons:
 
 ```html
 <button>
-  <svg>{icon}</svg>
-  <span class="dock-label">Text</span>
+    <svg>{icon}</svg>
+    <span class="dock-label">Text</span>
 </button>
 ```
 

@@ -1,41 +1,41 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "@arbitrator/ui",
-  "version": "1.0.50",
-  "type": "module",
-  "scripts": {
-    "dev": "bun run --watch src/main.ts",
-    "dev:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css --watch",
-    "build": "bun run build.ts",
-    "build:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@arbitrator/lister": "workspace:*",
-    "@arbitrator/sdk": "workspace:*",
-    "@arbitrator/sender": "workspace:*",
-    "@elysiajs/eden": "catalog:core",
-    "@elysiajs/html": "^1.4.2",
-    "@elysiajs/server-timing": "^1.4.1",
-    "@elysiajs/static": "^1.4.10",
-    "@faker-js/faker": "catalog:tools",
-    "@gtramontina.com/elysia-htmx": "^2.0.0",
-    "@kitajs/html": "^4.2.13",
-    "@kitajs/ts-html-plugin": "^4.1.4",
-    "@orpc/client": "catalog:core",
-    "elysia": "catalog:core",
-    "htmx.org": "4.0.0",
-    "hyperscript.org": "^0.9.93",
-    "lucide": "^1.50.0",
-    "theme-change": "^3.0.4",
-    "zod": "catalog:core"
-  },
-  "devDependencies": {
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/cli": "^4.3.3",
-    "@tailwindcss/forms": "^0.5.11",
-    "@tailwindcss/typography": "^0.5.20",
-    "daisyui": "^5.7.47",
-    "tailwindcss": "^4.3.3"
-  }
+    "$schema": "https://json.schemastore.org/package.json",
+    "name": "@arbitrator/ui",
+    "version": "1.0.50",
+    "type": "module",
+    "scripts": {
+        "dev": "bun run --watch src/main.ts",
+        "dev:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css --watch",
+        "build": "bun run build.ts",
+        "build:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@arbitrator/lister": "workspace:*",
+        "@arbitrator/sdk": "workspace:*",
+        "@arbitrator/sender": "workspace:*",
+        "@elysiajs/eden": "catalog:core",
+        "@elysiajs/html": "^1.4.2",
+        "@elysiajs/server-timing": "^1.4.1",
+        "@elysiajs/static": "^1.4.10",
+        "@faker-js/faker": "catalog:tools",
+        "@gtramontina.com/elysia-htmx": "^2.0.0",
+        "@kitajs/html": "^4.2.13",
+        "@kitajs/ts-html-plugin": "^4.1.4",
+        "@orpc/client": "catalog:core",
+        "elysia": "catalog:core",
+        "htmx.org": "4.0.0",
+        "hyperscript.org": "^0.9.93",
+        "lucide": "^1.50.0",
+        "theme-change": "^3.0.4",
+        "zod": "catalog:core"
+    },
+    "devDependencies": {
+        "@tailwindcss/aspect-ratio": "^0.4.2",
+        "@tailwindcss/cli": "^4.3.3",
+        "@tailwindcss/forms": "^0.5.11",
+        "@tailwindcss/typography": "^0.5.20",
+        "daisyui": "^5.7.47",
+        "tailwindcss": "^4.3.3"
+    }
 }

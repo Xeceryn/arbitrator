@@ -1,7 +1,7 @@
 import {
-  type MetadataChangedInput,
-  RoutingKeys,
-  metadataChangedSchema,
+    type MetadataChangedInput,
+    RoutingKeys,
+    metadataChangedSchema,
 } from "@arbitrator/contracts";
 
 import { publish } from "./publisher";
@@ -12,20 +12,20 @@ import { publish } from "./publisher";
  * event only delays convergence.
  */
 export async function publishMetadataChanged(
-  input: MetadataChangedInput,
+    input: MetadataChangedInput,
 ): Promise<boolean> {
-  const candidate = {
-    version: 1 as const,
-    occurredAt: new Date().toISOString(),
-    ...input,
-  };
+    const candidate = {
+        version: 1 as const,
+        occurredAt: new Date().toISOString(),
+        ...input,
+    };
 
-  const parsed = metadataChangedSchema.safeParse(candidate);
-  if (!parsed.success) {
-    return false;
-  }
+    const parsed = metadataChangedSchema.safeParse(candidate);
+    if (!parsed.success) {
+        return false;
+    }
 
-  return publish(RoutingKeys.metadataChanged, parsed.data, {
-    persistent: true,
-  });
+    return publish(RoutingKeys.metadataChanged, parsed.data, {
+        persistent: true,
+    });
 }

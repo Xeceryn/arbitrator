@@ -13,9 +13,9 @@ Use a fieldset as a container for related form elements. Use `fieldset-legend` a
 
 ```html
 <fieldset class="fieldset">
-  <legend class="fieldset-legend">{title}</legend>
-  {CONTENT}
-  <p class="label">{description}</p>
+    <legend class="fieldset-legend">{title}</legend>
+    {CONTENT}
+    <p class="label">{description}</p>
 </fieldset>
 ```
 

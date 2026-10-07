@@ -1,14 +1,14 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "moduleResolution": "bundler",
-    "lib": ["dom", "ESNext"],
-    "jsxImportSource": "@kitajs/html",
-    "types": ["@kitajs/html/htmx.d.ts"],
-    "plugins": [
-      {
-        "name": "@kitajs/ts-html-plugin"
-      }
-    ]
-  }
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "moduleResolution": "bundler",
+        "lib": ["dom", "ESNext"],
+        "jsxImportSource": "@kitajs/html",
+        "types": ["@kitajs/html/htmx.d.ts"],
+        "plugins": [
+            {
+                "name": "@kitajs/ts-html-plugin"
+            }
+        ]
+    }
 }

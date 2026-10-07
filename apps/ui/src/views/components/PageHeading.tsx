@@ -1,7 +1,7 @@
 type Props = {
-  heading: string;
-  /** Set on an htmx response to update the navbar title out-of-band. */
-  oob?: boolean;
+    heading: string;
+    /** Set on an htmx response to update the navbar title out-of-band. */
+    oob?: boolean;
 };
 
 /**
@@ -9,12 +9,12 @@ type Props = {
  * render it again with `oob` so the title follows in-app navigation.
  */
 export const PageHeading = ({ heading, oob }: Props) => (
-  <h1
-    id="page-heading"
-    class="truncate text-xl font-semibold"
-    {...(oob ? { "hx-swap-oob": "true" } : {})}
-    safe
-  >
-    {heading}
-  </h1>
+    <h1
+        id="page-heading"
+        class="truncate text-xl font-semibold"
+        {...(oob ? { "hx-swap-oob": "true" } : {})}
+        safe
+    >
+        {heading}
+    </h1>
 );

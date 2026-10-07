@@ -29,12 +29,12 @@ docker compose up -d nginx
 Then run the UI as usual (`bun run dev` in `apps/ui`) and open — replace
 `<computer-hostname>` with the output of `hostname`:
 
-| URL                                                    | Goes to                              |
-| ------------------------------------------------------ | ------------------------------------ |
-| `https://arbitrator.<computer-hostname>.local`          | UI dev server (`:3000`)              |
-| `https://rabbitmq.<computer-hostname>.local`            | RabbitMQ management UI (`:15672`)    |
-| `https://<computer-hostname>.local`                     | 301 → `arbitrator.<computer-hostname>.local` |
-| `https://arbitrator.test`                               | UI (extra alias; needs `/etc/hosts`)  |
+| URL                                            | Goes to                                      |
+| ---------------------------------------------- | -------------------------------------------- |
+| `https://arbitrator.<computer-hostname>.local` | UI dev server (`:3000`)                      |
+| `https://rabbitmq.<computer-hostname>.local`   | RabbitMQ management UI (`:15672`)            |
+| `https://<computer-hostname>.local`            | 301 → `arbitrator.<computer-hostname>.local` |
+| `https://arbitrator.test`                      | UI (extra alias; needs `/etc/hosts`)         |
 
 Except for `arbitrator.test`, these names resolve over mDNS once the alias
 publisher is installed (see [../avahi/README.md](../avahi/README.md)), so LAN
@@ -67,7 +67,7 @@ Run `./scripts/local-certs.sh` to generate the certs into `infra/certs/`.
 
 ### Option B — Let's Encrypt on a real domain (DNS-01)
 
-If your client needs a *publicly trusted* certificate (no CA import), you must
+If your client needs a _publicly trusted_ certificate (no CA import), you must
 use a domain you actually own, e.g. `dev.example.com`. DNS-01 validation works
 even if the domain resolves to a private/LAN IP:
 
@@ -76,14 +76,14 @@ even if the domain resolves to a private/LAN IP:
    can reach it.
 2. Issue the cert:
 
-   ```bash
-   ./scripts/letsencrypt-cert.sh dev.example.com you@example.com
-   ```
+    ```bash
+    ./scripts/letsencrypt-cert.sh dev.example.com you@example.com
+    ```
 
-   This runs certbot's manual DNS-01 flow (you add a `_acme-challenge` TXT
-   record when prompted). To automate renewal, install a certbot DNS plugin
-   for your provider (`python-certbot-dns-cloudflare`, `dns-route53`, …) and
-   replace `--manual` with `--dns-<provider> --dns-<provider>-credentials …`.
+    This runs certbot's manual DNS-01 flow (you add a `_acme-challenge` TXT
+    record when prompted). To automate renewal, install a certbot DNS plugin
+    for your provider (`python-certbot-dns-cloudflare`, `dns-route53`, …) and
+    replace `--manual` with `--dns-<provider> --dns-<provider>-credentials …`.
 
 3. Because LE is publicly trusted, clients need **no** CA import. Certs
    expire every 90 days — automate renewal with
@@ -169,16 +169,16 @@ also point this host at dnsmasq, to avoid a resolution loop.
 
 All overridable via environment (see `.envrc`):
 
-| Variable           | Default                        | Purpose                                  |
-| ------------------ | ------------------------------ | ---------------------------------------- |
-| `LOCAL_DOMAIN`     | `arbitrator.test`              | Extra UI alias + cert SAN                |
-| `MDNS_NAME`        | `$(hostname).local`            | Apex name → 301 to `UI_DOMAIN`           |
-| `UI_DOMAIN`        | `arbitrator.$(hostname).local` | UI vhost (`server_name`)                 |
-| `RABBITMQ_DOMAIN`  | `rabbitmq.$(hostname).local`   | RabbitMQ management vhost                |
-| `UI_UPSTREAM`      | `host.docker.internal:3000`    | Where the UI dev server listens          |
-| `RABBITMQ_UPSTREAM`| `rabbitmq:15672`               | RabbitMQ management backend              |
-| `NGINX_HTTP_PORT`  | `80`                           | Published HTTP port (redirects)          |
-| `NGINX_HTTPS_PORT` | `443`                          | Published HTTPS port                     |
+| Variable            | Default                        | Purpose                         |
+| ------------------- | ------------------------------ | ------------------------------- |
+| `LOCAL_DOMAIN`      | `arbitrator.test`              | Extra UI alias + cert SAN       |
+| `MDNS_NAME`         | `$(hostname).local`            | Apex name → 301 to `UI_DOMAIN`  |
+| `UI_DOMAIN`         | `arbitrator.$(hostname).local` | UI vhost (`server_name`)        |
+| `RABBITMQ_DOMAIN`   | `rabbitmq.$(hostname).local`   | RabbitMQ management vhost       |
+| `UI_UPSTREAM`       | `host.docker.internal:3000`    | Where the UI dev server listens |
+| `RABBITMQ_UPSTREAM` | `rabbitmq:15672`               | RabbitMQ management backend     |
+| `NGINX_HTTP_PORT`   | `80`                           | Published HTTP port (redirects) |
+| `NGINX_HTTPS_PORT`  | `443`                          | Published HTTPS port            |
 
 ## Why the UI stays on 3000
 

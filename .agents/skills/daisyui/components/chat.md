@@ -15,10 +15,10 @@ A chat bubble shows one line of a conversation and its related data. This data c
 
 ```html
 <div class="chat {PLACEMENT}">
-  <div class="chat-image"></div>
-  <div class="chat-header"></div>
-  <div class="chat-bubble {COLOR}">Message text</div>
-  <div class="chat-footer"></div>
+    <div class="chat-image"></div>
+    <div class="chat-header"></div>
+    <div class="chat-bubble {COLOR}">Message text</div>
+    <div class="chat-footer"></div>
 </div>
 ```
 

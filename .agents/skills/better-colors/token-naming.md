@@ -10,15 +10,15 @@ Naming is what makes a palette usable by anyone who did not build it. For which 
 
 ```css
 :root {
-  /* Tier 1: primitives, named by appearance. Never used directly. */
-  --blue-500: #3b82f6;
-  --neutral-200: #e5e7eb;
-  --neutral-700: #374151;
+    /* Tier 1: primitives, named by appearance. Never used directly. */
+    --blue-500: #3b82f6;
+    --neutral-200: #e5e7eb;
+    --neutral-700: #374151;
 
-  /* Tier 2: semantics, named by role. This is what components use. */
-  --color-accent-solid: var(--blue-500);
-  --color-border: var(--neutral-200);
-  --color-text-secondary: var(--neutral-700);
+    /* Tier 2: semantics, named by role. This is what components use. */
+    --color-accent-solid: var(--blue-500);
+    --color-border: var(--neutral-200);
+    --color-text-secondary: var(--neutral-700);
 }
 ```
 
@@ -81,14 +81,14 @@ Tailwind v4 generates utilities from `@theme`, so names declared there become th
 
 ```css
 @theme {
-  /* Primitives */
-  --color-brand-50: #eff6ff;
-  --color-brand-500: #3b82f6;
-  --color-brand-900: #1e3a8a;
+    /* Primitives */
+    --color-brand-50: #eff6ff;
+    --color-brand-500: #3b82f6;
+    --color-brand-900: #1e3a8a;
 
-  /* Semantics: what templates should use */
-  --color-accent-solid: var(--color-brand-500);
-  --color-text-secondary: var(--color-neutral-700);
+    /* Semantics: what templates should use */
+    --color-accent-solid: var(--color-brand-500);
+    --color-text-secondary: var(--color-neutral-700);
 }
 ```
 

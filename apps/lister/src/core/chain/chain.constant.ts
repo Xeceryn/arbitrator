@@ -1,6 +1,6 @@
 import {
-  chainOrderByKeysSchema,
-  chainSearchByKeysSchema,
+    chainOrderByKeysSchema,
+    chainSearchByKeysSchema,
 } from "./chain.schema";
 
 export const ChainSearchByOptions = chainSearchByKeysSchema.options;

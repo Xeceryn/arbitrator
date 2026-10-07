@@ -12,7 +12,7 @@ Use a code mockup to show code in a box with the style of a code editor.
 
 ```html
 <div class="mockup-code">
-  <pre data-prefix="$"><code>npm i daisyui</code></pre>
+    <pre data-prefix="$"><code>npm i daisyui</code></pre>
 </div>
 ```
 

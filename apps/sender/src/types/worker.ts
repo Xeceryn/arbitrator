@@ -5,6 +5,6 @@ export { WorkerState } from "@arbitrator/contracts";
  * Migrated workers use the discriminated unions in `@arbitrator/contracts`.
  */
 export const WorkerMessageType = {
-  StateChange: "state-change",
-  Data: "data",
+    StateChange: "state-change",
+    Data: "data",
 } as const;

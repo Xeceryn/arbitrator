@@ -14,7 +14,7 @@ Use a stat component to show numbers and data in a block.
 
 ```html
 <div class="stats {MODIFIER}">
-  <div class="stat">{CONTENT}</div>
+    <div class="stat">{CONTENT}</div>
 </div>
 ```
 

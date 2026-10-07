@@ -10,20 +10,20 @@ import { exchange } from "../exchange/exchange.sql";
 import { market } from "../market/market.sql";
 
 const clearDatabase = os.output(z.void()).handler(async () => {
-  await reset(database, {
-    cryptocurrency: cryptocurrency,
-    exchange: exchange,
-    chain: chain,
-    market: market,
-    chainLink: chainLink,
-  });
+    await reset(database, {
+        cryptocurrency: cryptocurrency,
+        exchange: exchange,
+        chain: chain,
+        market: market,
+        chainLink: chainLink,
+    });
 });
 
 const ping = os.output(z.literal("OK")).handler(() => {
-  return "OK";
+    return "OK";
 });
 
 export const utilityRouter = {
-  clearDatabase,
-  ping,
+    clearDatabase,
+    ping,
 };

@@ -18,42 +18,42 @@ Use this for infrequent staged entrances where sequence communicates hierarchy: 
 ```tsx
 // Motion (Framer Motion): staggered enter
 function PageHeader() {
-  return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={{
-        visible: { transition: { staggerChildren: 0.1 } },
-      }}
-    >
-      <motion.h1
-        variants={{
-          hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
-          visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-        }}
-      >
-        Welcome
-      </motion.h1>
+    return (
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={{
+                visible: { transition: { staggerChildren: 0.1 } },
+            }}
+        >
+            <motion.h1
+                variants={{
+                    hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+                    visible: { opacity: 1, y: 0, filter: "blur(0px)" },
+                }}
+            >
+                Welcome
+            </motion.h1>
 
-      <motion.p
-        variants={{
-          hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
-          visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-        }}
-      >
-        A description of the page.
-      </motion.p>
+            <motion.p
+                variants={{
+                    hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+                    visible: { opacity: 1, y: 0, filter: "blur(0px)" },
+                }}
+            >
+                A description of the page.
+            </motion.p>
 
-      <motion.div
-        variants={{
-          hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
-          visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-        }}
-      >
-        <Button>Get started</Button>
-      </motion.div>
-    </motion.div>
-  );
+            <motion.div
+                variants={{
+                    hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+                    visible: { opacity: 1, y: 0, filter: "blur(0px)" },
+                }}
+            >
+                <Button>Get started</Button>
+            </motion.div>
+        </motion.div>
+    );
 }
 ```
 
@@ -61,28 +61,28 @@ function PageHeader() {
 
 ```css
 .stagger-item {
-  opacity: 0;
-  transform: translateY(12px);
-  filter: blur(4px);
-  animation: fadeInUp 400ms ease-out forwards;
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+    animation: fadeInUp 400ms ease-out forwards;
 }
 
 .stagger-item:nth-child(1) {
-  animation-delay: 0ms;
+    animation-delay: 0ms;
 }
 .stagger-item:nth-child(2) {
-  animation-delay: 100ms;
+    animation-delay: 100ms;
 }
 .stagger-item:nth-child(3) {
-  animation-delay: 200ms;
+    animation-delay: 200ms;
 }
 
 @keyframes fadeInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
 }
 ```
 
@@ -95,14 +95,14 @@ Exits are softer and less attention-grabbing than enters. The user's focus is mo
 ```tsx
 // Small fixed translateY: indicates direction without drama
 <motion.div
-  exit={{
-    opacity: 0,
-    y: -12,
-    filter: "blur(4px)",
-    transition: { duration: 0.15, ease: "easeOut" },
-  }}
+    exit={{
+        opacity: 0,
+        y: -12,
+        filter: "blur(4px)",
+        transition: { duration: 0.15, ease: "easeOut" },
+    }}
 >
-  {content}
+    {content}
 </motion.div>
 ```
 
@@ -112,13 +112,13 @@ Exits are softer and less attention-grabbing than enters. The user's focus is mo
 // Slide fully out: use when spatial context is important
 // (e.g., a card returning to a list, a drawer closing)
 <motion.div
-  exit={{
-    opacity: 0,
-    x: "-100%",
-    transition: { duration: 0.2, ease: "easeOut" },
-  }}
+    exit={{
+        opacity: 0,
+        x: "-100%",
+        transition: { duration: 0.2, ease: "easeOut" },
+    }}
 >
-  {content}
+    {content}
 </motion.div>
 ```
 
@@ -127,23 +127,23 @@ Exits are softer and less attention-grabbing than enters. The user's focus is mo
 ```css
 /* Good: subtle exit */
 .item-exit {
-  opacity: 0;
-  transform: translateY(-12px);
-  transition:
-    opacity 150ms ease-out,
-    transform 150ms ease-out;
+    opacity: 0;
+    transform: translateY(-12px);
+    transition:
+        opacity 150ms ease-out,
+        transform 150ms ease-out;
 }
 
 /* Bad: dramatic exit that steals focus */
 .item-exit {
-  opacity: 0;
-  transform: translateY(-100%) scale(0.5);
-  transition: all 400ms ease-out;
+    opacity: 0;
+    transform: translateY(-100%) scale(0.5);
+    transition: all 400ms ease-out;
 }
 
 /* Sometimes correct: remove immediately when motion adds no context */
 .item-exit {
-  display: none;
+    display: none;
 }
 ```
 

@@ -15,9 +15,9 @@ HTML form:
 
 ```html
 <form class="filter">
-  <input class="btn btn-square" type="reset" value="×" />
-  <input class="btn" type="radio" name="{NAME}" aria-label="Tab 1 title" />
-  <input class="btn" type="radio" name="{NAME}" aria-label="Tab 2 title" />
+    <input class="btn btn-square" type="reset" value="×" />
+    <input class="btn" type="radio" name="{NAME}" aria-label="Tab 1 title" />
+    <input class="btn" type="radio" name="{NAME}" aria-label="Tab 2 title" />
 </form>
 ```
 
@@ -25,9 +25,9 @@ No HTML form:
 
 ```html
 <div class="filter">
-  <input class="btn filter-reset" type="radio" name="{NAME}" aria-label="×" />
-  <input class="btn" type="radio" name="{NAME}" aria-label="Tab 1 title" />
-  <input class="btn" type="radio" name="{NAME}" aria-label="Tab 2 title" />
+    <input class="btn filter-reset" type="radio" name="{NAME}" aria-label="×" />
+    <input class="btn" type="radio" name="{NAME}" aria-label="Tab 1 title" />
+    <input class="btn" type="radio" name="{NAME}" aria-label="Tab 2 title" />
 </div>
 ```
 

@@ -81,10 +81,10 @@ tracker is §10. Nothing else is required.
 **receiver**
 
 - Declares one durable queue per exchange (`Queues.orderbookFor(slug)`) and
-consumes every queue; each snapshot is parsed and written to its opportunity
-legs. One independent consumer loop runs per exchange, so a slow exchange cannot
-head-of-line block the others. Clustered over `hardwareConcurrency` via
-`src/main.ts`.
+  consumes every queue; each snapshot is parsed and written to its opportunity
+  legs. One independent consumer loop runs per exchange, so a slow exchange cannot
+  head-of-line block the others. Clustered over `hardwareConcurrency` via
+  `src/main.ts`.
 
 **RabbitMQ** — `rabbitmq:4-management-alpine`. Each exchange owns a durable,
 never-auto-deleted queue (`arbitrator.orderbook.<exchange>`); sender workers
@@ -220,11 +220,11 @@ are opened, never how many coins are streamed. Every desired coin is covered.
 
 ```ts
 type WorkerAdapterConfig = {
-  slug: string; // canonical lister slug, e.g. "gate"
-  modulePath: string; // "src/workers/orderbooks/gate-io.ts"
-  baseCurrency: "usdt" | "idr"; // from lister, fallback here
-  maxSubscriptionsPerConnection: number;
-  supportsDynamicSubscribe: boolean;
+    slug: string; // canonical lister slug, e.g. "gate"
+    modulePath: string; // "src/workers/orderbooks/gate-io.ts"
+    baseCurrency: "usdt" | "idr"; // from lister, fallback here
+    maxSubscriptionsPerConnection: number;
+    supportsDynamicSubscribe: boolean;
 };
 ```
 

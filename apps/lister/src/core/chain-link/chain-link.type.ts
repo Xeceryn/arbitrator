@@ -1,11 +1,11 @@
 import type { z } from "zod";
 
 import type {
-  chainLinkFilterExistsSchema,
-  chainLinkInsertSchema,
-  chainLinkSelectSchema,
-  chainLinkUpdateSchema,
-  chainLinkWithChainSchema,
+    chainLinkFilterExistsSchema,
+    chainLinkInsertSchema,
+    chainLinkSelectSchema,
+    chainLinkUpdateSchema,
+    chainLinkWithChainSchema,
 } from "./chain-link.schema";
 import { chainLink } from "./chain-link.sql";
 

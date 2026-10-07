@@ -15,8 +15,8 @@ Use the steps component to show a sequence in a process.
 
 ```html
 <ul class="steps {DIRECTION}">
-  <li class="step step-primary">{completed step}</li>
-  <li class="step">{upcoming step}</li>
+    <li class="step step-primary">{completed step}</li>
+    <li class="step">{upcoming step}</li>
 </ul>
 ```
 

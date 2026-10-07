@@ -8,8 +8,8 @@ import type { Orchestrator } from "../orchestrator/service";
  * context instead of importing the singleton.
  */
 export const orchestratorPlugin = (orchestrator: Orchestrator) =>
-  new Elysia({ name: "orchestrator" })
-    .decorate({ orchestrator })
-    .onStart(() => {
-      void orchestrator.runReconcile();
-    });
+    new Elysia({ name: "orchestrator" })
+        .decorate({ orchestrator })
+        .onStart(() => {
+            void orchestrator.runReconcile();
+        });

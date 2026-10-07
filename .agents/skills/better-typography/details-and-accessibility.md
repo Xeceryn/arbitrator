@@ -8,8 +8,8 @@ Default underline position is browser-determined, sometimes too close, sometimes
 
 ```css
 a {
-  text-underline-position: from-font;
-  text-decoration-thickness: from-font;
+    text-underline-position: from-font;
+    text-decoration-thickness: from-font;
 }
 ```
 
@@ -17,7 +17,7 @@ A dotted underline on an abbreviation:
 
 ```css
 abbr {
-  text-decoration: underline dotted;
+    text-decoration: underline dotted;
 }
 ```
 
@@ -25,15 +25,15 @@ Or tune manually:
 
 ```css
 a {
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  text-decoration-skip-ink: auto;
-  text-decoration-color: var(--color-gray-1000);
-  transition: text-decoration-color 200ms ease-out;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-skip-ink: auto;
+    text-decoration-color: var(--color-gray-1000);
+    transition: text-decoration-color 200ms ease-out;
 }
 
 a:hover {
-  text-decoration-color: var(--color-gray-1200);
+    text-decoration-color: var(--color-gray-1200);
 }
 ```
 
@@ -66,10 +66,10 @@ The two fixes differ in what they do to the design, not in correctness.
 ```tsx
 // 13px rendered from a 16px font-size: 13 / 16 = 0.8125
 <div className="flex h-10 items-center rounded-[10px] bg-gray-300 px-2.5">
-  <input
-    className="h-full w-[calc(100%/0.8125)] origin-left scale-[0.8125] bg-transparent text-base leading-[calc(1.125/0.8125)] outline-none sm:w-full sm:scale-100 sm:text-[13px]"
-    type="email"
-  />
+    <input
+        className="h-full w-[calc(100%/0.8125)] origin-left scale-[0.8125] bg-transparent text-base leading-[calc(1.125/0.8125)] outline-none sm:w-full sm:scale-100 sm:text-[13px]"
+        type="email"
+    />
 </div>
 ```
 
@@ -105,15 +105,15 @@ Tailwind's `antialiased` sets both properties:
 
 ```css
 html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 ```
 
 ```tsx
 <html lang="en">
-  <body class="font-sans antialiased">
-    <main>{children}</main>
-  </body>
+    <body class="font-sans antialiased">
+        <main>{children}</main>
+    </body>
 </html>
 ```

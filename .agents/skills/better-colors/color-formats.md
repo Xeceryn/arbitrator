@@ -53,13 +53,13 @@ The fix is to reduce vividness while holding hue and lightness. Generate ramps a
 
 ```css
 .accent {
-  background: #3b82f6;
+    background: #3b82f6;
 }
 
 @media (color-gamut: p3) {
-  .accent {
-    background: oklch(0.62 0.24 259);
-  }
+    .accent {
+        background: oklch(0.62 0.24 259);
+    }
 }
 ```
 
@@ -69,13 +69,13 @@ For browser matrices predating `oklch()` support, the same layering works with `
 
 ```css
 .accent {
-  background: #3b82f6;
+    background: #3b82f6;
 }
 
 @supports (color: oklch(0 0 0)) {
-  .accent {
-    background: oklch(0.62 0.19 259);
-  }
+    .accent {
+        background: oklch(0.62 0.19 259);
+    }
 }
 ```
 

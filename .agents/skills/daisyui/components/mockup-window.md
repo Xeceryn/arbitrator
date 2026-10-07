@@ -12,6 +12,6 @@ A window mockup is a box in the form of an operating-system window.
 
 ```html
 <div class="mockup-window">
-  <div>{CONTENT}</div>
+    <div>{CONTENT}</div>
 </div>
 ```

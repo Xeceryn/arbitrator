@@ -1,65 +1,65 @@
 services:
-  postgresql:
-    image: postgres:17.6-alpine
-    container_name: arbitrator-postgres
-    restart: unless-stopped
-    command: ["postgres", "-c", "max_connections=10000"]
-    environment:
-      POSTGRES_USER: ${DATABASE_USER:-postgres}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      POSTGRES_DB: ${DATABASE_NAME:-arbitrator}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+    postgresql:
+        image: postgres:17.6-alpine
+        container_name: arbitrator-postgres
+        restart: unless-stopped
+        command: ["postgres", "-c", "max_connections=10000"]
+        environment:
+            POSTGRES_USER: ${DATABASE_USER:-postgres}
+            POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+            POSTGRES_DB: ${DATABASE_NAME:-arbitrator}
+        ports:
+            - "${POSTGRES_PORT:-5432}:5432"
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
 
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: arbitrator-nginx
-    restart: unless-stopped
-    environment:
-      # The UI dev server runs on the host (bun --watch) on port 3000.
-      # host.docker.internal points back at the host from inside the container.
-      UI_UPSTREAM: ${UI_UPSTREAM:-host.docker.internal:3000}
-      # RabbitMQ management UI, reachable by its compose service name.
-      RABBITMQ_UPSTREAM: ${RABBITMQ_UPSTREAM:-rabbitmq:15672}
-      # Hostnames (see .envrc; *.invalid defaults are inert placeholders).
-      LOCAL_DOMAIN: ${LOCAL_DOMAIN:-arbitrator.test}
-      MDNS_NAME: ${MDNS_NAME:-local.invalid}
-      UI_DOMAIN: ${UI_DOMAIN:-arbitrator.invalid}
-      RABBITMQ_DOMAIN: ${RABBITMQ_DOMAIN:-rabbitmq.invalid}
-      # Only substitute our variables; leave nginx's own $host, $scheme, etc.
-      NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|RABBITMQ_UPSTREAM|LOCAL_DOMAIN|MDNS_NAME|UI_DOMAIN|RABBITMQ_DOMAIN)$$"
-    ports:
-      - "${NGINX_HTTP_PORT:-80}:80"
-      - "${NGINX_HTTPS_PORT:-443}:443"
-    depends_on:
-      - rabbitmq
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./infra/nginx/templates:/etc/nginx/templates:ro
-      - ./infra/certs:/etc/nginx/certs:ro
-      - ./infra/certbot/www:/var/www/certbot:ro
+    nginx:
+        image: nginx:1.27-alpine
+        container_name: arbitrator-nginx
+        restart: unless-stopped
+        environment:
+            # The UI dev server runs on the host (bun --watch) on port 3000.
+            # host.docker.internal points back at the host from inside the container.
+            UI_UPSTREAM: ${UI_UPSTREAM:-host.docker.internal:3000}
+            # RabbitMQ management UI, reachable by its compose service name.
+            RABBITMQ_UPSTREAM: ${RABBITMQ_UPSTREAM:-rabbitmq:15672}
+            # Hostnames (see .envrc; *.invalid defaults are inert placeholders).
+            LOCAL_DOMAIN: ${LOCAL_DOMAIN:-arbitrator.test}
+            MDNS_NAME: ${MDNS_NAME:-local.invalid}
+            UI_DOMAIN: ${UI_DOMAIN:-arbitrator.invalid}
+            RABBITMQ_DOMAIN: ${RABBITMQ_DOMAIN:-rabbitmq.invalid}
+            # Only substitute our variables; leave nginx's own $host, $scheme, etc.
+            NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|RABBITMQ_UPSTREAM|LOCAL_DOMAIN|MDNS_NAME|UI_DOMAIN|RABBITMQ_DOMAIN)$$"
+        ports:
+            - "${NGINX_HTTP_PORT:-80}:80"
+            - "${NGINX_HTTPS_PORT:-443}:443"
+        depends_on:
+            - rabbitmq
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        volumes:
+            - ./infra/nginx/templates:/etc/nginx/templates:ro
+            - ./infra/certs:/etc/nginx/certs:ro
+            - ./infra/certbot/www:/var/www/certbot:ro
 
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    container_name: arbitrator-rabbitmq
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-arbitrator}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-arbitrator}
-    ports:
-      - "5672:5672" # AMQP
-      - "15672:15672" # management UI
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    rabbitmq:
+        image: rabbitmq:4-management-alpine
+        container_name: arbitrator-rabbitmq
+        restart: unless-stopped
+        environment:
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-arbitrator}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-arbitrator}
+        ports:
+            - "5672:5672" # AMQP
+            - "15672:15672" # management UI
+        volumes:
+            - rabbitmq-data:/var/lib/rabbitmq
+        healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+            interval: 30s
+            timeout: 10s
+            retries: 5
 
 volumes:
-  rabbitmq-data:
-  postgres-data:
+    rabbitmq-data:
+    postgres-data:

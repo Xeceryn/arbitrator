@@ -10,14 +10,14 @@
 export const ExchangeType = "topic" as const;
 
 export const RoutingKeys = {
-  /**
-   * Legacy wildcard for the single shared orderbook queue. The per-exchange
-   * orderbook path no longer publishes to the exchange, so this only exists for
-   * the unused `concurrent.ts` entrypoint.
-   */
-  orderbookNormalizedAll: "orderbook.normalized.*",
-  /** Coarse metadata-change notification emitted by lister. */
-  metadataChanged: "metadata.changed",
+    /**
+     * Legacy wildcard for the single shared orderbook queue. The per-exchange
+     * orderbook path no longer publishes to the exchange, so this only exists for
+     * the unused `concurrent.ts` entrypoint.
+     */
+    orderbookNormalizedAll: "orderbook.normalized.*",
+    /** Coarse metadata-change notification emitted by lister. */
+    metadataChanged: "metadata.changed",
 } as const;
 
 /**
@@ -29,17 +29,17 @@ export const RoutingKeys = {
  * connected.
  */
 export const Queues = {
-  /**
-   * Per-exchange durable queue, e.g. `arbitrator.orderbook.indodax`. Sender
-   * workers send directly to it over the default exchange; the receiver declares
-   * it. No binding is involved.
-   */
-  orderbookFor: (exchange: string) => `arbitrator.orderbook.${exchange}`,
-  /**
-   * Legacy single queue captured through the `orderbook.normalized.*` binding.
-   * The default `index.ts` entrypoint no longer uses it; only the unused
-   * `concurrent.ts` entrypoint still binds it.
-   */
-  orderbook: "arbitrator.orderbook.normalized",
-  metadataChanged: "arbitrator.metadata.changed",
+    /**
+     * Per-exchange durable queue, e.g. `arbitrator.orderbook.indodax`. Sender
+     * workers send directly to it over the default exchange; the receiver declares
+     * it. No binding is involved.
+     */
+    orderbookFor: (exchange: string) => `arbitrator.orderbook.${exchange}`,
+    /**
+     * Legacy single queue captured through the `orderbook.normalized.*` binding.
+     * The default `index.ts` entrypoint no longer uses it; only the unused
+     * `concurrent.ts` entrypoint still binds it.
+     */
+    orderbook: "arbitrator.orderbook.normalized",
+    metadataChanged: "arbitrator.metadata.changed",
 } as const;

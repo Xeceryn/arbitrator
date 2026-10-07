@@ -19,7 +19,7 @@ Buttons:
 
 ```html
 <div role="tablist" class="tabs {MODIFIER}">
-  <button role="tab" class="tab">Tab</button>
+    <button role="tab" class="tab">Tab</button>
 </div>
 ```
 
@@ -27,7 +27,7 @@ Radio inputs:
 
 ```html
 <div role="tablist" class="tabs tabs-box">
-  <input type="radio" name="my_tabs" class="tab" aria-label="Tab" />
+    <input type="radio" name="my_tabs" class="tab" aria-label="Tab" />
 </div>
 ```
 

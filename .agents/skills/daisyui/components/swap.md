@@ -17,9 +17,9 @@ Checkbox:
 
 ```html
 <label class="swap {MODIFIER}">
-  <input type="checkbox" />
-  <div class="swap-on">{content when active}</div>
-  <div class="swap-off">{content when inactive}</div>
+    <input type="checkbox" />
+    <div class="swap-on">{content when active}</div>
+    <div class="swap-off">{content when inactive}</div>
 </label>
 ```
 
@@ -27,8 +27,8 @@ Class name:
 
 ```html
 <div class="swap {MODIFIER}">
-  <div class="swap-on">{content when active}</div>
-  <div class="swap-off">{content when inactive}</div>
+    <div class="swap-on">{content when active}</div>
+    <div class="swap-off">{content when inactive}</div>
 </div>
 ```
 

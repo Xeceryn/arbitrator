@@ -16,33 +16,35 @@ const logger = createLogger("arbitrator/sender/orchestrator");
  * logs; a worker that dies is respawned by the pool, not by a reconcile.
  */
 export function createOrchestrator(): Orchestrator {
-  const holder: { current: Orchestrator | undefined } = { current: undefined };
+    const holder: { current: Orchestrator | undefined } = {
+        current: undefined,
+    };
 
-  const pool = new WorkerPool(spawnThreadWorker, {
-    // A dead thread can only be recovered by the parent, but never for an
-    // exchange the user has since stopped.
-    shouldRespawn: (slug) => holder.current?.isStarted(slug) ?? false,
-    onWorkerEvent: (workerId, event) => {
-      if (typeof event !== "object" || event === null) return;
-      const record = event as Record<string, unknown>;
-      if (record.type === "error") {
-        logger.error(
-          `[${workerId}] worker reported: ${String(record.message)}`,
-        );
-        return;
-      }
-      if (record.type === "state") {
-        logger.info(`[${workerId}] state=${String(record.state)}`);
-      }
-    },
-    onWorkerFailure: (workerId, exchangeSlug, code) => {
-      logger.error(
-        `[${workerId}] worker died unexpectedly (${exchangeSlug}) exitCode=${code ?? "unknown"}`,
-      );
-    },
-  });
+    const pool = new WorkerPool(spawnThreadWorker, {
+        // A dead thread can only be recovered by the parent, but never for an
+        // exchange the user has since stopped.
+        shouldRespawn: (slug) => holder.current?.isStarted(slug) ?? false,
+        onWorkerEvent: (workerId, event) => {
+            if (typeof event !== "object" || event === null) return;
+            const record = event as Record<string, unknown>;
+            if (record.type === "error") {
+                logger.error(
+                    `[${workerId}] worker reported: ${String(record.message)}`,
+                );
+                return;
+            }
+            if (record.type === "state") {
+                logger.info(`[${workerId}] state=${String(record.state)}`);
+            }
+        },
+        onWorkerFailure: (workerId, exchangeSlug, code) => {
+            logger.error(
+                `[${workerId}] worker died unexpectedly (${exchangeSlug}) exitCode=${code ?? "unknown"}`,
+            );
+        },
+    });
 
-  const orchestrator = new Orchestrator(pool, createListerGateway());
-  holder.current = orchestrator;
-  return orchestrator;
+    const orchestrator = new Orchestrator(pool, createListerGateway());
+    holder.current = orchestrator;
+    return orchestrator;
 }

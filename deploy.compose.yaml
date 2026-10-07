@@ -10,178 +10,178 @@
 name: arbitrator-deploy
 
 x-database-env: &database-env
-  DATABASE_URL: postgres://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@postgresql:5432/${DATABASE_NAME:-arbitrator}
+    DATABASE_URL: postgres://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@postgresql:5432/${DATABASE_NAME:-arbitrator}
 
 x-amqp-env: &amqp-env
-  AMQP_URL: amqp://${RABBITMQ_USER:-arbitrator}:${RABBITMQ_PASSWORD:-arbitrator}@rabbitmq:5672
-  AMQP_EXCHANGE: ${AMQP_EXCHANGE:-arbitrator}
+    AMQP_URL: amqp://${RABBITMQ_USER:-arbitrator}:${RABBITMQ_PASSWORD:-arbitrator}@rabbitmq:5672
+    AMQP_EXCHANGE: ${AMQP_EXCHANGE:-arbitrator}
 
 services:
-  postgresql:
-    image: postgres:17.6-alpine
-    restart: unless-stopped
-    command: ["postgres", "-c", "max_connections=10000"]
-    environment:
-      POSTGRES_USER: ${DATABASE_USER:-postgres}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      POSTGRES_DB: ${DATABASE_NAME:-arbitrator}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${DATABASE_USER:-postgres} -d ${DATABASE_NAME:-arbitrator}",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
+    postgresql:
+        image: postgres:17.6-alpine
+        restart: unless-stopped
+        command: ["postgres", "-c", "max_connections=10000"]
+        environment:
+            POSTGRES_USER: ${DATABASE_USER:-postgres}
+            POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+            POSTGRES_DB: ${DATABASE_NAME:-arbitrator}
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U ${DATABASE_USER:-postgres} -d ${DATABASE_NAME:-arbitrator}",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
 
-  rabbitmq:
-    image: rabbitmq:4-management-alpine
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-arbitrator}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-arbitrator}
-    ports:
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
+    rabbitmq:
+        image: rabbitmq:4-management-alpine
+        restart: unless-stopped
+        environment:
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-arbitrator}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-arbitrator}
+        ports:
+            - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+        volumes:
+            - rabbitmq-data:/var/lib/rabbitmq
+        healthcheck:
+            test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+            interval: 10s
+            timeout: 10s
+            retries: 10
+            start_period: 20s
 
-  # One-shot `drizzle-kit migrate`; lister waits for it to finish.
-  lister-migrate:
-    build:
-      context: .
-      dockerfile: apps/lister/Dockerfile
-      target: migrate
-    environment:
-      <<: *database-env
-      NODE_ENV: production
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    restart: "no"
+    # One-shot `drizzle-kit migrate`; lister waits for it to finish.
+    lister-migrate:
+        build:
+            context: .
+            dockerfile: apps/lister/Dockerfile
+            target: migrate
+        environment:
+            <<: *database-env
+            NODE_ENV: production
+        depends_on:
+            postgresql:
+                condition: service_healthy
+        restart: "no"
 
-  lister:
-    build:
-      context: .
-      dockerfile: apps/lister/Dockerfile
-    image: arbitrator-lister:latest
-    restart: unless-stopped
-    environment:
-      <<: [*database-env, *amqp-env]
-      NODE_ENV: production
-    depends_on:
-      postgresql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      lister-migrate:
-        condition: service_completed_successfully
-    expose:
-      - "3001"
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "bun",
-          "-e",
-          "const r = await fetch('http://127.0.0.1:3001/'); process.exit(r.status < 500 ? 0 : 1)",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    lister:
+        build:
+            context: .
+            dockerfile: apps/lister/Dockerfile
+        image: arbitrator-lister:latest
+        restart: unless-stopped
+        environment:
+            <<: [*database-env, *amqp-env]
+            NODE_ENV: production
+        depends_on:
+            postgresql:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            lister-migrate:
+                condition: service_completed_successfully
+        expose:
+            - "3001"
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "bun",
+                    "-e",
+                    "const r = await fetch('http://127.0.0.1:3001/'); process.exit(r.status < 500 ? 0 : 1)",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
 
-  sender:
-    build:
-      context: .
-      dockerfile: apps/sender/Dockerfile
-    image: arbitrator-sender:latest
-    restart: unless-stopped
-    environment:
-      <<: *amqp-env
-      LISTER_URL: http://lister:3001
-      NODE_ENV: production
-    depends_on:
-      lister:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    expose:
-      - "3002"
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "bun",
-          "-e",
-          "const r = await fetch('http://127.0.0.1:3002/exchanges'); process.exit(r.ok ? 0 : 1)",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    sender:
+        build:
+            context: .
+            dockerfile: apps/sender/Dockerfile
+        image: arbitrator-sender:latest
+        restart: unless-stopped
+        environment:
+            <<: *amqp-env
+            LISTER_URL: http://lister:3001
+            NODE_ENV: production
+        depends_on:
+            lister:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        expose:
+            - "3002"
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "bun",
+                    "-e",
+                    "const r = await fetch('http://127.0.0.1:3002/exchanges'); process.exit(r.ok ? 0 : 1)",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
 
-  receiver:
-    build:
-      context: .
-      dockerfile: apps/receiver/Dockerfile
-    image: arbitrator-receiver:latest
-    # On a freshly migrated database the `exchange` table is empty, so the
-    # workers find no queues to consume and exit 0. `unless-stopped` makes the
-    # receiver keep retrying, so it picks up exchanges as soon as the catalog is
-    # populated (Docker backs the restarts off up to a minute).
-    restart: unless-stopped
-    # Reap the worker processes main.ts spawns and forward signals to it.
-    init: true
-    environment:
-      <<: [*database-env, *amqp-env]
-      LISTER_URL: http://lister:3001
-      NODE_ENV: production
-    depends_on:
-      lister:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    receiver:
+        build:
+            context: .
+            dockerfile: apps/receiver/Dockerfile
+        image: arbitrator-receiver:latest
+        # On a freshly migrated database the `exchange` table is empty, so the
+        # workers find no queues to consume and exit 0. `unless-stopped` makes the
+        # receiver keep retrying, so it picks up exchanges as soon as the catalog is
+        # populated (Docker backs the restarts off up to a minute).
+        restart: unless-stopped
+        # Reap the worker processes main.ts spawns and forward signals to it.
+        init: true
+        environment:
+            <<: [*database-env, *amqp-env]
+            LISTER_URL: http://lister:3001
+            NODE_ENV: production
+        depends_on:
+            lister:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
 
-  ui:
-    build:
-      context: .
-      dockerfile: apps/ui/Dockerfile
-    image: arbitrator-ui:latest
-    restart: unless-stopped
-    environment:
-      LISTER_URL: http://lister:3001
-      SENDER_URL: http://sender:3002
-      NODE_ENV: production
-    depends_on:
-      lister:
-        condition: service_healthy
-      sender:
-        condition: service_healthy
-    ports:
-      - "${UI_PORT:-3000}:3000"
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "bun",
-          "-e",
-          "const r = await fetch('http://127.0.0.1:3000/'); process.exit(r.ok ? 0 : 1)",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    ui:
+        build:
+            context: .
+            dockerfile: apps/ui/Dockerfile
+        image: arbitrator-ui:latest
+        restart: unless-stopped
+        environment:
+            LISTER_URL: http://lister:3001
+            SENDER_URL: http://sender:3002
+            NODE_ENV: production
+        depends_on:
+            lister:
+                condition: service_healthy
+            sender:
+                condition: service_healthy
+        ports:
+            - "${UI_PORT:-3000}:3000"
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "bun",
+                    "-e",
+                    "const r = await fetch('http://127.0.0.1:3000/'); process.exit(r.ok ? 0 : 1)",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
 
 volumes:
-  postgres-data:
-  rabbitmq-data:
+    postgres-data:
+    rabbitmq-data:

@@ -1,48 +1,48 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "compilerOptions": {
-    "lib": ["ESNext"],
-    "types": ["bun"],
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "compilerOptions": {
+        "lib": ["ESNext"],
+        "types": ["bun"],
 
-    "paths": {
-      /*
-       * APPS
-       */
-      "@arbitrator/lister": ["./apps/lister/src"],
-      "@arbitrator/lister/*": ["./apps/lister/src/*"],
-      /*
-       * PACKAGES
-       */
-      "@arbitrator/sdk": ["./packages/sdk/src"],
-      "@arbitrator/sdk/*": ["./packages/sdk/src/*"],
-      "@arbitrator/env-loader": ["./packages/env-loader/src"],
-      "@arbitrator/env-loader/*": ["./packages/env-loader/src/*"],
-      "@arbitrator/logger": ["./packages/logger/src"],
-      "@arbitrator/logger/*": ["./packages/logger/src/*"],
-      "@arbitrator/contracts": ["./packages/contracts/src"],
-      "@arbitrator/contracts/*": ["./packages/contracts/src/*"],
-      "@arbitrator/messaging": ["./packages/messaging/src"],
-      "@arbitrator/messaging/*": ["./packages/messaging/src/*"],
-      "@arbitrator/sender": ["./apps/sender/src"],
-      "@arbitrator/sender/*": ["./apps/sender/src/*"]
-    },
+        "paths": {
+            /*
+             * APPS
+             */
+            "@arbitrator/lister": ["./apps/lister/src"],
+            "@arbitrator/lister/*": ["./apps/lister/src/*"],
+            /*
+             * PACKAGES
+             */
+            "@arbitrator/sdk": ["./packages/sdk/src"],
+            "@arbitrator/sdk/*": ["./packages/sdk/src/*"],
+            "@arbitrator/env-loader": ["./packages/env-loader/src"],
+            "@arbitrator/env-loader/*": ["./packages/env-loader/src/*"],
+            "@arbitrator/logger": ["./packages/logger/src"],
+            "@arbitrator/logger/*": ["./packages/logger/src/*"],
+            "@arbitrator/contracts": ["./packages/contracts/src"],
+            "@arbitrator/contracts/*": ["./packages/contracts/src/*"],
+            "@arbitrator/messaging": ["./packages/messaging/src"],
+            "@arbitrator/messaging/*": ["./packages/messaging/src/*"],
+            "@arbitrator/sender": ["./apps/sender/src"],
+            "@arbitrator/sender/*": ["./apps/sender/src/*"]
+        },
 
-    "target": "ESNext",
-    "module": "Preserve",
-    "moduleDetection": "force",
-    "jsx": "react-jsx",
-    "allowJs": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "noEmit": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
-  }
+        "target": "ESNext",
+        "module": "Preserve",
+        "moduleDetection": "force",
+        "jsx": "react-jsx",
+        "allowJs": true,
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "noEmit": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noPropertyAccessFromIndexSignature": false
+    }
 }

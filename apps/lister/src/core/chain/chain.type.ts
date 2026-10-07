@@ -1,11 +1,11 @@
 import type z from "zod";
 
 import type {
-  chainInsertSchema,
-  chainSelectSchema,
-  chainUpdateSchema,
-  listChainSelectSchema,
-  paginatedChainSelectSChema,
+    chainInsertSchema,
+    chainSelectSchema,
+    chainUpdateSchema,
+    listChainSelectSchema,
+    paginatedChainSelectSChema,
 } from "./chain.schema";
 import { chain } from "./chain.sql";
 

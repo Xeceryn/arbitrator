@@ -1,16 +1,16 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "old-lister-migrator",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
-  },
-  "dependencies": {
-    "@arbitrator/lister": "workspace:*",
-    "@arbitrator/sdk": "workspace:*",
-    "@orpc/client": "catalog:core",
-    "@orpc/server": "catalog:core"
-  }
+    "$schema": "https://json.schemastore.org/package.json",
+    "name": "old-lister-migrator",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "bun run --watch src/index.ts",
+        "start": "bun run src/index.ts"
+    },
+    "dependencies": {
+        "@arbitrator/lister": "workspace:*",
+        "@arbitrator/sdk": "workspace:*",
+        "@orpc/client": "catalog:core",
+        "@orpc/server": "catalog:core"
+    }
 }

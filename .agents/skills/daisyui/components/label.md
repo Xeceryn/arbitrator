@@ -14,8 +14,8 @@ Regular label:
 
 ```html
 <label class="input">
-  <span class="label">{label text}</span>
-  <input type="text" placeholder="Type here" />
+    <span class="label">{label text}</span>
+    <input type="text" placeholder="Type here" />
 </label>
 ```
 
@@ -23,8 +23,8 @@ Floating label:
 
 ```html
 <label class="floating-label">
-  <input type="text" placeholder="Type here" class="input" />
-  <span>{label text}</span>
+    <input type="text" placeholder="Type here" class="input" />
+    <span>{label text}</span>
 </label>
 ```
 

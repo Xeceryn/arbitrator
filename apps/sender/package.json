@@ -1,37 +1,37 @@
 {
-  "$schema": "https://json.schemastore.org/package.json",
-  "name": "@arbitrator/sender",
-  "exports": {
-    "app": "./src/app.ts"
-  },
-  "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts",
-    "build": "bun build --target=bun ./src/index.ts --outdir=./dist"
-  },
-  "dependencies": {
-    "@arbitrator/contracts": "workspace:*",
-    "@arbitrator/logger": "workspace:*",
-    "@arbitrator/messaging": "workspace:*",
-    "@arbitrator/sdk": "workspace:*",
-    "@bufbuild/buf": "^1.72.0",
-    "@bufbuild/protobuf": "^2.13.0",
-    "@orpc/server": "catalog:core",
-    "amqplib": "catalog:core",
-    "binance": "^3.6.1",
-    "bitget-api": "^3.2.1",
-    "bitmart-api": "^2.5.1",
-    "elysia": "catalog:core",
-    "gateio-api": "^1.6.1",
-    "kucoin-api": "^2.6.1",
-    "okx-api": "^3.2.1",
-    "winston": "^3.19.0",
-    "ws": "^8.21.1",
-    "zod": "catalog:core"
-  },
-  "devDependencies": {
-    "@types/amqplib": "^0.10.8",
-    "@types/bun": "catalog:types",
-    "@types/ws": "^8.18.1"
-  }
+    "$schema": "https://json.schemastore.org/package.json",
+    "name": "@arbitrator/sender",
+    "exports": {
+        "app": "./src/app.ts"
+    },
+    "scripts": {
+        "dev": "bun run --watch src/index.ts",
+        "start": "bun run src/index.ts",
+        "build": "bun build --target=bun ./src/index.ts --outdir=./dist"
+    },
+    "dependencies": {
+        "@arbitrator/contracts": "workspace:*",
+        "@arbitrator/logger": "workspace:*",
+        "@arbitrator/messaging": "workspace:*",
+        "@arbitrator/sdk": "workspace:*",
+        "@bufbuild/buf": "^1.72.0",
+        "@bufbuild/protobuf": "^2.13.0",
+        "@orpc/server": "catalog:core",
+        "amqplib": "catalog:core",
+        "binance": "^3.6.1",
+        "bitget-api": "^3.2.1",
+        "bitmart-api": "^2.5.1",
+        "elysia": "catalog:core",
+        "gateio-api": "^1.6.1",
+        "kucoin-api": "^2.6.1",
+        "okx-api": "^3.2.1",
+        "winston": "^3.19.0",
+        "ws": "^8.21.1",
+        "zod": "catalog:core"
+    },
+    "devDependencies": {
+        "@types/amqplib": "^0.10.8",
+        "@types/bun": "catalog:types",
+        "@types/ws": "^8.18.1"
+    }
 }

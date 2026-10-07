@@ -18,7 +18,7 @@ Vertical menu:
 
 ```html
 <ul class="menu">
-  <li><button>Item</button></li>
+    <li><button>Item</button></li>
 </ul>
 ```
 
@@ -26,7 +26,7 @@ Horizontal menu:
 
 ```html
 <ul class="menu menu-horizontal">
-  <li><button>Item</button></li>
+    <li><button>Item</button></li>
 </ul>
 ```
 

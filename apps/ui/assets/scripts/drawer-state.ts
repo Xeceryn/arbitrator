@@ -11,21 +11,21 @@ const STORAGE_KEY = "arbitrator:drawer";
 const DESKTOP_QUERY = "(min-width: 64rem)";
 
 function initDrawerState() {
-  const toggle = document.querySelector<HTMLInputElement>("#left-drawer");
-  if (!toggle) return;
+    const toggle = document.querySelector<HTMLInputElement>("#left-drawer");
+    if (!toggle) return;
 
-  if (
-    window.matchMedia(DESKTOP_QUERY).matches &&
-    localStorage.getItem(STORAGE_KEY) === "open"
-  ) {
-    toggle.checked = true;
-  }
+    if (
+        window.matchMedia(DESKTOP_QUERY).matches &&
+        localStorage.getItem(STORAGE_KEY) === "open"
+    ) {
+        toggle.checked = true;
+    }
 
-  toggle.addEventListener("change", () => {
-    localStorage.setItem(STORAGE_KEY, toggle.checked ? "open" : "closed");
-  });
+    toggle.addEventListener("change", () => {
+        localStorage.setItem(STORAGE_KEY, toggle.checked ? "open" : "closed");
+    });
 
-  closeOverlayOnNavigate(toggle);
+    closeOverlayOnNavigate(toggle);
 }
 
 /**
@@ -37,18 +37,18 @@ function initDrawerState() {
  * it (and the remembered desktop state) alone.
  */
 function closeOverlayOnNavigate(toggle: HTMLInputElement) {
-  document.addEventListener("click", (event) => {
-    if (window.matchMedia(DESKTOP_QUERY).matches) return;
+    document.addEventListener("click", (event) => {
+        if (window.matchMedia(DESKTOP_QUERY).matches) return;
 
-    const target = event.target as Element | null;
-    if (!target?.closest(".drawer-side a[hx-get]")) return;
+        const target = event.target as Element | null;
+        if (!target?.closest(".drawer-side a[hx-get]")) return;
 
-    toggle.checked = false;
-  });
+        toggle.checked = false;
+    });
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initDrawerState);
+    document.addEventListener("DOMContentLoaded", initDrawerState);
 } else {
-  initDrawerState();
+    initDrawerState();
 }

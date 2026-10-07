@@ -6,16 +6,18 @@ await bundleClientSideResources();
 
 // Bundle the Elysia server itself.
 const result = await Bun.build({
-  entrypoints: ["./src/main.ts"],
-  outdir: "./dist",
-  target: "bun",
+    entrypoints: ["./src/main.ts"],
+    outdir: "./dist",
+    target: "bun",
 });
 
 if (!result.success) {
-  for (const log of result.logs) console.error(log);
-  process.exit(1);
+    for (const log of result.logs) console.error(log);
+    process.exit(1);
 }
 
 console.log(
-  result.outputs.map((output) => `${output.path} | ${output.type}`).join("\n"),
+    result.outputs
+        .map((output) => `${output.path} | ${output.type}`)
+        .join("\n"),
 );

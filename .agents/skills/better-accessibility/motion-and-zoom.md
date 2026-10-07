@@ -9,12 +9,12 @@ Make motion opt-in. Wrap animations in `@media (prefers-reduced-motion: no-prefe
 ```css
 /* Good: motion is opt-in */
 .card {
-  /* static styles */
+    /* static styles */
 }
 @media (prefers-reduced-motion: no-preference) {
-  .card {
-    transition: transform 200ms ease-out;
-  }
+    .card {
+        transition: transform 200ms ease-out;
+    }
 }
 ```
 
@@ -27,14 +27,14 @@ For an existing codebase where opt-in isn't feasible, the global kill switch is 
 
 ```css
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 ```
 

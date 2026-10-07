@@ -16,9 +16,9 @@ A drawer is a grid layout that can show and hide a sidebar. The sidebar can be o
 
 ```html
 <div class="drawer {MODIFIER}">
-  <input id="my-drawer" type="checkbox" class="drawer-toggle" />
-  <div class="drawer-content">{CONTENT}</div>
-  <div class="drawer-side">{SIDEBAR}</div>
+    <input id="my-drawer" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content">{CONTENT}</div>
+    <div class="drawer-side">{SIDEBAR}</div>
 </div>
 ```
 
@@ -27,8 +27,8 @@ The `{SIDEBAR}` can contain a menu:
 
 ```html
 <ul class="menu p-4 w-80 min-h-full bg-base-100 text-base-content">
-  <li><a>Item 1</a></li>
-  <li><a>Item 2</a></li>
+    <li><a>Item 1</a></li>
+    <li><a>Item 2</a></li>
 </ul>
 ```
 
@@ -42,25 +42,25 @@ Example: This sidebar is always visible on large screens. The user can toggle it
 
 ```html
 <div class="drawer lg:drawer-open">
-  <input id="my-drawer-3" type="checkbox" class="drawer-toggle" />
-  <div class="drawer-content flex flex-col items-center justify-center">
-    <!-- Page content here -->
-    <label for="my-drawer-3" class="btn drawer-button lg:hidden">
-      Open drawer
-    </label>
-  </div>
-  <div class="drawer-side">
-    <label
-      for="my-drawer-3"
-      aria-label="close sidebar"
-      class="drawer-overlay"
-    ></label>
-    <ul class="menu bg-base-200 min-h-full w-80 p-4">
-      <!-- Sidebar content here -->
-      <li><button>Sidebar Item 1</button></li>
-      <li><button>Sidebar Item 2</button></li>
-    </ul>
-  </div>
+    <input id="my-drawer-3" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content flex flex-col items-center justify-center">
+        <!-- Page content here -->
+        <label for="my-drawer-3" class="btn drawer-button lg:hidden">
+            Open drawer
+        </label>
+    </div>
+    <div class="drawer-side">
+        <label
+            for="my-drawer-3"
+            aria-label="close sidebar"
+            class="drawer-overlay"
+        ></label>
+        <ul class="menu bg-base-200 min-h-full w-80 p-4">
+            <!-- Sidebar content here -->
+            <li><button>Sidebar Item 1</button></li>
+            <li><button>Sidebar Item 2</button></li>
+        </ul>
+    </div>
 </div>
 ```
 
@@ -68,56 +68,56 @@ Example: This sidebar is always visible. In the closed state, it shows only icon
 
 ```html
 <div class="drawer lg:drawer-open">
-  <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
-  <div class="drawer-content">
-    <!-- Page content here -->
-  </div>
-  <div class="drawer-side is-drawer-close:overflow-visible">
-    <label
-      for="my-drawer-4"
-      aria-label="close sidebar"
-      class="drawer-overlay"
-    ></label>
-    <div
-      class="is-drawer-close:w-14 is-drawer-open:w-64 bg-base-200 flex flex-col items-start min-h-full"
-    >
-      <!-- Sidebar content here -->
-      <ul class="menu w-full grow">
-        <!-- list item -->
-        <li>
-          <button
-            class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
-            data-tip="Homepage"
-          >
-            {ICON_HERE}
-            <span class="is-drawer-close:hidden">Homepage</span>
-          </button>
-        </li>
-        <!-- list item -->
-        <li>
-          <button
-            class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
-            data-tip="Settings"
-          >
-            {ICON_HERE}
-            <span class="is-drawer-close:hidden">Settings</span>
-          </button>
-        </li>
-      </ul>
-      <!-- button to open/close drawer -->
-      <div
-        class="m-2 is-drawer-close:tooltip is-drawer-close:tooltip-right"
-        data-tip="Open"
-      >
-        <label
-          for="my-drawer-4"
-          class="btn btn-ghost btn-circle drawer-button is-drawer-open:rotate-y-180"
-        >
-          {ICON_HERE}
-        </label>
-      </div>
+    <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
+    <div class="drawer-content">
+        <!-- Page content here -->
     </div>
-  </div>
+    <div class="drawer-side is-drawer-close:overflow-visible">
+        <label
+            for="my-drawer-4"
+            aria-label="close sidebar"
+            class="drawer-overlay"
+        ></label>
+        <div
+            class="is-drawer-close:w-14 is-drawer-open:w-64 bg-base-200 flex flex-col items-start min-h-full"
+        >
+            <!-- Sidebar content here -->
+            <ul class="menu w-full grow">
+                <!-- list item -->
+                <li>
+                    <button
+                        class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                        data-tip="Homepage"
+                    >
+                        {ICON_HERE}
+                        <span class="is-drawer-close:hidden">Homepage</span>
+                    </button>
+                </li>
+                <!-- list item -->
+                <li>
+                    <button
+                        class="is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                        data-tip="Settings"
+                    >
+                        {ICON_HERE}
+                        <span class="is-drawer-close:hidden">Settings</span>
+                    </button>
+                </li>
+            </ul>
+            <!-- button to open/close drawer -->
+            <div
+                class="m-2 is-drawer-close:tooltip is-drawer-close:tooltip-right"
+                data-tip="Open"
+            >
+                <label
+                    for="my-drawer-4"
+                    class="btn btn-ghost btn-circle drawer-button is-drawer-open:rotate-y-180"
+                >
+                    {ICON_HERE}
+                </label>
+            </div>
+        </div>
+    </div>
 </div>
 ```
 

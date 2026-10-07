@@ -89,7 +89,7 @@ An empty state says what this place is, how to fill it and offers one clear next
 <!-- Good: orientation plus a next step -->
 <p class="font-medium">No projects yet</p>
 <p class="text-sm text-zinc-500">
-  Projects keep your tasks and files together.
+    Projects keep your tasks and files together.
 </p>
 <button class="mt-4">Create a project</button>
 ```

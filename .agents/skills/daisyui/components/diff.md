@@ -13,9 +13,9 @@ Use the diff component to show a side-by-side comparison of two items.
 
 ```html
 <figure class="diff">
-  <div class="diff-item-1">{item1}</div>
-  <div class="diff-item-2">{item2}</div>
-  <div class="diff-resizer"></div>
+    <div class="diff-item-1">{item1}</div>
+    <div class="diff-item-2">{item2}</div>
+    <div class="diff-resizer"></div>
 </figure>
 ```
 

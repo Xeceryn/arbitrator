@@ -15,8 +15,8 @@ Use a weight or style the active family does not provide and the browser may syn
 
 ```css
 .brand-wordmark {
-  /* Safe only after this isolated treatment is verified */
-  font-synthesis: none;
+    /* Safe only after this isolated treatment is verified */
+    font-synthesis: none;
 }
 ```
 
@@ -45,18 +45,18 @@ When a property exists, use it. `font-weight` keeps working when a non-variable 
 ```css
 /* Good: common axes use the properties */
 .heading {
-  font-weight: 650;
-  font-optical-sizing: auto;
+    font-weight: 650;
+    font-optical-sizing: auto;
 }
 
 /* Good: custom axis with no property of its own */
 .heading-grade {
-  font-variation-settings: "GRAD" 80;
+    font-variation-settings: "GRAD" 80;
 }
 
 /* Bad: weight via raw tag breaks on fallback fonts */
 .heading {
-  font-variation-settings: "wght" 650;
+    font-variation-settings: "wght" 650;
 }
 ```
 
@@ -77,17 +77,17 @@ Same rule as axes. Prefer the `font-variant-*` properties and reserve `font-feat
 ```css
 /* Good: common features use the properties */
 .price {
-  font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Good: slashed zero via the property too */
 .id {
-  font-variant-numeric: slashed-zero;
+    font-variant-numeric: slashed-zero;
 }
 
 /* Good: niche feature with no property of its own */
 .logo {
-  font-feature-settings: "ss01" 1;
+    font-feature-settings: "ss01" 1;
 }
 ```
 

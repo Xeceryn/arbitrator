@@ -66,7 +66,7 @@ toggle the `<details>`, so `assets/scripts/dropdown.ts` closes the enclosing
 
 ```tsx
 <BaseLayout title="arbitmage - Exchanges" heading="Exchanges">
-  <MarketPage {...query} />
+    <MarketPage {...query} />
 </BaseLayout>
 ```
 
@@ -75,11 +75,11 @@ navbar sits outside `#main-content`. Every htmx response repeats it:
 
 ```tsx
 return (
-  <>
-    <PageHeading heading="Exchanges" oob />
-    <title>Exchanges</title>
-    <MarketPage {...query} />
-  </>
+    <>
+        <PageHeading heading="Exchanges" oob />
+        <title>Exchanges</title>
+        <MarketPage {...query} />
+    </>
 );
 ```
 

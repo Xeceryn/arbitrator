@@ -34,17 +34,17 @@ When a type change is asked for, two routes. The system stack gives a native mac
 ```css
 /* System-native macOS/iOS feel */
 html {
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
 }
 
 /* Commercial brand face with safe fallbacks */
 html {
-  font-family: "Helvetica Now", "Helvetica Neue", Arial, sans-serif;
+    font-family: "Helvetica Now", "Helvetica Neue", Arial, sans-serif;
 }
 ```
 

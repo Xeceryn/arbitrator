@@ -14,9 +14,9 @@ description: Installation instructions for daisyUI 5
 
 ```html
 <link
-  href="https://cdn.jsdelivr.net/npm/daisyui@5"
-  rel="stylesheet"
-  type="text/css"
+    href="https://cdn.jsdelivr.net/npm/daisyui@5"
+    rel="stylesheet"
+    type="text/css"
 />
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 ```
@@ -34,9 +34,9 @@ For a browser setup with no installation, load the precompiled daisyUI CSS and t
 
 ```html
 <link
-  href="https://cdn.jsdelivr.net/npm/daisyui@5"
-  rel="stylesheet"
-  type="text/css"
+    href="https://cdn.jsdelivr.net/npm/daisyui@5"
+    rel="stylesheet"
+    type="text/css"
 />
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 ```
@@ -45,9 +45,9 @@ The main CDN file includes the light and dark themes. To load all built-in theme
 
 ```html
 <link
-  href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css"
-  rel="stylesheet"
-  type="text/css"
+    href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css"
+    rel="stylesheet"
+    type="text/css"
 />
 ```
 

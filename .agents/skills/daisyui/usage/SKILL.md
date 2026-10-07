@@ -37,7 +37,7 @@ Use the Tailwind `@utility` directive to change a daisyUI component globally:
 
 ```css
 @utility btn {
-  @apply rounded-full;
+    @apply rounded-full;
 }
 ```
 
@@ -54,7 +54,7 @@ daisyUI includes the `properties`, `rootcolor`, `scrollbar`, `rootscrolllock`, `
 
 ```css
 @plugin "daisyui" {
-  exclude: rootscrollgutter;
+    exclude: rootscrollgutter;
 }
 ```
 

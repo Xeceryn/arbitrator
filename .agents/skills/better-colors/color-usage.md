@@ -9,18 +9,18 @@ Users read a near-miss in hue as a slightly different shade, not as a different 
 ```css
 /* Bad: the accent means both "link" and "decorative heading" */
 a {
-  color: #3b82f6;
+    color: #3b82f6;
 }
 .section-title {
-  color: #4f8ef7;
+    color: #4f8ef7;
 }
 
 /* Good: interactive elements own the accent; headings stay neutral */
 a {
-  color: var(--color-accent-text);
+    color: var(--color-accent-text);
 }
 .section-title {
-  color: var(--color-text-primary);
+    color: var(--color-text-primary);
 }
 ```
 
@@ -35,12 +35,12 @@ Apply a semantic token only for the role it names. `--color-text-secondary` is m
 ```css
 /* Bad: separator token repurposed as a text color because it looked right */
 .caption {
-  color: var(--color-border);
+    color: var(--color-border);
 }
 
 /* Bad: text token repurposed as a background */
 .tag {
-  background: var(--color-text-secondary);
+    background: var(--color-text-secondary);
 }
 ```
 
@@ -115,19 +115,19 @@ Every custom color needs a light and a dark variant, derived per [palette-genera
 
 ```css
 :root {
-  --color-accent-solid: #3b82f6;
+    --color-accent-solid: #3b82f6;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-accent-solid: #60a5fa;
-  }
+    :root {
+        --color-accent-solid: #60a5fa;
+    }
 }
 
 @media (prefers-contrast: more) {
-  :root {
-    --color-accent-solid: #1d4ed8;
-  }
+    :root {
+        --color-accent-solid: #1d4ed8;
+    }
 }
 ```
 

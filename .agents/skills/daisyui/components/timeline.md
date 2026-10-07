@@ -15,11 +15,11 @@ Use a timeline to show a list of events in chronological order.
 
 ```html
 <ul class="timeline {MODIFIER}">
-  <li>
-    <div class="timeline-start">{start}</div>
-    <div class="timeline-middle">{icon}</div>
-    <div class="timeline-end">{end}</div>
-  </li>
+    <li>
+        <div class="timeline-start">{start}</div>
+        <div class="timeline-middle">{icon}</div>
+        <div class="timeline-end">{end}</div>
+    </li>
 </ul>
 ```
 

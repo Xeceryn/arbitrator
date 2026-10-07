@@ -12,9 +12,9 @@ Use breadcrumbs to help users navigate.
 
 ```html
 <div class="breadcrumbs">
-  <ul>
-    <li><a>Link</a></li>
-  </ul>
+    <ul>
+        <li><a>Link</a></li>
+    </ul>
 </div>
 ```
 

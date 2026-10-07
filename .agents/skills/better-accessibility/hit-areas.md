@@ -28,19 +28,19 @@ Where the visible element is smaller, say a 20×20 checkbox, extend the hit area
 ```css
 /* Small checkbox with expanded 44px hit area, on the wrapping label */
 .checkbox-label {
-  position: relative;
-  width: 20px;
-  height: 20px;
+    position: relative;
+    width: 20px;
+    height: 20px;
 }
 
 .checkbox-label::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%; /* physical centering: direction-independent */
-  transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%; /* physical centering: direction-independent */
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
 }
 ```
 
@@ -48,7 +48,7 @@ Where the visible element is smaller, say a 20×20 checkbox, extend the hit area
 
 ```tsx
 <button className="relative size-5 after:absolute after:top-1/2 after:left-1/2 after:size-11 after:-translate-1/2">
-  <CheckIcon />
+    <CheckIcon />
 </button>
 ```
 
@@ -58,10 +58,10 @@ Where the element can afford real box size, skip the pseudo-element and let the 
 
 ```css
 .icon-button {
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-grid;
-  place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-grid;
+    place-items: center;
 }
 ```
 
@@ -77,9 +77,9 @@ Give each one `pointer-events: none` (Tailwind `pointer-events-none`) so events 
 
 ```css
 .card-glow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
 }
 ```
 

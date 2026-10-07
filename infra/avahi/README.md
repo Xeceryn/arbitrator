@@ -63,29 +63,29 @@ though the record is published and avahi answers multicast for it. Two fixes:
 
 - **Per-host `/etc/hosts` entry** (blunt, per name):
 
-  ```bash
-  printf '127.0.0.1 arbitrator.%s.local rabbitmq.%s.local\n' "$(hostname)" "$(hostname)" \
-    | sudo tee -a /etc/hosts
-  ```
+    ```bash
+    printf '127.0.0.1 arbitrator.%s.local rabbitmq.%s.local\n' "$(hostname)" "$(hostname)" \
+      | sudo tee -a /etc/hosts
+    ```
 
 - **Allow the domain via nss-mdns** (no per-name entries):
 
-  1. Use the full `mdns` module (not `mdns_minimal`) in `/etc/nsswitch.conf`:
+    1. Use the full `mdns` module (not `mdns_minimal`) in `/etc/nsswitch.conf`:
 
-     ```
-     hosts: mymachines mdns [NOTFOUND=return] resolve files myhostname dns
-     ```
+        ```
+        hosts: mymachines mdns [NOTFOUND=return] resolve files myhostname dns
+        ```
 
-  2. Create `/etc/mdns.allow` with your base domain (one per line, leading dot
-     optional, `*` allows everything):
+    2. Create `/etc/mdns.allow` with your base domain (one per line, leading dot
+       optional, `*` allows everything):
 
-     ```
-     <computer-hostname>.local
-     ```
+        ```
+        <computer-hostname>.local
+        ```
 
-  The allow file is read only by the non-minimal `mdns` module — that is why
-  step 1 is required and `mdns` alone changes nothing. Lookups read it fresh,
-  so no restart is needed.
+    The allow file is read only by the non-minimal `mdns` module — that is why
+    step 1 is required and `mdns` alone changes nothing. Lookups read it fresh,
+    so no restart is needed.
 
 The server host itself needs one of these too, because nginx's apex redirects
 to `arbitrator.<host>.local` — if that name cannot resolve, the redirect dead-ends.

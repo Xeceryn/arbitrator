@@ -13,9 +13,9 @@ Use an avatar to show a thumbnail image.
 
 ```html
 <div class="avatar {MODIFIER}">
-  <div>
-    <img src="{image-url}" />
-  </div>
+    <div>
+        <img src="{image-url}" />
+    </div>
 </div>
 ```
 

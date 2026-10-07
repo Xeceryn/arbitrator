@@ -17,11 +17,11 @@ A small set of sizes used across a product, deviated from as little as possible.
 
 ```css
 :root {
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.5rem;
-  --text-2xl: 2rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 2rem;
 }
 ```
 
@@ -47,13 +47,13 @@ Assign each heading level to a descending step of the scale, so hierarchy comes 
 
 ```css
 h1 {
-  font-size: var(--text-2xl);
+    font-size: var(--text-2xl);
 }
 h2 {
-  font-size: var(--text-xl);
+    font-size: var(--text-xl);
 }
 h3 {
-  font-size: var(--text-lg);
+    font-size: var(--text-lg);
 }
 ```
 
@@ -71,12 +71,12 @@ Heading semantics and outline quality belong to `better-accessibility`. Pick the
 ```css
 /* Good */
 .display-heading {
-  letter-spacing: -0.02em;
+    letter-spacing: -0.02em;
 }
 
 .uppercase-label {
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 ```
 
@@ -92,12 +92,12 @@ Tailwind's `leading-snug`, `leading-normal` and `leading-relaxed` are sensible d
 ```css
 /* Bad: card description at heading leading */
 .card-description {
-  line-height: 1.1;
+    line-height: 1.1;
 }
 
 /* Good: it wraps to 3 lines, so it reads as body text */
 .card-description {
-  line-height: 1.4;
+    line-height: 1.4;
 }
 ```
 
@@ -114,17 +114,17 @@ Fonts reserve space above and below the letters, which is why text sits slightly
 ```css
 /* trim top and bottom */
 .badge {
-  text-box: trim-both cap alphabetic;
+    text-box: trim-both cap alphabetic;
 }
 
 /* trim only the top */
 .heading {
-  text-box: trim-start cap;
+    text-box: trim-start cap;
 }
 
 /* trim only the bottom */
 .label {
-  text-box: trim-end alphabetic;
+    text-box: trim-end alphabetic;
 }
 ```
 

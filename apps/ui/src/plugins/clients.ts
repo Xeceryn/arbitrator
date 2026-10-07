@@ -8,11 +8,11 @@ import { senderClient } from "../sender.client";
  * context. Registered globally so controllers never import the clients.
  */
 export const clientsPlugin = new Elysia({ name: "clients" }).decorate({
-  lister: listerClient,
-  sender: senderClient,
+    lister: listerClient,
+    sender: senderClient,
 });
 
 export type AppClients = {
-  lister: typeof listerClient;
-  sender: typeof senderClient;
+    lister: typeof listerClient;
+    sender: typeof senderClient;
 };

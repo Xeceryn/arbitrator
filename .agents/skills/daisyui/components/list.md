@@ -13,7 +13,7 @@ Use a list to show information in rows in a vertical layout.
 
 ```html
 <ul class="list">
-  <li class="list-row">{CONTENT}</li>
+    <li class="list-row">{CONTENT}</li>
 </ul>
 ```
 
