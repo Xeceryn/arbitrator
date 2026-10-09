@@ -56,4 +56,17 @@ export const opportunity = pg.pgTable("opportunity", {
       )
     `,
     ),
-});
+}, (table) => [
+    // The receiver's hot path updates one leg at a time by
+    // `cmcId + buyExchangeId` / `cmcId + sellExchangeId`, once per snapshot.
+    // Without these both updates sequentially scan the whole table. The FK
+    // column leads so `ON DELETE CASCADE` from `exchange` can use them too.
+    pg.index("opportunity_buyExchangeId_cmcId_idx").on(
+        table.buyExchangeId,
+        table.cmcId,
+    ),
+    pg.index("opportunity_sellExchangeId_cmcId_idx").on(
+        table.sellExchangeId,
+        table.cmcId,
+    ),
+]);

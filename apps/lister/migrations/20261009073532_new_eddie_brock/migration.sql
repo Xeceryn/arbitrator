@@ -1,0 +1,2 @@
+CREATE INDEX "opportunity_buyExchangeId_cmcId_idx" ON "opportunity" ("buyExchangeId","cmcId");--> statement-breakpoint
+CREATE INDEX "opportunity_sellExchangeId_cmcId_idx" ON "opportunity" ("sellExchangeId","cmcId");
