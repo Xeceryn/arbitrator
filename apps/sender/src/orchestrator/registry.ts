@@ -44,6 +44,17 @@ export const workerAdapters: Record<string, WorkerAdapter> = {
         maxSubscriptionsPerConnection: 50,
         supportsDynamicSubscribe: true,
     },
+    mexc: {
+        slug: "mexc",
+        modulePath: "src/workers/orderbooks/mexc.ts",
+        workerFile: new URL(
+            "../workers/orderbooks/mexc.ts",
+            import.meta.url,
+        ),
+        baseCurrency: "usdt",
+        maxSubscriptionsPerConnection: 20,
+        supportsDynamicSubscribe: true,
+    },
 };
 
 export function getWorkerAdapter(slug: string): WorkerAdapter | undefined {
