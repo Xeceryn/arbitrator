@@ -30,6 +30,10 @@ const socketClient = new WebsocketClient(
 
 /** binance stream topic (also `data.streamName`) -> cmcId. */
 const ChannelStore = new Map<string, number>();
+/** topic -> last time a snapshot was published, for per-coin throttling. */
+const LastSentAt = new Map<string, number>();
+/** At most one snapshot per coin is forwarded to RabbitMQ per interval. */
+const SEND_INTERVAL_MS = 1000;
 
 const toLevel = (row: [string | number, string | number]): [number, number] => [
     Number(row[0]),
@@ -42,7 +46,9 @@ const topicForPair = (pair: string) => `${pair.toLowerCase()}@depth20@1000ms`;
 function subscribe(symbols: SymbolSubscription[]): void {
     for (const item of symbols) {
         const pair = pairForSymbol(item.symbol);
-        ChannelStore.set(topicForPair(pair), item.cmcId);
+        const topic = topicForPair(pair);
+        ChannelStore.set(topic, item.cmcId);
+        LastSentAt.set(topic, Date.now());
         void socketClient.subscribePartialBookDepths(pair, 20, 1000, "spot");
     }
     if (symbols.length > 0) {
@@ -54,7 +60,10 @@ function unsubscribe(symbols: SymbolSubscription[]): void {
     const topics: string[] = [];
     for (const item of symbols) {
         const topic = topicForPair(pairForSymbol(item.symbol));
-        if (ChannelStore.delete(topic)) topics.push(topic);
+        if (ChannelStore.delete(topic)) {
+            LastSentAt.delete(topic);
+            topics.push(topic);
+        }
     }
     if (topics.length > 0) {
         void socketClient.unsubscribe(topics, "main");
@@ -69,8 +78,18 @@ socketClient.on("open", () => {
 
 socketClient.on("message", (event) => {
     const data = event as WsMessagePartialBookDepthEventRaw;
-    const cmcId = ChannelStore.get(data.streamName);
+    const topic = data.streamName;
+    const cmcId = ChannelStore.get(topic);
     if (cmcId === undefined) return;
+
+    // Throttle the broker per coin; the receiver only needs the latest
+    // snapshot each second regardless of how fast binance pushes.
+    const now = Date.now();
+    const lastSentAt = LastSentAt.get(topic);
+    if (lastSentAt !== undefined && now - lastSentAt < SEND_INTERVAL_MS) {
+        return;
+    }
+    LastSentAt.set(topic, now);
 
     publisher.publish({
         cmcId,

@@ -47,6 +47,10 @@ type IndodaxMessageRaw = {
 
 /** indodax channel (e.g. `market:order-book-btcidr`) -> cmcId. */
 const ChannelStore = new Map<string, number>();
+/** channel -> last time a snapshot was published, for per-coin throttling. */
+const LastSentAt = new Map<string, number>();
+/** At most one snapshot per coin is forwarded to RabbitMQ per interval. */
+const SEND_INTERVAL_MS = 1000;
 /** Channels subscribed on the current connection; reset on every (re)connect. */
 const SentChannels = new Set<string>();
 /** Subscribe request id -> channel, awaiting the server's ack. */
@@ -117,6 +121,7 @@ function subscribe(symbols: SymbolSubscription[]): void {
     for (const item of symbols) {
         const channel = channelForSymbol(item.symbol);
         ChannelStore.set(channel, item.cmcId);
+        LastSentAt.set(channel, Date.now());
         subscribeChannel(channel);
     }
 }
@@ -125,6 +130,7 @@ function unsubscribe(symbols: SymbolSubscription[]): void {
     for (const item of symbols) {
         const channel = channelForSymbol(item.symbol);
         if (!ChannelStore.delete(channel)) continue;
+        LastSentAt.delete(channel);
         unsubscribeChannel(channel);
     }
     postUnsubscribed(symbols.map((item) => item.cmcId));
@@ -195,6 +201,19 @@ function connect(): void {
 
                 const data = result?.data?.data;
                 if (!data?.ask || !data?.bid) continue;
+
+                // Throttle the broker per coin; the receiver only needs the
+                // latest snapshot each second regardless of how fast indodax
+                // pushes.
+                const now = Date.now();
+                const lastSentAt = LastSentAt.get(channel);
+                if (
+                    lastSentAt !== undefined &&
+                    now - lastSentAt < SEND_INTERVAL_MS
+                ) {
+                    continue;
+                }
+                LastSentAt.set(channel, now);
 
                 publisher.publish({
                     cmcId,
