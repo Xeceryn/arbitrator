@@ -12,7 +12,7 @@ import { signalColorClass } from "./signal";
 const CopyBadge = ({ value }: { value: string }) => (
     <span
         class="signal-bg rounded-box cursor-pointer select-none px-4 py-2 text-lg font-bold transition-opacity hover:opacity-90 active:opacity-70"
-        data-copy={value}
+        data-clipboard-text={value}
         role="button"
         tabindex="0"
         title={`Copy ${value}`}
@@ -80,7 +80,7 @@ export const SignalCard = ({ signal }: Props) => {
                     <div class="flex min-w-0 items-center gap-1.5">
                         <span
                             class="cursor-pointer truncate text-sm font-bold transition-opacity hover:opacity-90 active:opacity-70"
-                            data-copy={coin.symbol.toUpperCase()}
+                            data-clipboard-text={coin.symbol.toUpperCase()}
                             role="button"
                             tabindex="0"
                             title={`Copy ${coin.symbol.toUpperCase()}`}
@@ -90,7 +90,7 @@ export const SignalCard = ({ signal }: Props) => {
                         </span>
                         <span
                             class="badge badge-sm cursor-pointer border-slate-300 bg-secondary-content font-mono font-bold text-gray-900 transition-opacity hover:opacity-90 active:opacity-70"
-                            data-copy={String(cmcId)}
+                            data-clipboard-text={String(cmcId)}
                             role="button"
                             tabindex="0"
                             title="Copy CMC ID"

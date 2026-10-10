@@ -23,6 +23,7 @@
         "@kitajs/html": "^4.2.13",
         "@kitajs/ts-html-plugin": "^4.1.4",
         "@orpc/client": "catalog:core",
+        "clipboard": "^2.0.11",
         "elysia": "catalog:core",
         "htmx.org": "4.0.0",
         "hyperscript.org": "^0.9.93",

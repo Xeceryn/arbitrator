@@ -1,10 +1,11 @@
+import ClipboardJS from "clipboard";
+
 /**
- * Click-to-copy for any element carrying `data-copy`.
+ * Click-to-copy backed by clipboard.js.
  *
- * Uses event delegation so it keeps working after htmx morphs the signal board.
- * The copied value defaults to the element's `data-copy` attribute and falls
- * back to its text content. Keyboard activation (Enter / Space) matches the
- * button role used by the copyable badges.
+ * `ClipboardJS` is constructed with a selector, so it delegates from
+ * `document.body` and keeps working after htmx morphs the signal board.
+ * Copyable elements declare their value with `data-clipboard-text`.
  */
 
 type ToastLevel = "info" | "success" | "warning" | "error";
@@ -15,57 +16,36 @@ function toast(level: ToastLevel, message: string) {
     );
 }
 
-async function writeClipboard(value: string): Promise<boolean> {
-    try {
-        await navigator.clipboard.writeText(value);
-        return true;
-    } catch {
-        // Insecure context or denied permission: fall back to a temp textarea.
-        try {
-            const textarea = document.createElement("textarea");
-            textarea.value = value;
-            textarea.setAttribute("readonly", "");
-            textarea.style.position = "fixed";
-            textarea.style.opacity = "0";
-            document.body.appendChild(textarea);
-            textarea.select();
-            const ok = document.execCommand("copy");
-            textarea.remove();
-            return ok;
-        } catch {
-            return false;
-        }
-    }
-}
+function init() {
+    // Constructed with a selector, clipboard.js delegates from `document.body`,
+    // so it must wait until the body exists.
+    const clipboard = new ClipboardJS("[data-clipboard-text]");
 
-async function copyElement(element: HTMLElement): Promise<void> {
-    const value = (element.dataset.copy || element.textContent || "").trim();
-    if (!value) return;
+    clipboard.on("success", (event) => {
+        event.clearSelection();
+        toast("success", `Copied ${event.text}`);
+    });
 
-    if (await writeClipboard(value)) {
-        toast("success", `Copied ${value}`);
-    } else {
+    clipboard.on("error", () => {
         toast("error", "Copy failed");
-    }
+    });
 }
 
-document.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-
-    const copyable = target.closest<HTMLElement>("[data-copy]");
-    if (!copyable) return;
-
-    void copyElement(copyable);
-});
-
+// clipboard.js only listens for clicks, so mirror activation for the
+// `role="button"` badges when they are triggered from the keyboard.
 document.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
 
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
-    if (!target.matches("[data-copy]")) return;
+    if (!target.matches("[data-clipboard-text]")) return;
 
     event.preventDefault();
-    void copyElement(target);
+    target.click();
 });
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+} else {
+    init();
+}
