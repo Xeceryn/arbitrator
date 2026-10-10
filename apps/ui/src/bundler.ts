@@ -1,9 +1,9 @@
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 
 import { $ } from "bun";
 
 async function build_css() {
-    await $`tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css --minify`;
+    await $`bunx -y tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css --minify`;
 }
 
 async function bundle_external_scripts() {

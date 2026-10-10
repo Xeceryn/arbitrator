@@ -8,35 +8,31 @@ import {
 import { ArrowRightIcon } from "./icons";
 import { signalColorClass } from "./signal";
 
+/** A badge that copies its value when clicked (handled by `copy-to-clipboard.js`). */
+const CopyBadge = ({ value }: { value: string }) => (
+    <span
+        class="signal-bg rounded-box cursor-pointer select-none px-4 py-2 text-lg font-bold transition-opacity hover:opacity-90 active:opacity-70"
+        data-copy={value}
+        role="button"
+        tabindex="0"
+        title={`Copy ${value}`}
+    >
+        {value.toUpperCase()}
+    </span>
+);
+
 const ExchangeSymbolBadge = (x: {
     buyExchangeSymbol: string;
     sellExchangeSymbol: string;
 }) => {
     if (x.buyExchangeSymbol === x.sellExchangeSymbol) {
-        return (
-            <span
-                _="on click call navigator.clipboard.writeText(my innerText)"
-                class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
-            >
-                {x.buyExchangeSymbol}
-            </span>
-        );
+        return <CopyBadge value={x.buyExchangeSymbol} />;
     }
 
     return (
         <>
-            <span
-                _="on click call navigator.clipboard.writeText(my innerText)"
-                class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
-            >
-                {x.buyExchangeSymbol}
-            </span>
-            <span
-                _="on click call navigator.clipboard.writeText(my innerText)"
-                class="signal-bg rounded-box px-4 py-2 text-lg font-bold"
-            >
-                {x.sellExchangeSymbol}
-            </span>
+            <CopyBadge value={x.buyExchangeSymbol} />
+            <CopyBadge value={x.sellExchangeSymbol} />
         </>
     );
 };
@@ -82,16 +78,23 @@ export const SignalCard = ({ signal }: Props) => {
             <div class="card-body gap-2 p-2.5 font-bold">
                 <header class="flex items-center justify-between gap-1.5">
                     <div class="flex min-w-0 items-center gap-1.5">
-                        <img
-                            src={coin.logo}
-                            alt=""
-                            loading="lazy"
-                            class="size-5 rounded-full bg-secondary-content object-contain"
-                        />
-                        <span class="truncate text-sm font-bold" safe>
-                            {coin.symbol}
+                        <span
+                            class="cursor-pointer truncate text-sm font-bold transition-opacity hover:opacity-90 active:opacity-70"
+                            data-copy={coin.symbol.toUpperCase()}
+                            role="button"
+                            tabindex="0"
+                            title={`Copy ${coin.symbol.toUpperCase()}`}
+                            safe
+                        >
+                            {coin.symbol.toUpperCase()}
                         </span>
-                        <span class="badge badge-sm border-slate-300 bg-secondary-content font-mono font-bold text-gray-900">
+                        <span
+                            class="badge badge-sm cursor-pointer border-slate-300 bg-secondary-content font-mono font-bold text-gray-900 transition-opacity hover:opacity-90 active:opacity-70"
+                            data-copy={String(cmcId)}
+                            role="button"
+                            tabindex="0"
+                            title="Copy CMC ID"
+                        >
                             ID {cmcId}
                         </span>
                     </div>

@@ -88,6 +88,13 @@ export const BaseLayout = async ({
 
                     <link
                         rel="preload"
+                        href="/public/dist/copy-to-clipboard.js"
+                        as="script"
+                    />
+                    <script src="/public/dist/copy-to-clipboard.js"></script>
+
+                    <link
+                        rel="preload"
                         href="/public/dist/drawer-state.js"
                         as="script"
                     />

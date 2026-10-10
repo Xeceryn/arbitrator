@@ -41,11 +41,6 @@ export const SignalTableRow = ({ signal }: Props) => {
         >
             <td>
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="avatar">
-                        <div class="mask mask-circle size-7 bg-base-200 sm:size-8">
-                            <img src={coin.logo} alt="" loading="lazy" />
-                        </div>
-                    </div>
                     <div class="min-w-0">
                         <div class="truncate font-medium" safe>
                             {coin.symbol}
