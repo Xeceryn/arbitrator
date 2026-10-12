@@ -60,24 +60,19 @@ export function sumFailures(failures: Record<string, number> = {}): number {
 }
 
 /**
- * The per-row health cell. Rendered once in the table and again as an
- * out-of-band swap by the status poll, hence the stable `id`.
+ * The per-row health cell. The socket replaces the whole row, hence the
+ * stable `id`.
  */
 export const WorkerHealthCell = ({
     slug,
     states,
     workers,
-    oob,
 }: {
     slug: string;
     states: WorkerStateCounts;
     workers: WorkerDetail[];
-    oob?: boolean;
 }) => (
-    <td
-        id={`worker-health-${slug}`}
-        {...(oob ? { "hx-swap-oob": "true" } : {})}
-    >
+    <td id={`worker-health-${slug}`}>
         <WorkerStateBadges states={states} />
         {workers.length > 0 ? (
             <div class="mt-1 flex flex-wrap gap-1 font-mono text-[0.625rem] opacity-70">

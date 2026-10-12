@@ -132,12 +132,12 @@ ip route get 1.1.1.1 | awk '{print $7; exit}'   # shows your LAN IP
 
 All overridable via environment (see `.envrc`):
 
-| Variable           | Default                     | Purpose                              |
-| ------------------ | --------------------------- | ------------------------------------ |
+| Variable           | Default                     | Purpose                                     |
+| ------------------ | --------------------------- | ------------------------------------------- |
 | `LOCAL_DOMAIN`     | `$(hostname).local`         | The single vhost (`server_name`) + cert SAN |
-| `UI_UPSTREAM`      | `host.docker.internal:3000` | Where the UI dev server listens      |
-| `NGINX_HTTP_PORT`  | `80`                        | Published HTTP port (redirects)      |
-| `NGINX_HTTPS_PORT` | `443`                       | Published HTTPS port                 |
+| `UI_UPSTREAM`      | `host.docker.internal:3000` | Where the UI dev server listens             |
+| `NGINX_HTTP_PORT`  | `80`                        | Published HTTP port (redirects)             |
+| `NGINX_HTTPS_PORT` | `443`                       | Published HTTPS port                        |
 
 ## Why the UI stays on 3000
 

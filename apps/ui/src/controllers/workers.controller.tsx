@@ -1,113 +1,114 @@
+import type { OrchestratorStatus } from "@arbitrator/contracts";
+import type { ExchangeSelect } from "@arbitrator/lister/types";
 import { htmx } from "@gtramontina.com/elysia-htmx";
-import { Elysia, redirect } from "elysia";
+import { Elysia, redirect, status } from "elysia";
 import z from "zod";
 
 import { BaseLayout } from "../helpers/BaseLayout";
 import { type AppClients, clientsPlugin } from "../plugins/clients";
+import { getLastSenderStatus, subscribeToSenderStatus } from "../sender-stream";
 import { PageHeading } from "../views/components/PageHeading";
 import {
-    type SenderStatus,
     type WorkersData,
     WorkersPage,
     WorkersResults,
-    WorkersRowUpdate,
     WorkersStatusUpdate,
 } from "../views/pages/WorkersPage";
 
 const slugParam = z.object({ slug: z.string().min(1) });
 
-/** Eden surfaces the error body; sender returns `{ message }` for 501s. */
-function describeError(error: unknown): string {
-    if (!error) return "request failed";
-    if (typeof error === "object" && error !== null) {
-        const record = error as Record<string, unknown>;
-        const value = record.value;
-        if (value && typeof value === "object" && "message" in value) {
-            return String((value as { message: unknown }).message);
+type SenderCallError = { status: number; value: unknown } | null | undefined;
+
+/** Sender failures arrive as `{ message }` (501) or a validation body. */
+function senderErrorMessage(error: SenderCallError, fallback: string): string {
+    if (!error) return fallback;
+    const value = error.value;
+    if (typeof value === "string" && value.length > 0) return value;
+    if (value && typeof value === "object") {
+        const record = value as { message?: unknown; summary?: unknown };
+        if (typeof record.message === "string" && record.message.length > 0) {
+            return record.message;
         }
-        if ("message" in record) return String(record.message);
+        if (typeof record.summary === "string" && record.summary.length > 0) {
+            return record.summary;
+        }
     }
-    return String(error);
-}
-
-/** Tolerate a sender that is older/newer than this UI (missing fields). */
-function numberRecord(value: unknown): Record<string, number> {
-    return value && typeof value === "object"
-        ? (value as Record<string, number>)
-        : {};
-}
-
-/** Tolerate a sender that is older/newer than this UI (missing fields). */
-function normalizeStatus(input: unknown): SenderStatus {
-    const record = (input ?? {}) as Partial<SenderStatus>;
-    return {
-        started: Array.isArray(record.started) ? record.started : [],
-        workers: Array.isArray(record.workers) ? record.workers : [],
-        failures: numberRecord(record.failures),
-        desired: numberRecord(record.desired),
-        capacity: numberRecord(record.capacity),
-        supported: Array.isArray(record.supported) ? record.supported : [],
-    };
+    return fallback;
 }
 
 async function loadWorkersData({
     lister,
     sender,
 }: AppClients): Promise<WorkersData> {
-    try {
-        const { data, error } = await sender.exchanges.get();
-        if (error || !data) {
-            return { ok: false, message: describeError(error) };
-        }
-
-        const [listError, list] = await lister.exchange.list({ limit: -1 });
-        if (listError || !list) {
-            return { ok: false, message: "Unable to load exchanges." };
-        }
-
+    const { data, error } = await sender.exchanges.get();
+    if (error || !data) {
         return {
-            ok: true,
-            status: normalizeStatus(data),
-            exchanges: list.data,
+            ok: false,
+            message: senderErrorMessage(error, "Unable to reach the sender."),
         };
-    } catch (error) {
-        return { ok: false, message: describeError(error) };
     }
+
+    const [listError, list] = await lister.exchange.list({ limit: -1 });
+    if (listError || !list) {
+        return { ok: false, message: "Unable to load exchanges." };
+    }
+
+    cacheExchanges(list.data);
+    return { ok: true, status: data, exchanges: list.data };
+}
+
+type BrowserSocket = {
+    readyState: number;
+    send(data: unknown): unknown;
+};
+
+/**
+ * Exchange list from the last snapshot (`GET /workers`, `/workers/list`).
+ * The sender only knows slugs, so the socket needs these names to render row
+ * action buttons. Refreshed on every snapshot; never re-requested per event.
+ */
+let cachedExchanges: ExchangeSelect[] = [];
+
+function cacheExchanges(exchanges: ExchangeSelect[]): void {
+    cachedExchanges = exchanges;
 }
 
 /**
- * Sender-only status for the poll. Deliberately skips the lister, so the 3s
- * refresh never re-requests the exchange list.
+ * Every connected workers board. One shared sender stream feeds all of them:
+ * the sender pushes its full status on every mutation and this fans the same
+ * rendered `WorkersStatusUpdate` fragment out to each socket. The exchange
+ * list is only fetched once per page load; nothing polls after that.
  */
-async function loadSenderStatus({
-    sender,
-}: Pick<AppClients, "sender">): Promise<SenderStatus | undefined> {
-    try {
-        const { data, error } = await sender.exchanges.get();
-        if (error || !data) return undefined;
-        return normalizeStatus(data);
-    } catch {
-        return undefined;
+const browserSockets = new Set<BrowserSocket>();
+let unsubscribeSender: (() => void) | null = null;
+
+function broadcast(status: OrchestratorStatus): void {
+    if (browserSockets.size === 0) return;
+    const html = (
+        <WorkersStatusUpdate status={status} exchanges={cachedExchanges} />
+    );
+    let sent = 0;
+    for (const ws of browserSockets) {
+        if (ws.readyState === 1) {
+            ws.send(html);
+            sent += 1;
+        }
     }
+    console.log(
+        `[workers-ws] broadcast started=${status.started.length} workers=${status.workers.length} to ${sent}/${browserSockets.size} sockets`,
+    );
 }
 
-/**
- * After start/stop, swap only the affected row (the primary response) and let
- * the summary/hint update out-of-band. Falls back to the full results when the
- * data can't be loaded.
- */
-async function renderRowUpdate(clients: AppClients, slug: string) {
-    const data = await loadWorkersData(clients);
-    if (!data.ok) {
-        return <WorkersResults data={data} />;
-    }
+function ensureSenderSubscription(): void {
+    if (unsubscribeSender) return;
+    unsubscribeSender = subscribeToSenderStatus(broadcast);
+}
 
-    const exchange = data.exchanges.find((item) => item.slug === slug);
-    if (!exchange) {
-        return <WorkersResults data={data} />;
+function releaseSenderSubscription(): void {
+    if (browserSockets.size === 0 && unsubscribeSender) {
+        unsubscribeSender();
+        unsubscribeSender = null;
     }
-
-    return <WorkersRowUpdate status={data.status} exchange={exchange} />;
 }
 
 export const WorkersController = new Elysia()
@@ -142,17 +143,18 @@ export const WorkersController = new Elysia()
         );
     })
 
-    .get("/workers/status", async ({ sender }) => {
-        const status = await loadSenderStatus({ sender });
-        if (!status) return "";
-        return <WorkersStatusUpdate status={status} />;
-    })
-
-    .post("/workers/reconcile", async ({ hx, lister, sender }) => {
+    /**
+     * Fire-and-forget: forward to the sender, toast the outcome, swap nothing.
+     * Every visual change (this tab and all others) arrives via the socket.
+     */
+    .post("/workers/reconcile", async ({ hx, sender }) => {
         const { error } = await sender.reconcile.post();
         if (error) {
             hx.triggerEvent({
-                "make-toast": { level: "error", message: describeError(error) },
+                "make-toast": {
+                    level: "error",
+                    message: senderErrorMessage(error, "Reconcile failed."),
+                },
             });
         } else {
             hx.triggerEvent({
@@ -162,14 +164,13 @@ export const WorkersController = new Elysia()
                 },
             });
         }
-        return (
-            <WorkersResults data={await loadWorkersData({ lister, sender })} />
-        );
+        hx.reswap("none");
+        return status("No Content");
     })
 
     .post(
         "/workers/:slug/start",
-        async ({ params, hx, lister, sender }) => {
+        async ({ params, hx, sender }) => {
             const { error } = await sender
                 .exchanges({ slug: params.slug })
                 .start.post();
@@ -178,7 +179,10 @@ export const WorkersController = new Elysia()
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: describeError(error),
+                        message: senderErrorMessage(
+                            error,
+                            `Failed to start ${params.slug}.`,
+                        ),
                     },
                 });
             } else {
@@ -190,14 +194,15 @@ export const WorkersController = new Elysia()
                 });
             }
 
-            return renderRowUpdate({ lister, sender }, params.slug);
+            hx.reswap("none");
+            return status("No Content");
         },
         { params: slugParam },
     )
 
     .post(
         "/workers/:slug/stop",
-        async ({ params, hx, lister, sender }) => {
+        async ({ params, hx, sender }) => {
             const { error } = await sender
                 .exchanges({ slug: params.slug })
                 .stop.post();
@@ -206,7 +211,10 @@ export const WorkersController = new Elysia()
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: describeError(error),
+                        message: senderErrorMessage(
+                            error,
+                            `Failed to stop ${params.slug}.`,
+                        ),
                     },
                 });
             } else {
@@ -218,7 +226,42 @@ export const WorkersController = new Elysia()
                 });
             }
 
-            return renderRowUpdate({ lister, sender }, params.slug);
+            hx.reswap("none");
+            return status("No Content");
         },
         { params: slugParam },
-    );
+    )
+
+    /**
+     * The only workers WebSocket in the UI. One shared sender stream
+     * broadcasts a single rendered status fragment to every connected board;
+     * the subscription runs only while at least one socket is open.
+     */
+    .ws("/workers/ws", {
+        open(ws) {
+            const socket = ws as unknown as BrowserSocket;
+            browserSockets.add(socket);
+            ensureSenderSubscription();
+            console.log(
+                `[workers-ws] browser connected (${browserSockets.size} sockets)`,
+            );
+            // Catch-up: a browser joining an idle page gets the last known
+            // status immediately instead of waiting for the next sender event.
+            const last = getLastSenderStatus();
+            if (last && socket.readyState === 1) {
+                socket.send(
+                    <WorkersStatusUpdate
+                        status={last}
+                        exchanges={cachedExchanges}
+                    />,
+                );
+            }
+        },
+        close(ws) {
+            browserSockets.delete(ws as unknown as BrowserSocket);
+            console.log(
+                `[workers-ws] browser disconnected (${browserSockets.size} sockets)`,
+            );
+            releaseSenderSubscription();
+        },
+    });

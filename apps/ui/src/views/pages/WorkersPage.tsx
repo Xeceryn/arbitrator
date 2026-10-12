@@ -1,34 +1,12 @@
+import type { OrchestratorStatus } from "@arbitrator/contracts";
 import type { ExchangeSelect } from "@arbitrator/lister/types";
 
 import { ExchangeWorkerRow } from "../components/ExchangeWorkerRow";
 import { RefreshIcon } from "../components/icons";
-import {
-    countWorkerStates,
-    sumFailures,
-    WorkerHealthCell,
-} from "../components/worker-state";
+import { countWorkerStates, sumFailures } from "../components/worker-state";
 
-type SymbolSubscription = { cmcId: number; symbol: string };
-
-type WorkerSnapshot = {
-    id: string;
-    exchangeSlug: string;
-    symbols: SymbolSubscription[];
-    /** Last state the worker reported; absent on an older sender. */
-    state?: string;
-};
-
-export type SenderStatus = {
-    started: string[];
-    workers: WorkerSnapshot[];
-    /** Recent unexpected worker deaths per exchange slug. */
-    failures?: Record<string, number>;
-    /** Desired subscription count per exchange (last reconcile). */
-    desired?: Record<string, number>;
-    /** Max subscriptions one worker may hold, per exchange. */
-    capacity?: Record<string, number>;
-    supported: string[];
-};
+/** Shared sender snapshot; the single source of truth lives in contracts. */
+export type SenderStatus = OrchestratorStatus;
 
 export type WorkersData =
     | { ok: true; status: SenderStatus; exchanges: ExchangeSelect[] }
@@ -100,23 +78,33 @@ export const WorkersStats = ({
 
 export const WorkersHint = ({
     status,
+    exchanges,
     oob: enabled,
 }: {
     status: SenderStatus;
+    exchanges: ExchangeSelect[];
     oob?: boolean;
-}) => (
-    <div
-        id="workers-hint"
-        role="status"
-        class={status.started.length === 1 ? "alert" : "hidden"}
-        {...oob(enabled)}
-    >
-        <span>
-            One exchange is started. Start a second one to stream the coins
-            transferable between them.
-        </span>
-    </div>
-);
+}) => {
+    if (status.started.length !== 1) {
+        return <div id="workers-hint" class="hidden" {...oob(enabled)} />;
+    }
+    const slug = status.started[0]!;
+    const name =
+        exchanges.find((exchange) => exchange.slug === slug)?.name ?? slug;
+    return (
+        <div
+            id="workers-hint"
+            role="status"
+            class="alert alert-warning"
+            {...oob(enabled)}
+        >
+            <span safe>
+                {name} is started and waiting — start a second exchange to
+                stream the coins transferable between them.
+            </span>
+        </div>
+    );
+};
 
 /** Derive the props for one exchange's row from the current status. */
 export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
@@ -125,17 +113,20 @@ export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
     );
     const states = countWorkerStates(own);
     states.exited =
-        (states.exited ?? 0) + (status.failures?.[exchange.slug] ?? 0);
+        (states.exited ?? 0) + (status.failures[exchange.slug] ?? 0);
 
-    const desired = status.desired?.[exchange.slug] ?? 0;
-    const capacity = status.capacity?.[exchange.slug] ?? 0;
+    const desired = status.desired[exchange.slug] ?? 0;
+    const capacity = status.capacity[exchange.slug] ?? 0;
     const expectedWorkers =
         capacity > 0 && desired > 0 ? Math.ceil(desired / capacity) : 0;
+    const started = status.started.includes(exchange.slug);
 
     return {
         exchange,
-        started: status.started.includes(exchange.slug),
+        started,
         supported: status.supported.includes(exchange.slug),
+        /** Alone: started but idle until a second exchange joins. */
+        waiting: started && status.started.length < 2,
         workerCount: own.length,
         symbolCount: own.reduce(
             (total, worker) => total + worker.symbols.length,
@@ -150,24 +141,6 @@ export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
         })),
     };
 }
-
-/**
- * The response to a start/stop action: the affected row is the primary swap
- * (`hx-target="closest tr"`), while the summary and hint update out-of-band.
- */
-export const WorkersRowUpdate = ({
-    status,
-    exchange,
-}: {
-    status: SenderStatus;
-    exchange: ExchangeSelect;
-}) => (
-    <>
-        <ExchangeWorkerRow {...workerRowProps(status, exchange)} />
-        <WorkersStats status={status} oob />
-        <WorkersHint status={status} oob />
-    </>
-);
 
 const WorkersTable = ({
     status,
@@ -193,7 +166,7 @@ const WorkersTable = ({
                     </th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="workers-tbody">
                 {exchanges.length > 0 ? (
                     exchanges.map((exchange) => (
                         <ExchangeWorkerRow
@@ -216,8 +189,12 @@ const WorkersTable = ({
 );
 
 /**
- * The swap unit for an explicit refresh (`GET /workers/list`). Start/stop only
- * swaps the affected row, see `WorkersRowUpdate`.
+ * The swap unit for an explicit refresh (`GET /workers/list`). Start/stop and
+ * recompute never swap: their POSTs only toast and every visual change arrives
+ * via the socket. The steady state never polls: `#workers-live` owns a
+ * WebSocket and the server pushes `WorkersStatusUpdate` fragments out-of-band
+ * on every sender event. The error card keeps a slow retry poll so a downed
+ * sender recovers without a manual refresh.
  */
 export const WorkersResults = ({ data }: { data: WorkersData }) => {
     if (!data.ok) {
@@ -225,7 +202,7 @@ export const WorkersResults = ({ data }: { data: WorkersData }) => {
             <div
                 id="workers-results"
                 hx-get="/workers/list"
-                hx-trigger="every 3s"
+                hx-trigger="every 10s"
                 hx-target="#workers-results"
                 hx-swap="outerHTML"
                 class="flex flex-col gap-4"
@@ -245,57 +222,48 @@ export const WorkersResults = ({ data }: { data: WorkersData }) => {
     }
 
     return (
-        <div
-            id="workers-results"
-            hx-get="/workers/status"
-            hx-trigger="every 3s"
-            hx-swap="none"
-            class="flex flex-col gap-4"
-        >
+        <div id="workers-results" class="flex flex-col gap-4">
             <WorkersStats status={data.status} />
-            <WorkersHint status={data.status} />
+            <WorkersHint status={data.status} exchanges={data.exchanges} />
             <WorkersTable status={data.status} exchanges={data.exchanges} />
         </div>
     );
 };
 
 /**
- * Poll payload: only the dynamic parts. It re-fetches the sender's status (not
- * the lister) and swaps the stats, hint and every exchange's health cell
- * out-of-band, so the exchange list is never re-requested on the 3s tick.
+ * WebSocket payload. The sender pushes its full status on every mutation; this
+ * swaps stats, hint and the whole table body out-of-band, so nothing is ever
+ * re-requested after the initial snapshot.
+ *
+ * Why a full `<tbody>` and not per-cell fragments: htmx parses responses
+ * through `<template>`, which drops bare `<td>`/`<tr>` tags (only the first
+ * table-ish element survives, and only in table context). Wrapping the rows in
+ * `<table>` keeps the parser happy; the bare `<table>` shell is left behind in
+ * the fragment and never swapped. When the exchange cache is cold there is no
+ * row data, so the tbody is omitted and only stats/hint update.
  */
-export const WorkersStatusUpdate = ({ status }: { status: SenderStatus }) => {
-    const slugs = [
-        ...new Set([
-            ...status.started,
-            ...status.workers.map((worker) => worker.exchangeSlug),
-        ]),
-    ];
-
+export const WorkersStatusUpdate = ({
+    status,
+    exchanges,
+}: {
+    status: SenderStatus;
+    exchanges: ExchangeSelect[];
+}) => {
     return (
         <>
             <WorkersStats status={status} oob />
-            <WorkersHint status={status} oob />
-            {slugs.map((slug) => {
-                const own = status.workers.filter(
-                    (worker) => worker.exchangeSlug === slug,
-                );
-                const states = countWorkerStates(own);
-                states.exited =
-                    (states.exited ?? 0) + (status.failures?.[slug] ?? 0);
-                return (
-                    <WorkerHealthCell
-                        slug={slug}
-                        states={states}
-                        workers={own.map((worker) => ({
-                            id: worker.id,
-                            state: worker.state,
-                            symbolCount: worker.symbols.length,
-                        }))}
-                        oob
-                    />
-                );
-            })}
+            <WorkersHint status={status} exchanges={exchanges} oob />
+            {exchanges.length > 0 ? (
+                <table>
+                    <tbody id="workers-tbody" hx-swap-oob="true">
+                        {exchanges.map((exchange) => (
+                            <ExchangeWorkerRow
+                                {...workerRowProps(status, exchange)}
+                            />
+                        ))}
+                    </tbody>
+                </table>
+            ) : null}
         </>
     );
 };
@@ -303,55 +271,90 @@ export const WorkersStatusUpdate = ({ status }: { status: SenderStatus }) => {
 /**
  * Static chrome: the header and refresh button stay put while the results swap.
  * `#workers-indicator` is shared by the refresh and every row's action button.
+ * `#workers-live` owns the socket; only dynamic cells are swapped out-of-band,
+ * so row buttons keep focus across pushes. Recompute is fire-and-forget like
+ * start/stop: it toasts and the socket carries the result.
  */
-export const WorkersPage = ({ data }: { data: WorkersData }) => (
-    <div class="flex flex-col gap-6">
-        <section id="workers-list" class="w-full">
-            <div class="card w-full bg-base-100 shadow-xl">
-                <div class="card-body gap-4 p-4 sm:p-8">
-                    <header class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h2 class="text-lg font-semibold">
-                                Orderbook workers
-                            </h2>
-                            <p class="max-w-prose text-sm opacity-60">
-                                Start two or more exchanges to stream the coins
-                                transferable between them.
-                            </p>
+export const WorkersPage = ({ data }: { data: WorkersData }) => {
+    const wsAttributes: Record<string, string> = {
+        "hx-ws:connect": "/workers/ws",
+        "hx-target": "#workers-results",
+        "hx-swap": "none",
+        "hx-trigger": "load",
+        "hx-on:htmx:ws:after:connection":
+            "document.getElementById('workers-live-on')?.classList.remove('hidden');document.getElementById('workers-live-off')?.classList.add('hidden')",
+        "hx-on:htmx:ws:close":
+            "document.getElementById('workers-live-on')?.classList.add('hidden');document.getElementById('workers-live-off')?.classList.remove('hidden')",
+        "hx-on:htmx:ws:after:message:incoming":
+            "document.getElementById('workers-updated')&&(document.getElementById('workers-updated').textContent='Updated '+new Date().toLocaleTimeString())",
+    };
+
+    return (
+        <div class="flex flex-col gap-6">
+            <section id="workers-list" class="w-full">
+                <div class="card w-full bg-base-100 shadow-xl">
+                    <div class="card-body gap-4 p-4 sm:p-8">
+                        <header class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-lg font-semibold">
+                                    Orderbook workers
+                                </h2>
+                                <p class="max-w-prose text-sm opacity-60">
+                                    Start two or more exchanges to stream the
+                                    coins transferable between them.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span
+                                    id="workers-live-off"
+                                    class="badge badge-ghost badge-sm"
+                                >
+                                    Connecting…
+                                </span>
+                                <span
+                                    id="workers-live-on"
+                                    class="badge badge-success badge-sm hidden"
+                                >
+                                    Live
+                                </span>
+                                <span
+                                    id="workers-updated"
+                                    class="hidden text-xs opacity-60 sm:inline"
+                                ></span>
+                                <span
+                                    id="workers-indicator"
+                                    class="htmx-indicator loading loading-spinner loading-sm"
+                                ></span>
+                                <button
+                                    type="button"
+                                    class="btn btn-outline btn-sm"
+                                    hx-get="/workers/list"
+                                    hx-target="#workers-results"
+                                    hx-swap="outerHTML"
+                                    hx-indicator="#workers-indicator"
+                                    aria-label="Refresh worker status"
+                                >
+                                    <RefreshIcon /> Refresh
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-outline btn-sm"
+                                    hx-post="/workers/reconcile"
+                                    hx-swap="none"
+                                    hx-indicator="#workers-indicator"
+                                    title="Re-read metadata from the lister and re-pack workers"
+                                    aria-label="Recompute workers from current metadata"
+                                >
+                                    Recompute
+                                </button>
+                            </div>
+                        </header>
+                        <div id="workers-live" {...wsAttributes}>
+                            <WorkersResults data={data} />
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span
-                                id="workers-indicator"
-                                class="htmx-indicator loading loading-spinner loading-sm"
-                            ></span>
-                            <button
-                                type="button"
-                                class="btn btn-outline btn-sm"
-                                hx-get="/workers/list"
-                                hx-target="#workers-results"
-                                hx-swap="outerHTML"
-                                hx-indicator="#workers-indicator"
-                                aria-label="Refresh worker status"
-                            >
-                                <RefreshIcon /> Refresh
-                            </button>
-                            <button
-                                type="button"
-                                class="btn btn-outline btn-sm"
-                                hx-post="/workers/reconcile"
-                                hx-target="#workers-results"
-                                hx-swap="outerHTML"
-                                hx-indicator="#workers-indicator"
-                                title="Re-read metadata from the lister and re-pack workers"
-                                aria-label="Recompute workers from current metadata"
-                            >
-                                Recompute
-                            </button>
-                        </div>
-                    </header>
-                    <WorkersResults data={data} />
+                    </div>
                 </div>
-            </div>
-        </section>
-    </div>
-);
+            </section>
+        </div>
+    );
+};

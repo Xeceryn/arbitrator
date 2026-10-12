@@ -150,20 +150,20 @@ user CAs for browsing. For a native app you either:
 
 Useful for CI and throwaway clients. Point the runtime at the CA file directly.
 
-| Runtime / tool    | Setting                                                                                                              |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Node.js           | `NODE_EXTRA_CA_CERTS=/abs/path/arbitrator-local-ca.crt node app.js` (read at startup)                                |
-| Bun               | `NODE_EXTRA_CA_CERTS=/abs/path/arbitrator-local-ca.crt bun run app.ts`                                               |
-| Deno              | `DENO_CERT=/abs/path/arbitrator-local-ca.crt deno run …` or `--cert`                                                 |
+| Runtime / tool    | Setting                                                                                                    |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| Node.js           | `NODE_EXTRA_CA_CERTS=/abs/path/arbitrator-local-ca.crt node app.js` (read at startup)                      |
+| Bun               | `NODE_EXTRA_CA_CERTS=/abs/path/arbitrator-local-ca.crt bun run app.ts`                                     |
+| Deno              | `DENO_CERT=/abs/path/arbitrator-local-ca.crt deno run …` or `--cert`                                       |
 | curl              | `curl --cacert /abs/path/arbitrator-local-ca.crt https://<computer-hostname>.local/` (or `CURL_CA_BUNDLE`) |
-| Python (requests) | `REQUESTS_CA_BUNDLE=/abs/path/arbitrator-local-ca.crt python app.py`                                                 |
-| Python (ssl)      | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt python app.py`                                                      |
-| Go                | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt go run .`                                                           |
-| Git               | `git config --global http.sslCAInfo /abs/path/arbitrator-local-ca.crt`                                               |
-| Java              | `keytool -importcert -alias arbitrator-local-ca -cacerts -file arbitrator-local-ca.crt`                              |
-| .NET              | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt` or import into the OS store                                        |
-| Postman           | Settings → Certificates → **CA Certificates** → add the `.crt`                                                       |
-| Docker container  | mount the file and run `update-ca-certificates`, or set `NODE_EXTRA_CA_CERTS`                                        |
+| Python (requests) | `REQUESTS_CA_BUNDLE=/abs/path/arbitrator-local-ca.crt python app.py`                                       |
+| Python (ssl)      | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt python app.py`                                            |
+| Go                | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt go run .`                                                 |
+| Git               | `git config --global http.sslCAInfo /abs/path/arbitrator-local-ca.crt`                                     |
+| Java              | `keytool -importcert -alias arbitrator-local-ca -cacerts -file arbitrator-local-ca.crt`                    |
+| .NET              | `SSL_CERT_FILE=/abs/path/arbitrator-local-ca.crt` or import into the OS store                              |
+| Postman           | Settings → Certificates → **CA Certificates** → add the `.crt`                                             |
+| Docker container  | mount the file and run `update-ca-certificates`, or set `NODE_EXTRA_CA_CERTS`                              |
 
 ## 4. Verify
 
@@ -183,13 +183,13 @@ appears in the SAN.
 
 ## Troubleshooting
 
-| Symptom                                                                              | Cause                                                                                                                 |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| Browser still warns, curl works                                                      | Firefox has its own store — import there too.                                                                         |
-| Only Android native app rejects it                                                   | User CA is not trusted by apps; see `network_security_config.xml`.                                                    |
-| `NET::ERR_CERT_AUTHORITY_INVALID` after re-running the script                        | nginx not reloaded: `docker compose restart nginx`.                                                                   |
-| Name `a.b.<computer-hostname>.local` fails                                           | X.509 wildcards are one level deep; there are no subdomains -- put the extra service on a path instead (see `README.md`).                             |
-| Worked, then broke after `mkcert -uninstall` / new `CAROOT`                          | The CA changed; re-export and re-install on every client.                                                             |
-| Name resolves nowhere (`avahi-resolve` times out)                                    | mDNS is blocked; check `avahi-resolve -n $(hostname).local` and fall back to `/etc/hosts` or the LAN IP.                                         |
-| Resolves on Windows/macOS but not Linux                                              | Rare for 2-label `.local`; confirm `avahi-resolve -n $(hostname).local` on the host and use `/etc/hosts` if it fails. |
-| Client on guest/corporate Wi-Fi can't resolve `<hostname>.local`                     | Multicast mDNS is blocked; use `/etc/hosts` or the LAN IP directly.                                       |
+| Symptom                                                          | Cause                                                                                                                     |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Browser still warns, curl works                                  | Firefox has its own store — import there too.                                                                             |
+| Only Android native app rejects it                               | User CA is not trusted by apps; see `network_security_config.xml`.                                                        |
+| `NET::ERR_CERT_AUTHORITY_INVALID` after re-running the script    | nginx not reloaded: `docker compose restart nginx`.                                                                       |
+| Name `a.b.<computer-hostname>.local` fails                       | X.509 wildcards are one level deep; there are no subdomains -- put the extra service on a path instead (see `README.md`). |
+| Worked, then broke after `mkcert -uninstall` / new `CAROOT`      | The CA changed; re-export and re-install on every client.                                                                 |
+| Name resolves nowhere (`avahi-resolve` times out)                | mDNS is blocked; check `avahi-resolve -n $(hostname).local` and fall back to `/etc/hosts` or the LAN IP.                  |
+| Resolves on Windows/macOS but not Linux                          | Rare for 2-label `.local`; confirm `avahi-resolve -n $(hostname).local` on the host and use `/etc/hosts` if it fails.     |
+| Client on guest/corporate Wi-Fi can't resolve `<hostname>.local` | Multicast mDNS is blocked; use `/etc/hosts` or the LAN IP directly.                                                       |

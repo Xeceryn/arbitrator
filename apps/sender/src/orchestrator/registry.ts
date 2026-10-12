@@ -47,10 +47,7 @@ export const workerAdapters: Record<string, WorkerAdapter> = {
     mexc: {
         slug: "mexc",
         modulePath: "src/workers/orderbooks/mexc.ts",
-        workerFile: new URL(
-            "../workers/orderbooks/mexc.ts",
-            import.meta.url,
-        ),
+        workerFile: new URL("../workers/orderbooks/mexc.ts", import.meta.url),
         baseCurrency: "usdt",
         maxSubscriptionsPerConnection: 20,
         supportsDynamicSubscribe: true,

@@ -1,3 +1,4 @@
+import type { OrchestratorStatus } from "@arbitrator/contracts";
 import { createLogger } from "@arbitrator/logger";
 
 import type { WorkerPool } from "./pool";
@@ -38,25 +39,25 @@ export type ListerGateway = {
     syncOpportunities(exchangeIds: number[]): Promise<void>;
 };
 
-export type OrchestratorStatus = {
-    started: string[];
-    workers: ReturnType<WorkerPool["snapshot"]>;
-    /** Recent unexpected worker deaths per exchange, for the health view. */
-    failures: Record<string, number>;
-    /** Desired subscription count per exchange from the last reconcile. */
-    desired: Record<string, number>;
-    /** Max subscriptions one worker may hold, per exchange. */
-    capacity: Record<string, number>;
-    supported: string[];
-};
+export type { OrchestratorStatus };
 
 /**
  * Owns the started-exchange set and drives reconciliation. Triggers are
  * coalesced and level-triggered: every run recomputes full desired state and
  * the pool applies only the delta.
+ *
+ * Status pushes are event-driven, not polled: every mutation (start/stop,
+ * reconcile topology change, worker state report, death, respawn) notifies the
+ * subscribers once, coalesced through a microtask so one reconcile emits one
+ * push. The sender WS fans those pushes out; the UI never refetches.
  */
 export class Orchestrator {
     private readonly started = new Set<string>();
+    private readonly listeners = new Set<
+        (status: OrchestratorStatus) => void
+    >();
+    private notifyQueued = false;
+    private expiryTimer: ReturnType<typeof setTimeout> | undefined;
     private debounce: ReturnType<typeof setTimeout> | undefined;
     private running = false;
     private pending = false;
@@ -77,12 +78,14 @@ export class Orchestrator {
 
         this.started.add(slug);
         this.schedule();
+        this.notify();
         return { ok: true };
     }
 
     stop(slug: string): { ok: true } {
-        this.started.delete(slug);
+        const had = this.started.delete(slug);
         this.schedule();
+        if (had) this.notify();
         return { ok: true };
     }
 
@@ -111,6 +114,53 @@ export class Orchestrator {
     /** Whether an exchange is still started, so the pool only respawns live work. */
     isStarted(slug: string): boolean {
         return this.started.has(slug);
+    }
+
+    /**
+     * Subscribe to event-driven status pushes. The listener fires once per
+     * mutation batch (never polled). Returns an unsubscribe function.
+     */
+    subscribe(listener: (status: OrchestratorStatus) => void): () => void {
+        this.listeners.add(listener);
+        return () => {
+            this.listeners.delete(listener);
+        };
+    }
+
+    /** Called by the pool after any topology or worker-state mutation. */
+    handlePoolChanged(): void {
+        this.notify();
+    }
+
+    /**
+     * Coalesced fan-out: synchronous mutation bursts (one reconcile applying
+     * several commands) emit a single push. Also schedules a delayed push while
+     * failure counts are non-empty, so the short-lived "exited" badges clear
+     * without polling once the 15s window expires.
+     */
+    private notify(): void {
+        if (this.notifyQueued) return;
+        this.notifyQueued = true;
+        queueMicrotask(() => {
+            this.notifyQueued = false;
+            if (this.listeners.size === 0) return;
+            const status = this.status();
+            for (const listener of [...this.listeners]) listener(status);
+            this.scheduleExpiryPush(status);
+        });
+    }
+
+    private scheduleExpiryPush(status: OrchestratorStatus): void {
+        if (this.expiryTimer) clearTimeout(this.expiryTimer);
+        this.expiryTimer = undefined;
+        if (Object.keys(status.failures).length === 0) return;
+        this.expiryTimer = setTimeout(() => {
+            this.expiryTimer = undefined;
+            if (this.listeners.size === 0) return;
+            const next = this.status();
+            for (const listener of [...this.listeners]) listener(next);
+            this.scheduleExpiryPush(next);
+        }, 16_000);
     }
 
     private schedule(): void {
@@ -154,6 +204,7 @@ export class Orchestrator {
             );
             // Nothing is arbitrageable: drop every persisted leg.
             await this.lister.syncOpportunities([]);
+            this.notify();
             return;
         }
 
@@ -202,6 +253,7 @@ export class Orchestrator {
 
         // Keep persisted legs in lockstep with the started set + current metadata.
         await this.lister.syncOpportunities(exchangeIds);
+        this.notify();
     }
 
     private apply(result: ReconcileResult): void {

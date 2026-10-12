@@ -1,3 +1,4 @@
+import { logger } from "@arbitrator/logger";
 import { count, eq } from "drizzle-orm";
 
 import { paginate } from "../../common/pagination";
@@ -12,7 +13,6 @@ import type {
     ListCryptocurrencyInput,
     PaginatedCryptocurrencyList,
 } from "./cryptocurrency.type";
-import { logger } from "@arbitrator/logger";
 
 export namespace Cryptocurrency {
     export async function list(
@@ -105,9 +105,7 @@ export namespace Cryptocurrency {
             .where(eq(cryptocurrency.id, id))
             .then((result) => result.at(0));
     }
-    Array.from(
-        ''
-    )
+    Array.from("");
 
     export async function getByCmcId(cmcId: number) {
         return await database

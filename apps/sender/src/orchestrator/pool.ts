@@ -3,6 +3,7 @@ import { Worker } from "node:worker_threads";
 import {
     type SymbolSubscription,
     type WorkerState,
+    type WorkerStatus,
     workerStateSchema,
 } from "@arbitrator/contracts";
 
@@ -48,10 +49,12 @@ export type PoolEvents = {
     ) => void;
     /** Whether process-level respawn is still wanted for this exchange. */
     shouldRespawn?: (exchangeSlug: string) => boolean;
+    /** Called after any topology or worker-state mutation, to push a status event. */
+    onChanged?: () => void;
 };
 
-/** A live worker plus the last connection state it reported to its parent. */
-export type WorkerStatus = WorkerSnapshot & { state: WorkerState };
+/** Re-exported from contracts so callers keep importing from the pool. */
+export type { WorkerStatus };
 
 /**
  * Workers post their connection state either as the current discriminated
@@ -192,10 +195,12 @@ export class WorkerPool {
         handle.on("message", (message) => {
             const state = readWorkerState(message);
             if (state) {
+                const previous = this.states.get(workerId);
                 this.states.set(workerId, state);
                 if (state === "connected" || state === "reconnected") {
                     this.consecutiveFailures.delete(exchangeSlug);
                 }
+                if (previous !== state) this.events.onChanged?.();
             }
             this.events.onWorkerEvent?.(workerId, message);
         });
@@ -219,6 +224,7 @@ export class WorkerPool {
             snapshot: { id: workerId, exchangeSlug, symbols: [...symbols] },
             handle,
         });
+        this.events.onChanged?.();
     }
 
     private terminateWorker(workerId: string): void {
@@ -228,6 +234,7 @@ export class WorkerPool {
         this.states.delete(workerId);
         this.stopping.add(workerId);
         void entry.handle.terminate();
+        this.events.onChanged?.();
     }
 
     private dropWorker(workerId: string, code?: number): void {
@@ -245,6 +252,7 @@ export class WorkerPool {
 
         this.events.onWorkerFailure?.(workerId, exchangeSlug, code);
 
+        this.events.onChanged?.();
         this.scheduleRespawn(exchangeSlug, symbols);
     }
 
@@ -321,6 +329,7 @@ export class WorkerPool {
                 if (!held.has(symbol.cmcId))
                     entry.snapshot.symbols.push(symbol);
             }
+            this.events.onChanged?.();
             return;
         }
 
@@ -328,5 +337,6 @@ export class WorkerPool {
         entry.snapshot.symbols = entry.snapshot.symbols.filter(
             (symbol) => !removing.has(symbol.cmcId),
         );
+        this.events.onChanged?.();
     }
 }

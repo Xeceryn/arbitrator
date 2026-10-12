@@ -3,7 +3,7 @@ import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
 import { type Delivery, subscribe } from "@arbitrator/messaging";
 import { listerClient } from "@arbitrator/sdk";
-import { RedisClient } from "bun";
+// import { RedisClient } from "bun";
 
 const logger = createLogger("arbitrator/receiver");
 
