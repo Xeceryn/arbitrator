@@ -169,7 +169,7 @@ export const AssignmentController = new Elysia()
                     level: "success",
                     message: "Exchange assigned",
                 },
-                "assign-exchange-success": null,
+                "assign-exchange-success": {},
             });
             return await renderCoinAssignmentList(params.id);
         },

@@ -26,7 +26,6 @@
         "clipboard": "^2.0.11",
         "elysia": "catalog:core",
         "htmx.org": "4.0.0",
-        "hyperscript.org": "^0.9.93",
         "lucide": "^1.50.0",
         "theme-change": "^3.0.4",
         "zod": "catalog:core"

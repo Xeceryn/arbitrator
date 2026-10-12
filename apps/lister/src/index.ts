@@ -1,12 +1,15 @@
 import { RPCHandler } from "@orpc/server/fetch";
 import { CORSPlugin } from "@orpc/server/plugins";
 
+import { startLastPriceScheduler } from "./last-price/last-price.scheduler";
 import { logger } from "./logger";
 import { router } from "./router";
 
 const handler = new RPCHandler(router, {
     plugins: [new CORSPlugin({ origin: "*" })],
 });
+
+startLastPriceScheduler();
 
 Bun.serve({
     async fetch(request: Request) {

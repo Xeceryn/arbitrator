@@ -106,7 +106,7 @@ export const ChainController = new Elysia()
 
             hx.triggerEvent({
                 "make-toast": { level: "success", message: "Chain updated" },
-                update_chain_success: null,
+                update_chain_success: {},
             });
             return <ChainTableRow {...data} />;
         },
@@ -161,7 +161,7 @@ export const ChainController = new Elysia()
 
             hx.triggerEvent({
                 "make-toast": { level: "success", message: "Chain added" },
-                "add-chain-success": null,
+                "add-chain-success": {},
             });
             return <ChainTableRow {...data} />;
         },

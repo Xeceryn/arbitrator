@@ -1,4 +1,5 @@
 import {
+    lastPriceKey,
     type NormalizedOrderbookEvent,
     Queues,
     RoutingKeys,
@@ -7,6 +8,7 @@ import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
 import { subscribe } from "@arbitrator/messaging";
 import { listerClient } from "@arbitrator/sdk";
+import { redis } from "bun";
 
 const logger = createLogger("arbitrator/receiver");
 
@@ -40,11 +42,18 @@ for (const exchange of exchanges.data) {
 // ---------------------------------------------------------------- idr rate
 const IDR_REFRESH_MS = 1000 * 60 * 5;
 const IDR_FALLBACK = 17950;
+/** Symbol whose last price is the USDT/IDR conversion rate. */
+const IDR_SYMBOL = "usdt";
 
-// Swap the body for Redis later, nothing else changes.
-// e.g. const v = await redis.get("idr:price"); return Number(v);
+// Read the rate the lister's last-price cron wrote to Redis. A failure here
+// leaves `idrRate` on its last good value.
 async function fetchIdrPrice(): Promise<number> {
-    return IDR_FALLBACK;
+    const value = await redis.get(lastPriceKey(IDR_SYMBOL));
+    const price = value === null ? Number.NaN : Number(value);
+    if (!Number.isFinite(price) || price <= 0) {
+        throw new Error(`no ${IDR_SYMBOL} last price in redis (got ${value})`);
+    }
+    return price;
 }
 
 let idrRate = IDR_FALLBACK; // hot path reads this directly, never awaits

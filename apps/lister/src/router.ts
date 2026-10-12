@@ -5,6 +5,7 @@ import { exchangeRouter } from "./core/exchange/exchange.router";
 import { marketRouter } from "./core/market/market.router";
 import { opportunityRouter } from "./core/opportunity/opportunity.router";
 import { utilityRouter } from "./core/utility/utility.router";
+import { lastPriceRouter } from "./last-price/last-price.router";
 
 export const router = {
     exchange: exchangeRouter,
@@ -13,5 +14,6 @@ export const router = {
     opportunity: opportunityRouter,
     chainLink: chainLinkRouter,
     chain: chainRouter,
+    lastPrice: lastPriceRouter,
     utility: utilityRouter,
 };

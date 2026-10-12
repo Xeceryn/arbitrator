@@ -1,9 +1,13 @@
-import { type NormalizedOrderbookEvent, Queues } from "@arbitrator/contracts";
+import {
+    lastPriceKey,
+    type NormalizedOrderbookEvent,
+    Queues,
+} from "@arbitrator/contracts";
 import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
 import { type Delivery, subscribe } from "@arbitrator/messaging";
 import { listerClient } from "@arbitrator/sdk";
-// import { RedisClient } from "bun";
+import { redis } from "bun";
 
 const logger = createLogger("arbitrator/receiver");
 
@@ -18,19 +22,40 @@ for (const exchange of exchanges.data) {
     exchangeSlugIdMap.set(exchange.slug, exchange.id);
     if (exchange.baseCurrency === "idr") idrExchangeSlugs.add(exchange.slug);
 }
-const IDR_PRICE = 17869 as const;
+/** Symbol whose last price is the USDT/IDR conversion rate. */
+const IDR_SYMBOL = "usdt";
+const IDR_FALLBACK = 17869;
 const CACHED_IDR_TTL = 1000 * 60 * 5;
+let cachedIdrPrice: number = IDR_FALLBACK;
 let cachedAt: number = 0;
 
+/**
+ * USDT/IDR rate, read straight from Redis where the lister's last-price cron
+ * writes it. Cached in-process so the hot path never pays a round trip; a
+ * failed read keeps the last good rate rather than zeroing every price.
+ */
 export async function getIdrPrice(): Promise<number> {
     const now = Date.now();
     if (now - cachedAt < CACHED_IDR_TTL) {
-        return IDR_PRICE;
+        return cachedIdrPrice;
     }
-    const idrPrice = await Promise.resolve(IDR_PRICE);
+
+    try {
+        const value = await redis.get(lastPriceKey(IDR_SYMBOL));
+        const price = value === null ? Number.NaN : Number(value);
+        if (Number.isFinite(price) && price > 0) {
+            cachedIdrPrice = price;
+        } else {
+            logger.warn(`ignoring invalid idr price from redis: ${value}`);
+        }
+    } catch (error) {
+        logger.warn(
+            `idr price read failed, keeping ${cachedIdrPrice}: ${String(error)}`,
+        );
+    }
     cachedAt = now;
 
-    return idrPrice;
+    return cachedIdrPrice;
 }
 
 export type SearchedOrderbook = {

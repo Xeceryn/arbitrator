@@ -85,7 +85,7 @@ export const CoinTableRow = (props: CryptocurrencySelect) => {
                         type="button"
                         class="btn btn-square btn-outline btn-xs sm:btn-sm btn-error"
                         aria-label={`Delete ${props.name}`}
-                        _="on click alert('ngawor sampean mas')"
+                        hx-on:click="alert('ngawor sampean mas')"
                         title={`Delete ${props.name}`}
                         /* TODO: wire the delete request and add a confirmation step. */
                     >

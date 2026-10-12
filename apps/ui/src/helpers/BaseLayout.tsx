@@ -59,14 +59,6 @@ export const BaseLayout = async ({
 
                     <link
                         rel="preload"
-                        href="/public/js/hyperscript.min.js"
-                        as="script"
-                    />
-                    <script src="/public/js/hyperscript.min.js"></script>
-                    {/*<script src="/public/js/lucide.js"></script> */}
-
-                    <link
-                        rel="preload"
                         href="/public/js/theme-change.js"
                         as="script"
                     />

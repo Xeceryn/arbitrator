@@ -120,7 +120,7 @@ export const ExchangeController = new Elysia()
 
             hx.triggerEvent({
                 "make-toast": { level: "success", message: "Exchange updated" },
-                update_exchange_success: null,
+                update_exchange_success: {},
             });
             return <MarketTableRow {...data} />;
         },
@@ -148,7 +148,7 @@ export const ExchangeController = new Elysia()
 
             hx.triggerEvent({
                 "make-toast": { level: "success", message: "Exchange added" },
-                "add-exchange-success": null,
+                "add-exchange-success": {},
             });
             return <MarketTableRow {...data} />;
         },

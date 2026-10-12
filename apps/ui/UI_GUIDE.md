@@ -6,7 +6,8 @@ that already ship: `coins`, `markets`, `chain`.
 ## Stack
 
 - Server-rendered JSX via `@kitajs/html`, served by Elysia.
-- Interactivity via htmx. A little hyperscript for local toggles.
+- Interactivity via htmx, including `hx-on:*` attributes for local inline
+  scripting.
 - Tailwind CSS v4 + daisyUI 5. `themes: all` is enabled, so only semantic
   daisy classes (`base-100`, `base-200`, `base-300`, `primary`, `error`, …)
   are safe. A raw hex or a `gray-*`/`zinc-*` class breaks the theme switch.

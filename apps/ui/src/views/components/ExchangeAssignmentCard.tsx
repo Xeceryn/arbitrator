@@ -67,7 +67,7 @@ export const ExchangeAssignmentCard = ({ coinId, market }: Props) => {
                         class="btn btn-square btn-ghost btn-xs"
                         aria-label={`Edit exchange symbol for ${market.exchange.name}`}
                         title="Edit exchange symbol"
-                        _={`on click toggle .hidden on #symbol-editor-${market.id}`}
+                        hx-on:click={`const el=document.getElementById('symbol-editor-${market.id}');el.classList.toggle('hidden');if(!el.classList.contains('hidden'))el.querySelector('input')?.focus();`}
                     >
                         <PencilIcon />
                     </button>
@@ -132,7 +132,7 @@ export const ExchangeAssignmentCard = ({ coinId, market }: Props) => {
                     <button
                         type="button"
                         class="btn btn-sm btn-ghost"
-                        _={`on click add .hidden to #symbol-editor-${market.id}`}
+                        hx-on:click={`document.getElementById('symbol-editor-${market.id}').classList.add('hidden')`}
                     >
                         Cancel
                     </button>

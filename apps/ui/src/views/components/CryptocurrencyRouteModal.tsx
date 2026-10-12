@@ -6,7 +6,7 @@ const defaultHeader = `<h2 id="coin-route-title" class="text-lg font-semibold">T
  * On close, drop the loaded routes and restore the default title so reopening
  * the modal for another coin never flashes stale data.
  */
-const resetOnClose = `on close set #coin-route-modal-content.innerHTML to '' then set #coin_route_header.innerHTML to '${defaultHeader}'`;
+const resetOnClose = `document.getElementById('coin-route-modal-content').innerHTML = ''; document.getElementById('coin_route_header').innerHTML = ${JSON.stringify(defaultHeader)};`;
 
 /**
  * Transfer-route modal for a coin. The header is static until the panel is
@@ -18,7 +18,7 @@ export const CryptocurrencyRouteModal = () => (
         id="coin_route_modal"
         class="modal modal-middle"
         aria-labelledby="coin-route-title"
-        _={resetOnClose}
+        hx-on:close={resetOnClose}
     >
         <div class="modal-box flex w-full max-w-6xl! flex-col overflow-hidden">
             <header class="flex items-center gap-3 border-b border-base-300 pb-4">

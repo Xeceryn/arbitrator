@@ -99,7 +99,7 @@ export const CryptocurrencyController = new Elysia()
                     level: "info",
                     message: "Coin Updated",
                 },
-                update_coin_success: null,
+                update_coin_success: {},
             });
 
             const [error, data] = await listerClient.cryptocurrency.update({

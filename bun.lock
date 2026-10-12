@@ -114,7 +114,6 @@
         "clipboard": "^2.0.11",
         "elysia": "catalog:core",
         "htmx.org": "4.0.0",
-        "hyperscript.org": "^0.9.93",
         "lucide": "^1.50.0",
         "theme-change": "^3.0.4",
         "zod": "catalog:core",
@@ -132,6 +131,7 @@
       "name": "@arbitrator/contracts",
       "version": "0.0.0",
       "dependencies": {
+        "@arbitrator/contracts": "workspace:*",
         "zod": "catalog:core",
       },
     },
@@ -701,8 +701,6 @@
     "htmx.org": ["htmx.org@4.0.0", "", { "bin": { "upgrade-check": "dist/scripts/upgrade-check.js" } }, "sha512-T/171FUY93Kdfp8t+DnHdk45QvKRiBhVhhrwSzrXgUi4pHKvhp77dUA/qg8FAjsFWPIHNbmUuIdCrcVHuiZWng=="],
 
     "https-proxy-agent": ["https-proxy-agent@5.0.1", "", { "dependencies": { "agent-base": "6", "debug": "4" } }, "sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA=="],
-
-    "hyperscript.org": ["hyperscript.org@0.9.93", "", { "bin": { "hyperscript.org": "dist/platform/node-hyperscript.js" } }, "sha512-9Lr9SisBgUW5AjeTekwXErZJLlnFFfq8BiXDzaMGpmX8MA64XdSM3MFYDaWsSFj/ALxeWwtteVgWobKn8DYIkA=="],
 
     "ieee754": ["ieee754@1.2.1", "", {}, "sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA=="],
 

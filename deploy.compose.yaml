@@ -16,6 +16,9 @@ x-amqp-env: &amqp-env
     AMQP_URL: amqp://${RABBITMQ_USER:-arbitrator}:${RABBITMQ_PASSWORD:-arbitrator}@rabbitmq:5672
     AMQP_EXCHANGE: ${AMQP_EXCHANGE:-arbitrator}
 
+x-redis-env: &redis-env
+    REDIS_URL: redis://redis:6379
+
 services:
     postgresql:
         image: postgres:17.6-alpine
@@ -53,6 +56,18 @@ services:
             retries: 10
             start_period: 20s
 
+    redis:
+        image: redis:7.4-alpine
+        restart: unless-stopped
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+
     # One-shot `drizzle-kit migrate`; lister waits for it to finish.
     lister-migrate:
         build:
@@ -74,12 +89,14 @@ services:
         image: arbitrator-lister:latest
         restart: unless-stopped
         environment:
-            <<: [*database-env, *amqp-env]
+            <<: [*database-env, *amqp-env, *redis-env]
             NODE_ENV: production
         depends_on:
             postgresql:
                 condition: service_healthy
             rabbitmq:
+                condition: service_healthy
+            redis:
                 condition: service_healthy
             lister-migrate:
                 condition: service_completed_successfully
@@ -141,13 +158,15 @@ services:
         # Reap the worker processes main.ts spawns and forward signals to it.
         init: true
         environment:
-            <<: [*database-env, *amqp-env]
+            <<: [*database-env, *amqp-env, *redis-env]
             LISTER_URL: http://lister:3001
             NODE_ENV: production
         depends_on:
             lister:
                 condition: service_healthy
             rabbitmq:
+                condition: service_healthy
+            redis:
                 condition: service_healthy
 
     ui:
@@ -183,3 +202,4 @@ services:
 volumes:
     postgres-data:
     rabbitmq-data:
+    redis-data:
