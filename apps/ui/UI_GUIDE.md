@@ -65,7 +65,7 @@ toggle the `<details>`, so `assets/scripts/dropdown.ts` closes the enclosing
 **The navbar owns the page `<h1>`.** Pass `heading` to `BaseLayout`:
 
 ```tsx
-<BaseLayout title="arbitmage - Exchanges" heading="Exchanges">
+<BaseLayout title="Arbitrator - Exchanges" heading="Exchanges">
     <MarketPage {...query} />
 </BaseLayout>
 ```

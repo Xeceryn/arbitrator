@@ -27,7 +27,7 @@ export const ChainController = new Elysia()
             hx.pushURL(createPushURL("/chain", query));
             if (!hx.isHTMX) {
                 return (
-                    <BaseLayout title="arbitmage - Chains" heading="Chains">
+                    <BaseLayout title="Arbitrator - Chains" heading="Chains">
                         <ChainPage {...query} />
                     </BaseLayout>
                 );

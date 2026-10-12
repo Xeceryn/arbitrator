@@ -30,7 +30,7 @@ export const CryptocurrencyController = new Elysia()
             if (!hx.isHTMX) {
                 return (
                     <BaseLayout
-                        title="arbitmage - Cryptocurrencies"
+                        title="Arbitrator - Cryptocurrencies"
                         heading="Cryptocurrencies"
                     >
                         <CoinPage {...query} />

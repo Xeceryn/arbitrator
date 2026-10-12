@@ -46,14 +46,14 @@ export const Sidebar = () => (
     <div class="flex min-h-full flex-col items-start bg-base-100 is-drawer-close:w-14 is-drawer-open:w-64">
         <ul class="menu w-full grow">
             <li>
-                <a href="/" class={navItemClass} data-tip="arbitmage">
+                <a href="/" class={navItemClass} data-tip="Arbitrator">
                     <img
                         class="mask mask-squircle size-5"
                         src="/public/favicon.ico"
                         alt=""
                     />
                     <span class="is-drawer-close:hidden font-semibold">
-                        arbitmage
+                        Arbitrator
                     </span>
                 </a>
             </li>

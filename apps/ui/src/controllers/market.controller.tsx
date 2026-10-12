@@ -35,7 +35,7 @@ export const ExchangeController = new Elysia()
             if (!hx.isHTMX) {
                 return (
                     <BaseLayout
-                        title="arbitmage - Exchanges"
+                        title="Arbitrator - Exchanges"
                         heading="Exchanges"
                     >
                         <MarketPage {...query} />

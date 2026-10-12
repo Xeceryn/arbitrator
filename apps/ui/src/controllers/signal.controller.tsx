@@ -131,7 +131,7 @@ export const SignalController = new Elysia()
 
             if (!hx.isHTMX) {
                 return (
-                    <BaseLayout title="arbitmage - Signals" heading="Signals">
+                    <BaseLayout title="Arbitrator - Signals" heading="Signals">
                         <SignalPage
                             query={query}
                             data={data}

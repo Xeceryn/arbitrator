@@ -10,7 +10,7 @@ type Props = PropsWithChildren<{
 }>;
 
 export const BaseLayout = async ({
-    title = "E9 - Arbitmage",
+    title = "E9 - Arbitrator",
     heading,
     children,
 }: Props) => {

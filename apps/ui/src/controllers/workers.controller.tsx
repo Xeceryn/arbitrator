@@ -119,7 +119,7 @@ export const WorkersController = new Elysia()
 
         if (!hx.isHTMX) {
             return (
-                <BaseLayout title="arbitmage - Workers" heading="Workers">
+                <BaseLayout title="Arbitrator - Workers" heading="Workers">
                     <WorkersPage data={data} />
                 </BaseLayout>
             );
