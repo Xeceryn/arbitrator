@@ -5,8 +5,8 @@
 #
 #   docker compose -f deploy.compose.yaml up --build
 #
-# Only the UI and the RabbitMQ management UI are published on the host. The
-# lister, sender and receiver talk to each other over the Compose network.
+# Only the UI is published on the host. The lister, sender and receiver talk to
+# each other over the Compose network.
 name: arbitrator-deploy
 
 x-database-env: &database-env
@@ -44,8 +44,6 @@ services:
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-arbitrator}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-arbitrator}
-        ports:
-            - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
         volumes:
             - rabbitmq-data:/var/lib/rabbitmq
         healthcheck:
