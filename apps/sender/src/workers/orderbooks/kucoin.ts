@@ -1,29 +1,22 @@
-// NOTE: for debugging purposes when not running as a worker
-// change the self to log instead of sending message to the parent
-
-// const self = {
-//   postMessage(...args: any[]) {
-//     console.log(args);
-//   },
-// };
-declare let self: Worker;
-
-import { threadId as processId } from "worker_threads";
-
+import { type SymbolSubscription, WorkerState } from "@arbitrator/contracts";
+import { createLogger } from "@arbitrator/logger";
 import { WebsocketClient } from "kucoin-api";
 
 import {
-    WorkerMessageType,
-    WorkerState,
-    type OrderbookWorkerMessage,
-} from "../../types";
-import type { SymbolInfo } from "../../types/metadata";
-import { split_symbols } from "../../utils";
+    bootstrap,
+    createOrderbookPublisher,
+    onCommand,
+    postError,
+    postState,
+    postSubscribed,
+    postUnsubscribed,
+} from "../protocol";
 
-const exchange = "kucoin";
-const threadId = exchange + "-orderbook-" + processId;
+const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
-const SymbolStore = new Map<string, number>();
+const logger = createLogger(`arbitrator/sender/worker/${exchange}-${threadId}`);
+const publisher = await createOrderbookPublisher(exchange);
+
 const socketClient = new WebsocketClient(
     {},
     {
@@ -33,126 +26,147 @@ const socketClient = new WebsocketClient(
     },
 );
 
-function stream(metadata: SymbolInfo[]) {
-    socketClient.on("open", () => {
-        const message: OrderbookWorkerMessage = {
-            type: WorkerMessageType.StateChange,
-            threadId,
-            exchange,
-            content: {
-                state: WorkerState.Connected,
-            },
-        };
-        self.postMessage(message);
-    });
+/** The spot public connection every topic is routed to. */
+const WS_KEY = "spotPublicV1";
+/** Level-50 orderbook topic prefix. */
+const TOPIC_PREFIX = "/spotMarket/level2Depth50:";
+/**
+ * KuCoin limits client -> server messages to 100 per 10 seconds *per
+ * connection*, and `kucoin-api` emits one message per topic. Send one
+ * subscribe/unsubscribe at a time and sleep a second between them so a worker
+ * holding a full symbol set never trips the limit. The first `subscribe()` call
+ * is also what makes the SDK open the socket.
+ */
+const SUBSCRIBE_INTERVAL_MS = 1000;
+/** At most one snapshot per coin is forwarded to RabbitMQ per interval. */
+const SEND_INTERVAL_MS = 1000;
 
-    socketClient.on("update", (event) => {
-        if (event.type === "message") {
-            const cmcId = SymbolStore.get(event.topic)!;
+/** topic (e.g. `/spotMarket/level2Depth50:BTC-USDT`) -> cmcId. */
+const TopicStore = new Map<string, number>();
+/** topic -> last time a snapshot was published, for per-coin throttling. */
+const LastSentAt = new Map<string, number>();
 
-            // const { asks, bids } = event.data;
-            const asks = event.data.asks.map(([price, volume]: any) => {
-                return [Number(price), Number(volume)];
-            });
-            const bids = event.data.bids.map(([price, volume]: any) => {
-                return [Number(price), Number(volume)];
-            });
-            const message: OrderbookWorkerMessage = {
-                type: WorkerMessageType.Data,
-                threadId,
-                exchange,
-                content: {
-                    cmcId: cmcId,
-                    asks,
-                    bids,
-                },
-            };
-            self.postMessage(message);
-            return;
-        }
-        return;
-    });
+type DepthLevelRaw = [string | number, string | number];
+type DepthMessageRaw = {
+    type: string;
+    topic: string;
+    data: { asks: DepthLevelRaw[]; bids: DepthLevelRaw[] };
+};
 
-    socketClient.on("close", () => {
-        const message: OrderbookWorkerMessage = {
-            type: WorkerMessageType.StateChange,
-            exchange,
-            threadId,
-            content: {
-                state: WorkerState.Closed,
-            },
-        };
-        self.postMessage(message);
-    });
+const toLevel = (row: DepthLevelRaw): [number, number] => [
+    Number(row[0]),
+    Number(row[1]),
+];
 
-    socketClient.on("reconnect", () => {
-        const message: OrderbookWorkerMessage = {
-            type: WorkerMessageType.StateChange,
-            threadId,
-            exchange,
-            content: {
-                state: WorkerState.Reconnecting,
-            },
-        };
-        self.postMessage(message);
-    });
+const topicForSymbol = (symbol: string): string =>
+    `${TOPIC_PREFIX}${symbol.toUpperCase()}-USDT`;
 
-    socketClient.on("reconnected", () => {
-        const message: OrderbookWorkerMessage = {
-            type: WorkerMessageType.StateChange,
-            exchange,
-            threadId,
-            content: {
-                state: WorkerState.Connected,
-            },
-        };
-        self.postMessage(message);
-    });
+const sleep = (ms: number): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
-    // TODO: add error detail logging if the state change is error
-    socketClient.on("exception", (error) => {
-        const message: OrderbookWorkerMessage = {
-            type: WorkerMessageType.StateChange,
-            threadId,
-            exchange,
-            content: {
-                state: WorkerState.Error,
-            },
-        };
-        self.postMessage(message);
-    });
+/** Serializes outbound (un)subscribes so only one leaves per interval. */
+let outbound: Promise<void> = Promise.resolve();
 
-    try {
-        // for (const [_index, meta] of split_symbols(metadata, 100).entries()) {
-        const subscriptions = metadata.map(({ symbol, cmcId }) => {
-            const subscription =
-                "/spotMarket/level2Depth50:" + symbol.toUpperCase() + "-USDT";
-            SymbolStore.set(subscription, cmcId);
-            return subscription;
+function sendSequentially(
+    action: "subscribe" | "unsubscribe",
+    topic: string,
+): void {
+    outbound = outbound
+        .then(async () => {
+            if (action === "subscribe") {
+                socketClient.subscribe([topic], WS_KEY);
+            } else {
+                socketClient.unsubscribe([topic], WS_KEY);
+            }
+            await sleep(SUBSCRIBE_INTERVAL_MS);
+        })
+        .catch((error: unknown) => {
+            logger.error(`failed to ${action} ${topic}: ${String(error)}`);
         });
-
-        socketClient.subscribe(subscriptions, "spotPublicV1");
-        // }
-    } catch (error) {
-        const message: OrderbookWorkerMessage = {
-            type: WorkerMessageType.StateChange,
-            threadId,
-            exchange,
-            content: {
-                state: WorkerState.Error,
-            },
-        };
-        self.postMessage(message);
-    }
 }
 
-const args = Bun.argv
-    .at(2)!
-    .split(",")
-    .map((s) => {
-        const [id, symbol] = s.split("-");
-        const cmcId = Number(id);
-        return { cmcId, symbol };
-    });
+function subscribe(symbols: SymbolSubscription[]): void {
+    for (const item of symbols) {
+        const topic = topicForSymbol(item.symbol);
+        TopicStore.set(topic, item.cmcId);
+        LastSentAt.set(topic, Date.now());
+        sendSequentially("subscribe", topic);
+    }
+    if (symbols.length > 0) postSubscribed(symbols.map((item) => item.cmcId));
+}
 
-stream(args);
+function unsubscribe(symbols: SymbolSubscription[]): void {
+    for (const item of symbols) {
+        const topic = topicForSymbol(item.symbol);
+        if (!TopicStore.delete(topic)) continue;
+        LastSentAt.delete(topic);
+        sendSequentially("unsubscribe", topic);
+    }
+    postUnsubscribed(symbols.map((item) => item.cmcId));
+}
+
+socketClient.on("open", () => {
+    postState(threadId, exchange, WorkerState.Connected);
+    logger.info("socket open");
+});
+
+socketClient.on("update", (event) => {
+    const message = event as DepthMessageRaw;
+    if (message.type !== "message") return;
+
+    const cmcId = TopicStore.get(message.topic);
+    if (cmcId === undefined) return;
+    if (
+        !Array.isArray(message.data?.asks) ||
+        !Array.isArray(message.data?.bids)
+    ) {
+        return;
+    }
+
+    // Throttle the broker per coin; the receiver only needs the latest
+    // snapshot each second regardless of how fast KuCoin pushes.
+    const now = Date.now();
+    const lastSentAt = LastSentAt.get(message.topic);
+    if (lastSentAt !== undefined && now - lastSentAt < SEND_INTERVAL_MS) {
+        return;
+    }
+    LastSentAt.set(message.topic, now);
+
+    publisher.publish({
+        cmcId,
+        asks: message.data.asks.map(toLevel),
+        bids: message.data.bids.map(toLevel),
+    });
+});
+
+socketClient.on("reconnect", () => {
+    postState(threadId, exchange, WorkerState.Reconnecting);
+    logger.info("socket closed, reconnecting");
+});
+
+socketClient.on("reconnected", () => {
+    postState(threadId, exchange, WorkerState.Connected);
+    logger.info("socket reconnected");
+});
+
+socketClient.on("close", () => {
+    postState(threadId, exchange, WorkerState.Closed);
+    logger.info("socket closed");
+});
+
+socketClient.on("exception", (error) => {
+    postError(error instanceof Error ? error.message : String(error));
+    logger.error(
+        `socket exception: ${error instanceof Error ? error.message : String(error)}`,
+    );
+});
+
+onCommand((command) => {
+    if (command.type === "subscribe") subscribe(command.symbols);
+    if (command.type === "unsubscribe") unsubscribe(command.symbols);
+    if (command.type === "shutdown") {
+        void publisher.close().finally(() => process.exit(0));
+    }
+});
+
+subscribe(initialSymbols);

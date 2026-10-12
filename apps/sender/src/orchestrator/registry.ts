@@ -44,6 +44,17 @@ export const workerAdapters: Record<string, WorkerAdapter> = {
         maxSubscriptionsPerConnection: 50,
         supportsDynamicSubscribe: true,
     },
+    kucoin: {
+        slug: "kucoin",
+        modulePath: "src/workers/orderbooks/kucoin.ts",
+        workerFile: new URL("../workers/orderbooks/kucoin.ts", import.meta.url),
+        baseCurrency: "usdt",
+        // KuCoin caps both topics per request and, comfortably above that, the
+        // spot topic count per connection (400). One worker per 100 symbols
+        // keeps each connection's paced subscribe backlog small.
+        maxSubscriptionsPerConnection: 100,
+        supportsDynamicSubscribe: true,
+    },
     mexc: {
         slug: "mexc",
         modulePath: "src/workers/orderbooks/mexc.ts",
