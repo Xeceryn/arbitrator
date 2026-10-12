@@ -138,7 +138,7 @@ export const BaseLayout = async ({
                                     <p>
                                         Copyright © BedokCorp{" "}
                                         {new Date().getFullYear()} · Built with
-                                        love by{" "}
+                                        ❤️ by{" "}
                                         <a
                                             class="link link-hover font-medium"
                                             href="https://sulthonuladib.dev"
