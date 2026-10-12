@@ -1,6 +1,6 @@
 {
     "$schema": "./node_modules/oxfmt/configuration_schema.json",
-    "ignorePatterns": ["./apps/ui/public/**/*"],
+    "ignorePatterns": ["apps/ui/public/**/*"],
     "sortImports": true,
     "printWidth": 80,
     "tabWidth": 4,
