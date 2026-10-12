@@ -6,6 +6,9 @@ out
 dist
 *.tgz
 
+# cmc-collector scraped snapshots
+apps/cmc-collector/data/
+
 # code coverage
 coverage
 *.lcov

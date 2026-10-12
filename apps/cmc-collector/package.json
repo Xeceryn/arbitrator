@@ -2,8 +2,13 @@
     "$schema": "https://json.schemastore.org/package.json",
     "name": "@arbitrator/cmc-collector",
     "version": "0.1.0",
-    "scripts": {},
+    "scripts": {
+        "scrape": "bun run src/index.ts --scrape",
+        "import": "bun run src/index.ts --import",
+        "sync": "bun run src/index.ts --all",
+        "typecheck": "tsc --noEmit"
+    },
     "dependencies": {
-        "@coinmarketcap/sdk": "^4.0.3"
+        "@arbitrator/sdk": "workspace:*"
     }
 }
