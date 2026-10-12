@@ -8,7 +8,7 @@
         "dev:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css --watch",
         "build": "bun run build.ts",
         "build:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "bun --check"
     },
     "dependencies": {
         "@arbitrator/lister": "workspace:*",

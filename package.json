@@ -46,7 +46,7 @@
         "format": "oxfmt",
         "lint": "oxlint",
         "lint:fix": "oxlint --fix",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "bun --check"
     },
     "dependencies": {},
     "devDependencies": {

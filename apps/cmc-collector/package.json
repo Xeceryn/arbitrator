@@ -6,7 +6,7 @@
         "scrape": "bun run src/index.ts --scrape",
         "import": "bun run src/index.ts --import",
         "sync": "bun run src/index.ts --all",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "bun --check"
     },
     "dependencies": {
         "@arbitrator/sdk": "workspace:*"

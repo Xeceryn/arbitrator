@@ -118,6 +118,33 @@ export const ChainController = new Elysia()
         },
     )
 
+    .delete(
+        "/chain/:id",
+        async ({ params, hx }) => {
+            const [error] = await listerClient.chain.remove(params.id);
+            if (error) {
+                hx.reswap("none");
+                hx.triggerEvent({
+                    "make-toast": {
+                        level: "error",
+                        message: "failed to delete chain",
+                    },
+                });
+                return status("No Content");
+            }
+
+            hx.triggerEvent({
+                "make-toast": { level: "success", message: "Chain deleted" },
+            });
+            return status("OK");
+        },
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+        },
+    )
+
     .post(
         "/chain",
         async ({ body, hx }) => {

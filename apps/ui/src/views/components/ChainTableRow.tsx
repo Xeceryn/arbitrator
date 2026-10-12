@@ -39,7 +39,10 @@ export const ChainTableRow = (props: ChainSelect) => {
                         class="btn btn-square btn-outline btn-xs sm:btn-sm btn-error"
                         aria-label={`Delete ${props.name}`}
                         title={`Delete ${props.name}`}
-                        /* TODO: wire the delete request and add a confirmation step. */
+                        hx-delete={`/chain/${props.id}`}
+                        hx-confirm={`Delete ${props.name}?`}
+                        hx-target={`#chain-table-row-${props.id}`}
+                        hx-swap="outerHTML"
                     >
                         <TrashIcon />
                     </button>

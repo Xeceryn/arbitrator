@@ -13,7 +13,7 @@
         "dev": "bun run --watch src/index.ts",
         "start": "bun run src/index.ts",
         "build": "bun build --target=bun ./src/index.ts --outdir=./dist",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "bun --check",
         "db:migrate": "bunx --bun drizzle-kit migrate",
         "db:generate": "bunx --bun drizzle-kit generate",
         "db:studio": "bunx --bun drizzle-kit studio"
