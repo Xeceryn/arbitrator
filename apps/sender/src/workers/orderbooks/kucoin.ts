@@ -33,11 +33,12 @@ const TOPIC_PREFIX = "/spotMarket/level2Depth50:";
 /**
  * KuCoin limits client -> server messages to 100 per 10 seconds *per
  * connection*, and `kucoin-api` emits one message per topic. Send one
- * subscribe/unsubscribe at a time and sleep a second between them so a worker
- * holding a full symbol set never trips the limit. The first `subscribe()` call
- * is also what makes the SDK open the socket.
+ * subscribe/unsubscribe at a time and sleep between them so a worker holding a
+ * full symbol set never trips the limit. 200ms = 5 messages/s, well under the
+ * limit while still filling a 100-symbol worker in ~20s. The first
+ * `subscribe()` call is also what makes the SDK open the socket.
  */
-const SUBSCRIBE_INTERVAL_MS = 1000;
+const SUBSCRIBE_INTERVAL_MS = 200;
 /** At most one snapshot per coin is forwarded to RabbitMQ per interval. */
 const SEND_INTERVAL_MS = 1000;
 
