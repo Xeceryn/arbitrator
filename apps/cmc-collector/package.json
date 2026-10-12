@@ -1,0 +1,9 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "name": "@arbitrator/cmc-collector",
+    "version": "0.1.0",
+    "scripts": {},
+    "dependencies": {
+        "@coinmarketcap/sdk": "^4.0.3"
+    }
+}
