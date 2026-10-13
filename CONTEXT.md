@@ -56,6 +56,3 @@ One orderbook websocket connection thread for one exchange.
 **Connection capacity**:
 The maximum number of subscriptions one worker may hold
 (`maxSubscriptionsPerConnection`).
-
-**Signal**:
-A persisted arbitrage opportunity. Out of scope for the orchestration feature.

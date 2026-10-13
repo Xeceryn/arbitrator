@@ -1,15 +1,21 @@
 /**
- * Client-side view / sort / hide for the live signal board.
+ * Client-side hide/sort for the live signal board.
  *
- * The WebSocket broadcasts one identical board to every connected client, so
- * ordering, exchange hiding and the card/table switch all happen here instead
- * of on the server. State is re-applied after every htmx morph, because each
- * push replaces the board with the neutral, unfiltered payload.
+ * The WebSocket only ever swaps the cards that changed (see the signal
+ * controller), so this script never replaces the list. It reads the controls
+ * and applies two things after every push:
+ *
+ * - `hide`: which cards match a hidden exchange, via `style.display`.
+ * - rank: descending by the active metric, via the CSS `order` property on the
+ *   grid items.
+ *
+ * Using `order` instead of moving nodes matters: re-appending a card between
+ * the mousedown and mouseup of a copy click makes the browser retarget the
+ * click, so `clipboard.js` never sees it and the page can jump. With `order`,
+ * the nodes stay put and only their paint order changes.
  */
 
 type OrderBy = "profitPercentage" | "profitVolume";
-type Order = "asc" | "desc";
-type View = "card" | "table";
 
 const ORDER_ATTRS: Record<OrderBy, string> = {
     profitPercentage: "data-profit-percentage",
@@ -17,21 +23,13 @@ const ORDER_ATTRS: Record<OrderBy, string> = {
 };
 
 function readState(): {
-    view: View;
     orderBy: OrderBy;
-    order: Order;
     hide: Set<string>;
 } {
     const form = document.querySelector<HTMLFormElement>("#signal-controls");
-    const view =
-        (form?.querySelector<HTMLInputElement>('input[name="view"]:checked')
-            ?.value as View | undefined) ?? "card";
     const orderBy =
         (form?.querySelector<HTMLSelectElement>('select[name="orderBy"]')
             ?.value as OrderBy | undefined) ?? "profitPercentage";
-    const order =
-        (form?.querySelector<HTMLSelectElement>('select[name="order"]')
-            ?.value as Order | undefined) ?? "desc";
     const hide = new Set(
         Array.from(
             form?.querySelectorAll<HTMLInputElement>(
@@ -40,44 +38,35 @@ function readState(): {
         ).map((input) => input.value),
     );
 
-    return { view, orderBy, order, hide };
+    return { orderBy, hide };
 }
 
 function applyState() {
-    const board = document.querySelector("#signal-board");
-    if (!board) return;
+    const list = document.querySelector<HTMLElement>("[data-signal-list]");
+    if (!list) return;
 
-    const { view, orderBy, order, hide } = readState();
-
-    for (const panel of board.querySelectorAll<HTMLElement>(
-        "[data-signal-panel]",
-    )) {
-        panel.style.display = panel.dataset.signalPanel === view ? "" : "none";
-    }
-
+    const { orderBy, hide } = readState();
     const attr = ORDER_ATTRS[orderBy];
 
-    for (const list of board.querySelectorAll<HTMLElement>(
-        "[data-signal-list]",
-    )) {
-        const nodes = Array.from(
-            list.querySelectorAll<HTMLElement>("[data-signal-node]"),
-        );
+    const nodes = Array.from(
+        list.querySelectorAll<HTMLElement>("[data-signal-node]"),
+    );
 
-        for (const node of nodes) {
-            const hidden =
-                hide.has(node.dataset.buySlug ?? "") ||
-                hide.has(node.dataset.sellSlug ?? "");
-            node.style.display = hidden ? "none" : "";
-        }
+    for (const node of nodes) {
+        const hidden =
+            hide.has(node.dataset.buySlug ?? "") ||
+            hide.has(node.dataset.sellSlug ?? "");
+        node.style.display = hidden ? "none" : "";
+    }
 
-        nodes.sort((a, b) => {
-            const av = Number(a.getAttribute(attr) ?? 0);
-            const bv = Number(b.getAttribute(attr) ?? 0);
-            return order === "asc" ? av - bv : bv - av;
-        });
+    nodes.sort((a, b) => {
+        const av = Number(a.getAttribute(attr) ?? 0);
+        const bv = Number(b.getAttribute(attr) ?? 0);
+        return bv - av;
+    });
 
-        for (const node of nodes) list.appendChild(node);
+    for (const [index, node] of nodes.entries()) {
+        node.style.order = String(index);
     }
 
     const count = document.querySelector("#signal-hide-count");

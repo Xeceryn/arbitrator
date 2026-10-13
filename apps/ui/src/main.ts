@@ -21,7 +21,7 @@ if (!process.argv.includes("--cluster")) {
     await bundleClientSideResources();
 }
 
-new Elysia()
+new Elysia({ websocket: { perMessageDeflate: true } })
     .onError(({ code, error, request, set }) => {
         if (code === "NOT_FOUND") {
             // Browsers silently probe paths we don't define (e.g. Chrome's

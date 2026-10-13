@@ -1,4 +1,7 @@
-import type { ExchangeSelect } from "@arbitrator/lister/types";
+import type {
+    ExchangeSelect,
+    OpportunitySignal,
+} from "@arbitrator/lister/types";
 import { listerClient } from "@arbitrator/sdk";
 import { htmx } from "@gtramontina.com/elysia-htmx";
 import { Elysia } from "elysia";
@@ -6,9 +9,9 @@ import z from "zod";
 
 import { BaseLayout } from "../helpers/BaseLayout";
 import { PageHeading } from "../views/components/PageHeading";
+import { SignalCard } from "../views/components/SignalCard";
 import {
     SignalBoard,
-    type SignalQuery,
     SignalPage,
     type SignalsData,
 } from "../views/pages/SignalPage";
@@ -24,27 +27,24 @@ const hideSchema = z
         value === undefined ? [] : Array.isArray(value) ? value : [value],
     );
 
+const ORDER_BY_VALUES = ["profitPercentage", "profitVolume"] as const;
+type OrderBy = (typeof ORDER_BY_VALUES)[number];
+
 const signalQuerySchema = z.object({
-    view: z.enum(["card", "table"]).default("card"),
-    orderBy: z
-        .enum(["profitPercentage", "profitVolume"])
-        .default("profitPercentage"),
-    order: z.enum(["asc", "desc"]).default("desc"),
+    orderBy: z.enum(ORDER_BY_VALUES).default("profitPercentage"),
     hide: hideSchema,
 });
 
-const DEFAULT_QUERY: SignalQuery = {
-    view: "card",
-    orderBy: "profitPercentage",
-    order: "desc",
-    hide: [],
-};
+/** The same `orderBy` choice, but for the socket's subscription query. */
+const streamQuerySchema = z.object({
+    orderBy: z.enum(ORDER_BY_VALUES).default("profitPercentage"),
+});
 
-/** Profitable signals, minus any leg touching a hidden exchange. */
-async function loadSignals(query: SignalQuery): Promise<SignalsData> {
+/** Profitable signals for one stream, always ranked descending. */
+async function loadSignals(orderBy: OrderBy): Promise<SignalsData> {
     const [error, data] = await listerClient.opportunity.list({
-        orderBy: query.orderBy,
-        order: query.order,
+        orderBy,
+        order: "desc",
     });
 
     if (error || !data) {
@@ -54,15 +54,7 @@ async function loadSignals(query: SignalQuery): Promise<SignalsData> {
         };
     }
 
-    const hidden = new Set(query.hide);
-    return {
-        ok: true,
-        signals: data.filter(
-            (signal) =>
-                !hidden.has(signal.buyExchange.slug) &&
-                !hidden.has(signal.sellExchange.slug),
-        ),
-    };
+    return { ok: true, signals: data };
 }
 
 async function loadExchanges(): Promise<ExchangeSelect[]> {
@@ -72,47 +64,144 @@ async function loadExchanges(): Promise<ExchangeSelect[]> {
 }
 
 type Sendable = {
+    id: string;
     readyState: number;
     send(data: unknown): unknown;
 };
 
 /**
- * Every connected board. One shared timer feeds all of them: the server fetches
- * and renders the board once per tick, then fans the identical payload out to
- * each socket. Filtering, sorting and the card/table switch all happen on the
- * client, so no per-connection state is kept here.
+ * One stream per `orderBy`. A room only runs while it has subscribers, and the
+ * server diffs each tick against the cards it last sent, so a steady board
+ * costs a handful of card swaps instead of the whole 60-card board.
  */
-const sockets = new Set<Sendable>();
-let timer: ReturnType<typeof setInterval> | null = null;
-let busy = false;
+type Room = {
+    sockets: Set<Sendable>;
+    /** Last payload sent for each card, keyed by its DOM id. */
+    cards: Map<string, string>;
+    /** Latest signals, so a socket that joins mid-stream can be resynced. */
+    signals: OpportunitySignal[];
+    /** Whether any board has been sent for this room yet. */
+    rendered: boolean;
+    busy: boolean;
+};
+
+const rooms: Record<OrderBy, Room> = {
+    profitPercentage: {
+        sockets: new Set(),
+        cards: new Map(),
+        signals: [],
+        rendered: false,
+        busy: false,
+    },
+    profitVolume: {
+        sockets: new Set(),
+        cards: new Map(),
+        signals: [],
+        rendered: false,
+        busy: false,
+    },
+};
+
+/** Which room each connected socket currently subscribes to, by socket id. */
+const subscription = new Map<string, OrderBy>();
+
+function cardId(signal: OpportunitySignal): string {
+    return `signal-card-${signal.cmcId}-${signal.buyExchange.id}-${signal.sellExchange.id}`;
+}
+
+function renderCard(signal: OpportunitySignal): string {
+    return String(<SignalCard signal={signal} />);
+}
 
 /**
- * Fetch + render once, then send the same payload to every open socket. Skips
- * entirely when nobody is connected, and while a previous push is in flight.
+ * Replace the whole board. Used on the first push and whenever membership
+ * flips between empty and non-empty, where an in-place card swap would leave a
+ * stale grid or a stale empty state behind.
  */
-async function broadcast() {
-    if (busy || sockets.size === 0) return;
-    busy = true;
+function fullBoard(signals: OpportunitySignal[]): string {
+    return `<hx-partial hx-target="#signal-board" hx-swap="innerHTML">${String(
+        <SignalBoard data={{ ok: true, signals }} />,
+    )}</hx-partial>`;
+}
+
+/**
+ * Fetch one stream, send only what changed, and remember the new state.
+ * Unchanged cards are never serialized to the wire and never touch the DOM.
+ */
+async function refreshRoom(orderBy: OrderBy) {
+    const room = rooms[orderBy];
+    if (room.busy || room.sockets.size === 0) return;
+    room.busy = true;
+
     try {
-        const data = await loadSignals(DEFAULT_QUERY);
-        const html = <SignalBoard data={data} />;
-        for (const ws of sockets) {
-            if (ws.readyState === 1) ws.send(html);
+        const data = await loadSignals(orderBy);
+        // Keep the last good board on a transient error rather than blanking it.
+        if (!data.ok) return;
+
+        const { signals } = data;
+        room.signals = signals;
+
+        const cards = new Map(
+            signals.map((signal) => [cardId(signal), renderCard(signal)]),
+        );
+
+        const tasks: string[] = [];
+        const membershipFlipped =
+            (cards.size === 0) !== (room.cards.size === 0);
+
+        if (!room.rendered || membershipFlipped) {
+            tasks.push(fullBoard(signals));
+        } else {
+            for (const [id, html] of cards) {
+                if (room.cards.get(id) !== html) {
+                    tasks.push(
+                        `<hx-partial hx-target="#${id}" hx-swap="outerMorph">${html}</hx-partial>`,
+                    );
+                }
+            }
+            for (const id of room.cards.keys()) {
+                if (!cards.has(id)) {
+                    tasks.push(
+                        `<hx-partial hx-target="#${id}" hx-swap="delete"></hx-partial>`,
+                    );
+                }
+            }
+        }
+
+        room.cards = cards;
+        room.rendered = true;
+
+        if (tasks.length > 0) {
+            const payload = tasks.join("");
+            for (const ws of room.sockets) {
+                if (ws.readyState === 1) ws.send(payload);
+            }
         }
     } finally {
-        busy = false;
+        room.busy = false;
     }
 }
 
-/** Run one shared interval only while at least one board is connected. */
+let timer: ReturnType<typeof setInterval> | null = null;
+
+function broadcast() {
+    for (const orderBy of ORDER_BY_VALUES) {
+        if (rooms[orderBy].sockets.size > 0) void refreshRoom(orderBy);
+    }
+}
+
+/** Run one shared interval only while at least one room has subscribers. */
 function startTimer() {
     if (timer) return;
-    timer = setInterval(() => void broadcast(), 500);
-    void broadcast();
+    timer = setInterval(broadcast, 500);
+    broadcast();
 }
 
 function stopTimer() {
-    if (sockets.size === 0 && timer) {
+    if (
+        timer &&
+        ORDER_BY_VALUES.every((orderBy) => rooms[orderBy].sockets.size === 0)
+    ) {
         clearInterval(timer);
         timer = null;
     }
@@ -125,7 +214,7 @@ export const SignalController = new Elysia()
         "/signals",
         async ({ query, hx }) => {
             const [data, exchanges] = await Promise.all([
-                loadSignals(query),
+                loadSignals(query.orderBy),
                 loadExchanges(),
             ]);
 
@@ -156,19 +245,54 @@ export const SignalController = new Elysia()
     )
 
     /**
-     * The only WebSocket in the UI. One shared timer broadcasts a single rendered
-     * board to every connected client; the clients do their own filtering and
-     * sorting, and never send anything back. The timer runs only while at least
-     * one socket is open.
+     * The only WebSocket in the UI. Each socket subscribes to one of two rooms
+     * (`profitPercentage` / `profitVolume`) chosen by the `orderBy` query, and
+     * `hx-ws:send` moves it between rooms when the select changes. One shared
+     * timer refreshes each active room once and fans the identical card diffs
+     * out to that room's sockets; clients keep doing their own hide/sort.
      */
     .ws("/signals/ws", {
+        query: streamQuerySchema,
         open(ws) {
-            const wasEmpty = sockets.size === 0;
-            sockets.add(ws);
-            if (wasEmpty) startTimer();
+            const { orderBy } = ws.data.query;
+            rooms[orderBy].sockets.add(ws);
+            subscription.set(ws.id, orderBy);
+            startTimer();
+
+            // Resync this socket: the HTTP render may be stale, or may have
+            // come from the other stream if the user just switched.
+            const room = rooms[orderBy];
+            if (room.rendered) {
+                ws.send(fullBoard(room.signals));
+            } else {
+                void refreshRoom(orderBy);
+            }
+        },
+        message(ws, message) {
+            const orderBy = (message as { orderBy?: unknown } | null)?.orderBy;
+            if (orderBy !== "profitPercentage" && orderBy !== "profitVolume") {
+                return;
+            }
+
+            const current = subscription.get(ws.id);
+            if (current === orderBy) return;
+            if (current) rooms[current].sockets.delete(ws);
+
+            const room = rooms[orderBy];
+            room.sockets.add(ws);
+            subscription.set(ws.id, orderBy);
+            startTimer();
+
+            if (room.rendered) {
+                ws.send(fullBoard(room.signals));
+            } else {
+                void refreshRoom(orderBy);
+            }
         },
         close(ws) {
-            sockets.delete(ws);
+            const orderBy = subscription.get(ws.id);
+            if (orderBy) rooms[orderBy].sockets.delete(ws);
+            subscription.delete(ws.id);
             stopTimer();
         },
     });

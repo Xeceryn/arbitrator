@@ -1,17 +1,5 @@
 # arbitrator
 
-a monorepo of microservices
+a monorepo of arbitrage app services.
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run dev
-```
-
-on each project in the monorepo.
+## NOTE

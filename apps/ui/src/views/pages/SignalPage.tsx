@@ -4,15 +4,11 @@ import type {
 } from "@arbitrator/lister/types";
 
 import { SignalCard } from "../components/SignalCard";
-import { SignalTableRow } from "../components/SignalTableRow";
 
-export type SignalView = "card" | "table";
 export type SignalOrderBy = "profitPercentage" | "profitVolume";
 
 export type SignalQuery = {
-    view: SignalView;
     orderBy: SignalOrderBy;
-    order: "asc" | "desc";
     /** Exchange slugs whose signals are hidden (either leg). */
     hide: string[];
 };
@@ -21,20 +17,18 @@ export type SignalsData =
     | { ok: true; signals: OpportunitySignal[] }
     | { ok: false; message: string };
 
-const VIEW_OPTIONS: Array<{ value: SignalView; label: string }> = [
-    { value: "card", label: "Cards" },
-    { value: "table", label: "Table" },
-];
-
 const ORDER_BY_OPTIONS: Array<{ value: SignalOrderBy; label: string }> = [
     { value: "profitPercentage", label: "Profit %" },
     { value: "profitVolume", label: "Profit volume" },
 ];
 
 /**
- * Filter chrome. Purely client-side now: the socket broadcasts one shared board
- * and `signal-board.ts` reads these inputs to hide/sort/switch view locally, so
- * changing a filter never touches the network and the form keeps focus.
+ * Filter chrome. `hide` is purely client-side, so changing it never touches
+ * the network and the form keeps focus. `orderBy` is the exception: it picks
+ * the stream this socket subscribes to, so `hx-ws:send` (default `change` for
+ * a `<select>`) tells the server to move us to the `profitPercentage` or
+ * `profitVolume` room and resend that room's board. Signals are always ranked
+ * descending, so there is no direction control.
  */
 export const SignalControls = ({
     query,
@@ -48,22 +42,9 @@ export const SignalControls = ({
         onsubmit="return false"
         class="flex flex-wrap items-center gap-2"
     >
-        <div role="tablist" class="tabs tabs-box">
-            {VIEW_OPTIONS.map((option) => (
-                <input
-                    type="radio"
-                    name="view"
-                    class="tab"
-                    value={option.value}
-                    aria-label={option.label}
-                    checked={query.view === option.value}
-                />
-            ))}
-        </div>
-
         <label class="select select-bordered w-40">
             <span class="sr-only">Sort by</span>
-            <select name="orderBy">
+            <select name="orderBy" hx-ws:send="true">
                 {ORDER_BY_OPTIONS.map((option) => (
                     <option
                         value={option.value}
@@ -72,18 +53,6 @@ export const SignalControls = ({
                         {option.label}
                     </option>
                 ))}
-            </select>
-        </label>
-
-        <label class="select select-bordered w-40">
-            <span class="sr-only">Direction</span>
-            <select name="order">
-                <option value="desc" selected={query.order === "desc"}>
-                    Descending
-                </option>
-                <option value="asc" selected={query.order === "asc"}>
-                    Ascending
-                </option>
             </select>
         </label>
 
@@ -128,45 +97,16 @@ export const SignalControls = ({
     </form>
 );
 
-const SignalTable = ({ signals }: { signals: OpportunitySignal[] }) => (
-    <div class="w-full overflow-x-auto">
-        <table class="table w-full table-pin-rows [&_td]:px-2 [&_th]:px-2 sm:[&_td]:px-4 sm:[&_th]:px-4">
-            <thead>
-                <tr>
-                    <th>Coin</th>
-                    <th class="hidden lg:table-cell">ID</th>
-                    <th>Buy exchange</th>
-                    <th>Sell exchange</th>
-                    <th class="hidden text-right md:table-cell">Buy price</th>
-                    <th class="hidden text-right md:table-cell">Sell price</th>
-                    <th class="text-right">Profit %</th>
-                    <th class="text-right">Profit volume</th>
-                    <th class="hidden xl:table-cell">Pair</th>
-                </tr>
-            </thead>
-            <tbody data-signal-list>
-                {signals.map((signal) => (
-                    <SignalTableRow signal={signal} />
-                ))}
-            </tbody>
-        </table>
-    </div>
-);
-
 /**
- * The swappable board. Root id `signal-board` is stable so the WebSocket's
- * morph diff instead of replacing the DOM every second.
- */
-/**
- * The swappable board. Root id `signal-board` is stable so the WebSocket morphs
- * instead of replacing the DOM every tick. It always carries both views; the
- * client shows one and sorts/filters locally, which is why the WebSocket can
- * broadcast the exact same HTML to everyone.
+ * The board body. `#signal-board` is the stable morph-free wrapper; only its
+ * children change. The stream replaces it with this markup on a membership
+ * change (empty ↔ non-empty) and swaps individual cards in place the rest of
+ * the time, so this output is also what the first WebSocket payload carries.
  */
 export const SignalBoard = ({ data }: { data: SignalsData }) => {
     if (!data.ok) {
         return (
-            <div id="signal-board" class="alert alert-error" role="alert">
+            <div class="alert alert-error" role="alert">
                 <div>
                     <p class="font-medium">Unable to load signals.</p>
                     <p class="text-sm opacity-80" safe>
@@ -179,7 +119,7 @@ export const SignalBoard = ({ data }: { data: SignalsData }) => {
 
     if (data.signals.length === 0) {
         return (
-            <div id="signal-board" class="py-16 text-center">
+            <div class="py-16 text-center">
                 <p class="font-medium">No profitable signals</p>
                 <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
                     Start two or more exchanges under Worker Orchestration to
@@ -190,29 +130,23 @@ export const SignalBoard = ({ data }: { data: SignalsData }) => {
     }
 
     return (
-        <div id="signal-board">
-            <div data-signal-panel="card">
-                <div
-                    data-signal-list
-                    class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"
-                >
-                    {data.signals.map((signal) => (
-                        <SignalCard signal={signal} />
-                    ))}
-                </div>
-            </div>
-            <div data-signal-panel="table" style="display:none">
-                <SignalTable signals={data.signals} />
-            </div>
+        <div
+            id="signal-list"
+            data-signal-list="true"
+            class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"
+        >
+            {data.signals.map((signal) => (
+                <SignalCard signal={signal} />
+            ))}
         </div>
     );
 };
 
 /**
- * Full signal page. `#signal-live` owns the socket; it wraps both the controls
- * (kept outside the morph target so their state survives) and the board. Only
- * `#signal-board` is swapped, and `signal-board.ts` re-applies the local
- * filter/sort/view after every push.
+ * Full signal page. `#signal-live` owns the socket; it wraps the controls
+ * (kept outside any swap target so their state survives) and `#signal-board`.
+ * Only the board's contents are ever replaced, and `signal-board.ts` reapplies
+ * the local hide/sort state after every push.
  */
 export const SignalPage = ({
     query,
@@ -224,9 +158,8 @@ export const SignalPage = ({
     exchanges: ExchangeSelect[];
 }) => {
     const wsAttributes: Record<string, string> = {
-        "hx-ws:connect": "/signals/ws",
-        "hx-target": "#signal-board",
-        "hx-swap": "outerMorph",
+        "hx-ws:connect": `/signals/ws?orderBy=${query.orderBy}`,
+        "hx-swap": "none",
         "hx-trigger": "load",
     };
 
@@ -240,7 +173,7 @@ export const SignalPage = ({
                                 query={query}
                                 exchanges={exchanges}
                             />
-                            <div class="mt-4">
+                            <div class="mt-4" id="signal-board">
                                 <SignalBoard data={data} />
                             </div>
                         </div>

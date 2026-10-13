@@ -13,8 +13,3 @@ export function signalColorClass(
 ): string {
     return `signal-${buy}-${sell}`;
 }
-
-/** Textual cue for the pair, so colour is never the only carrier. */
-export function signalPairLabel(buy: BaseCurrency, sell: BaseCurrency): string {
-    return `${buy.toUpperCase()} → ${sell.toUpperCase()}`;
-}
