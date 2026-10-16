@@ -21,6 +21,8 @@ if (!process.argv.includes("--cluster")) {
     await bundleClientSideResources();
 }
 
+const port = Number(process.env.PORT ?? 3000);
+
 new Elysia({ websocket: { perMessageDeflate: true } })
     .onError(({ code, error, request, set }) => {
         if (code === "NOT_FOUND") {
@@ -43,7 +45,31 @@ new Elysia({ websocket: { perMessageDeflate: true } })
         if (code === "VALIDATION") {
             console.log(error);
         }
-        if (code === "INTERNAL_SERVER_ERROR") {
+        if (code === "INTERNAL_SERVER_ERROR" || code === "UNKNOWN") {
+            console.error(`Unhandled error (${code}):`, error);
+
+            const isHTMX =
+                request.headers.get("hx-request") === "true" ||
+                request.headers.get("hx-boosted") === "true";
+
+            if (isHTMX) {
+                // htmx follows the redirect, so a 302 would make the final
+                // status 200 and every `hx-status:5xx` guard unreachable.
+                // Answer with a real 5xx so the guards fire, and force
+                // `HX-Reswap: none` so even an unguarded `hx-swap="delete"`
+                // cannot remove the caller's row. The toast tells the user
+                // that the action failed.
+                set.status = 500;
+                set.headers["HX-Reswap"] = "none";
+                set.headers["HX-Trigger"] = JSON.stringify({
+                    "make-toast": {
+                        level: "error",
+                        message: "Something went wrong. Try again.",
+                    },
+                });
+                return "";
+            }
+
             return redirect("/internal-server-error");
         }
     })
@@ -77,7 +103,7 @@ new Elysia({ websocket: { perMessageDeflate: true } })
         return;
     })
 
-    .listen(3000, ({ hostname, port }) => {
+    .listen(port, ({ hostname, port }) => {
         console.log(
             `UI running on http://${hostname}:${port} with PID ${process.pid}`,
         );

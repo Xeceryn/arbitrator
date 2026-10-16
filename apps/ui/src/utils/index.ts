@@ -1,3 +1,5 @@
+import type { ZodError } from "zod";
+
 export const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: "long",
     timeStyle: "short",
@@ -106,4 +108,56 @@ export function formatCompact(value: number): string {
 /** Ratio (`0.0085`) as a percentage string (`0.85 %`). */
 export function formatProfitPercentage(ratio: number): string {
     return `${(ratio * 100).toFixed(2)} %`;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Inline form validation                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type ValidationMessage = { field: string; message: string };
+
+/** Turn a zod failure into field-scoped messages for inline rendering. */
+export function validationMessages(error: ZodError): ValidationMessage[] {
+    return error.issues.map((issue) => ({
+        field: issue.path.map(String).join("."),
+        message: issue.message,
+    }));
+}
+
+/**
+ * Map an upstream "add" failure to a user-facing message and, when the cause
+ * is obvious, the field to mark invalid. The API only exposes raw strings, so
+ * this keeps duplicate-value errors actionable instead of showing
+ * "Internal Server Error".
+ */
+export function addErrorMessage(
+    entity: string,
+    error: { message?: string } | null | undefined,
+): ValidationMessage {
+    const raw = error?.message ?? "";
+    if (/cmc\s*id/i.test(raw)) {
+        return {
+            field: "cmcId",
+            message:
+                "That CMC ID is already in use. Check the ID and try again.",
+        };
+    }
+    if (/\bslug\b/i.test(raw)) {
+        return {
+            field: "slug",
+            message:
+                "That slug is already in use. Pick another slug and try again.",
+        };
+    }
+    if (/\bcode\b/i.test(raw)) {
+        return {
+            field: "code",
+            message:
+                "That code is already in use. Pick another code and try again.",
+        };
+    }
+    return {
+        field: "",
+        message: `Could not add the ${entity}. Check the details are unique, then try again.`,
+    };
 }
