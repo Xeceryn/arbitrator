@@ -126,13 +126,16 @@ export function Navbar({
 }: PropsWithChildren<{ heading?: string }> = {}) {
     return (
         <header class="navbar sticky top-0 z-20 min-h-14 gap-2 border-b border-base-300 bg-base-100/95 px-4 backdrop-blur sm:px-6 lg:px-8">
-            <label
-                for="left-drawer"
+            <button
+                type="button"
+                id="sidebar-toggle"
                 aria-label="Toggle sidebar"
+                aria-controls="left-drawer"
+                aria-expanded="false"
                 class="btn btn-square btn-ghost drawer-button"
             >
                 <SidebarToggleIcon />
-            </label>
+            </button>
             <div class="flex flex-1 items-center gap-2">
                 {heading ? <PageHeading heading={heading} /> : null}
                 {children}

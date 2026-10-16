@@ -5,18 +5,19 @@ import z from "zod";
 
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
-import { createPushURL } from "../utils";
+import { addErrorMessage, createPushURL, validationMessages } from "../utils";
 import { ExchangeEditModalContent } from "../views/components/ExchangeEditModalContent";
+import { ValidationErrorList } from "../views/components/FormErrors";
 import { MarketTableRow } from "../views/components/MarketTableRow";
 import { PageHeading } from "../views/components/PageHeading";
 import { MarketPage, MarketResults } from "../views/pages/MarketPage";
 
 /** Form bodies arrive as strings, so coerce before handing them to the API. */
 const exchangeBody = z.object({
-    cmcId: z.coerce.number().int().positive(),
-    name: z.string().min(1),
-    slug: z.string().min(1),
-    logo: z.string().min(1),
+    cmcId: z.coerce.number().int().positive("Enter a positive CMC ID."),
+    name: z.string().min(1, "Enter the exchange name."),
+    slug: z.string().min(1, "Enter the CoinMarketCap slug."),
+    logo: z.string().min(1, "Add a logo URL."),
     baseCurrency: z.enum(["usdt", "idr"]),
     registeredOnCmc: z
         .union([z.literal("true"), z.literal("false")])
@@ -24,6 +25,16 @@ const exchangeBody = z.object({
 });
 
 const exchangeUpdateBody = exchangeBody.partial();
+
+/** Loose shape for the route so validation failures can render inline. */
+const exchangeForm = z.object({
+    cmcId: z.optional(z.string()),
+    name: z.optional(z.string()),
+    slug: z.optional(z.string()),
+    logo: z.optional(z.string()),
+    baseCurrency: z.optional(z.string()),
+    registeredOnCmc: z.optional(z.string()),
+});
 
 export const ExchangeController = new Elysia()
     .use(htmx())
@@ -120,7 +131,7 @@ export const ExchangeController = new Elysia()
 
             hx.triggerEvent({
                 "make-toast": { level: "success", message: "Exchange updated" },
-                update_exchange_success: {},
+                "exchange-updated": {},
             });
             return <MarketTableRow {...data} />;
         },
@@ -135,24 +146,59 @@ export const ExchangeController = new Elysia()
     .post(
         "/markets",
         async ({ body, hx }) => {
-            const [error, data] = await listerClient.exchange.add(body);
+            const parsed = exchangeBody.safeParse(body);
+            if (!parsed.success) {
+                const messages = validationMessages(parsed.error);
+                hx.triggerEvent({
+                    "market-validation-error": {
+                        fields: messages.map(({ field }) => field),
+                    },
+                });
+                return status(
+                    422,
+                    <ValidationErrorList messages={messages} />,
+                );
+            }
+
+            const [error, data] = await listerClient.exchange.add(parsed.data);
             if (error || !data) {
+                const messages = [addErrorMessage("exchange", error)];
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: "failed to add exchange",
+                        message: "Failed to add exchange",
+                    },
+                    "market-validation-error": {
+                        fields: messages
+                            .map(({ field }) => field)
+                            .filter(Boolean),
                     },
                 });
-                return status("No Content");
+                return status(
+                    422,
+                    <ValidationErrorList messages={messages} />,
+                );
             }
 
             hx.triggerEvent({
                 "make-toast": { level: "success", message: "Exchange added" },
-                "add-exchange-success": {},
+                "market-created": { id: data.id },
             });
-            return <MarketTableRow {...data} />;
+            return (
+                <>
+                    <MarketTableRow {...data} />
+                    <hx-partial
+                        hx-target="#market-table-empty"
+                        hx-swap="delete"
+                    ></hx-partial>
+                    <hx-partial
+                        hx-target="#market-add-error"
+                        hx-swap="innerHTML"
+                    ></hx-partial>
+                </>
+            );
         },
         {
-            body: exchangeBody,
+            body: exchangeForm,
         },
     );

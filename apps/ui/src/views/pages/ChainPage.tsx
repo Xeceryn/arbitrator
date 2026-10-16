@@ -195,7 +195,7 @@ export const ChainResults = async (props: ListChainInput) => {
                                 <ChainTableRow {...chain} />
                             ))
                         ) : (
-                            <tr>
+                            <tr id="chain-table-empty">
                                 <td colspan="5" class="py-16 text-center">
                                     <p class="font-medium">No chains yet</p>
                                     <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">

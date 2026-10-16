@@ -66,7 +66,7 @@ export const CryptocurrencyRouteModal = () => (
             </div>
         </div>
         <form method="dialog" class="modal-backdrop">
-            <button>close</button>
+            <button aria-label="Close">close</button>
         </form>
     </dialog>
 );

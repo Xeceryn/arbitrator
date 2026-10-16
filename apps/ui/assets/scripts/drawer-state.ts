@@ -1,11 +1,17 @@
 /**
- * Persists the sidebar state across full page loads.
+ * Persists the sidebar state across full page loads and keeps the navbar
+ * toggle's `aria-expanded` in sync.
  *
  * The drawer's `#left-drawer` checkbox is the single source of truth. We
  * remember it so a reload keeps the desktop rail expanded/collapsed.
  *
  * Restore is desktop-only: below `lg` an "open" drawer is a full-screen
  * overlay, so it should always start closed there.
+ *
+ * `Navbar` renders a real `<button>` (keyboard reachable) instead of a
+ * pointer-only `<label for="left-drawer">`. The button forwards its click to
+ * the checkbox, so `change` still fires and the native drawer behaviour is
+ * untouched.
  */
 const STORAGE_KEY = "arbitrator:drawer";
 const DESKTOP_QUERY = "(min-width: 64rem)";
@@ -14,6 +20,18 @@ function initDrawerState() {
     const toggle = document.querySelector<HTMLInputElement>("#left-drawer");
     if (!toggle) return;
 
+    const button =
+        document.querySelector<HTMLButtonElement>("#sidebar-toggle");
+
+    // daisyUI's drawer toggle is visually hidden but still an <input>, so it
+    // would otherwise be the first tab stop after the skip link. The navbar
+    // button is the accessible control; keep the checkbox out of the tab order.
+    toggle.tabIndex = -1;
+
+    const syncExpanded = () => {
+        button?.setAttribute("aria-expanded", String(toggle.checked));
+    };
+
     if (
         window.matchMedia(DESKTOP_QUERY).matches &&
         localStorage.getItem(STORAGE_KEY) === "open"
@@ -21,8 +39,17 @@ function initDrawerState() {
         toggle.checked = true;
     }
 
+    syncExpanded();
+
     toggle.addEventListener("change", () => {
         localStorage.setItem(STORAGE_KEY, toggle.checked ? "open" : "closed");
+        syncExpanded();
+    });
+
+    button?.addEventListener("click", () => {
+        // `.click()` toggles `checked` and fires `change`, which keeps the
+        // persisted state and `aria-expanded` in step with the drawer.
+        toggle.click();
     });
 
     closeOverlayOnNavigate(toggle);

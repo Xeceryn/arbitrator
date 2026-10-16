@@ -221,7 +221,7 @@ export const MarketResults = async (props: ListExchangeInput) => {
                                 <MarketTableRow {...exchange} />
                             ))
                         ) : (
-                            <tr>
+                            <tr id="market-table-empty">
                                 <td colspan="7" class="py-16 text-center">
                                     <p class="font-medium">No exchanges yet</p>
                                     <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">

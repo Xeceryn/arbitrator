@@ -10,15 +10,29 @@ import {
     listCryptocurrencySelectSchema,
 } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
-import { createPushURL } from "../utils";
+import { addErrorMessage, createPushURL, validationMessages } from "../utils";
 import {
     CoinRouteHeader,
     CoinRoutePanel,
 } from "../views/components/CoinRoutePanel";
 import { CoinTableRow } from "../views/components/CoinTableRow";
 import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
+import { ValidationErrorList } from "../views/components/FormErrors";
 import { PageHeading } from "../views/components/PageHeading";
 import { CoinPage, CoinResults } from "../views/pages/CryptocurrencyPage";
+
+/**
+ * Add form body. HTML sends strings, so `cmcId` is coerced; the other fields
+ * must be non-empty. Kept separate from the API insert schema so validation
+ * failures can be rendered inline instead of as an Elysia 422 envelope.
+ */
+const addCoinBody = z.object({
+    name: z.string().min(1, "Enter the coin name."),
+    symbol: z.string().min(1, "Enter the ticker symbol."),
+    slug: z.string().min(1, "Enter the CoinMarketCap slug."),
+    cmcId: z.coerce.number().int().positive("Enter a positive CMC ID."),
+    logo: z.string().min(1, "Add a logo URL."),
+});
 
 export const CryptocurrencyController = new Elysia()
     .use(html())
@@ -99,7 +113,7 @@ export const CryptocurrencyController = new Elysia()
                     level: "info",
                     message: "Coin Updated",
                 },
-                update_coin_success: {},
+                "coin-updated": {},
             });
 
             const [error, data] = await listerClient.cryptocurrency.update({
@@ -202,21 +216,69 @@ export const CryptocurrencyController = new Elysia()
     .post(
         "/coins",
         async ({ body, hx }) => {
-            if (!body.slug) {
-                hx.retarget("#slug-add-coin-field");
-                hx.reswap("afterbegin");
-                return <div>Slug is required</div>;
+            const parsed = addCoinBody.safeParse(body);
+            if (!parsed.success) {
+                const messages = validationMessages(parsed.error);
+                hx.triggerEvent({
+                    "coin-validation-error": {
+                        fields: messages.map(({ field }) => field),
+                    },
+                });
+                return status(
+                    422,
+                    <ValidationErrorList messages={messages} />,
+                );
             }
-            hx.triggerEvent("add-coin-success");
-            return {
-                // <CoinTableRow {
-                // 	{}
-                // } />
-            };
+
+            const [error, data] = await listerClient.cryptocurrency.add(
+                parsed.data,
+            );
+            if (error || !data) {
+                const messages = [addErrorMessage("coin", error)];
+                hx.triggerEvent({
+                    "make-toast": {
+                        level: "error",
+                        message: "Failed to add coin",
+                    },
+                    "coin-validation-error": {
+                        fields: messages
+                            .map(({ field }) => field)
+                            .filter(Boolean),
+                    },
+                });
+                return status(
+                    422,
+                    <ValidationErrorList messages={messages} />,
+                );
+            }
+
+            hx.triggerEvent({
+                "make-toast": { level: "success", message: "Coin added" },
+                "coin-created": { id: data.id },
+            });
+            // Smallest fragment: the new row. The partials clear the modal's
+            // error region and drop the empty-state row when it is present.
+            return (
+                <>
+                    <CoinTableRow {...data} />
+                    <hx-partial
+                        hx-target="#coin-table-empty"
+                        hx-swap="delete"
+                    ></hx-partial>
+                    <hx-partial
+                        hx-target="#add-coin-error"
+                        hx-swap="innerHTML"
+                    ></hx-partial>
+                </>
+            );
         },
         {
             body: z.object({
+                name: z.optional(z.string()),
+                symbol: z.optional(z.string()),
                 slug: z.optional(z.string()),
+                cmcId: z.optional(z.string()),
+                logo: z.optional(z.string()),
             }),
         },
     );

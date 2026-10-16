@@ -11,7 +11,7 @@ export const ExchangeEditModalContent = (
             hx-swap="outerHTML"
             // htmx 4 swaps 4xx by default. Keep validation failures from nuking the row.
             {...{ "hx-status:422": "swap:none" }}
-            hx-on:update_exchange_success="exchange_edit_modal.close()"
+            hx-on:exchange-updated="exchange_edit_modal.close()"
         >
             <h2 id="edit-exchange-title" class="text-lg font-semibold">
                 Edit exchange

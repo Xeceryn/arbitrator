@@ -70,7 +70,7 @@ export const SignalCard = ({ signal }: Props) => {
             data-sell-slug={sellExchange.slug}
             data-profit-percentage={profitPercentage}
             data-profit-volume={profitVolume}
-            class={`card border border-slate-300 bg-secondary-content text-black shadow-sm ${signalColorClass(
+            class={`card border border-base-300 bg-base-100 text-base-content shadow-sm ${signalColorClass(
                 buyExchange.baseCurrency,
                 sellExchange.baseCurrency,
             )}`}
@@ -89,7 +89,7 @@ export const SignalCard = ({ signal }: Props) => {
                             {coin.symbol.toUpperCase()}
                         </span>
                         <span
-                            class="badge badge-sm cursor-pointer border-slate-300 bg-secondary-content font-mono font-bold text-gray-900 transition-opacity hover:opacity-90 active:opacity-70"
+                            class="badge badge-sm cursor-pointer border-base-300 bg-base-100 font-mono font-bold text-base-content transition-opacity hover:opacity-90 active:opacity-70"
                             data-clipboard-text={String(cmcId)}
                             role="button"
                             tabindex="0"
@@ -152,7 +152,7 @@ export const SignalCard = ({ signal }: Props) => {
                             src={buyExchange.logo}
                             alt={buyExchange.name}
                             loading="lazy"
-                            class="size-6 rounded-box bg-slate-200 object-contain p-0.5"
+                            class="size-6 rounded-box bg-base-200 object-contain p-0.5"
                         />
                         <span
                             class="truncate text-xs font-bold opacity-90"
@@ -167,7 +167,7 @@ export const SignalCard = ({ signal }: Props) => {
                             src={sellExchange.logo}
                             alt={sellExchange.name}
                             loading="lazy"
-                            class="size-6 rounded-box bg-slate-200 object-contain p-0.5"
+                            class="size-6 rounded-box bg-base-200 object-contain p-0.5"
                         />
                         <span
                             class="truncate text-xs font-bold opacity-90"

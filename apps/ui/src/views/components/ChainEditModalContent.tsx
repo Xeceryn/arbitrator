@@ -11,7 +11,7 @@ export const ChainEditModalContent = (
             hx-swap="outerHTML"
             // htmx 4 swaps 4xx by default. Keep validation failures from nuking the row.
             {...{ "hx-status:422": "swap:none" }}
-            hx-on:update_chain_success="chain_edit_modal.close()"
+            hx-on:chain-updated="chain_edit_modal.close()"
         >
             <h2 id="edit-chain-title" class="text-lg font-semibold">
                 Edit chain

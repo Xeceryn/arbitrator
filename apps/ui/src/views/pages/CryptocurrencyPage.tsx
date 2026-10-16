@@ -212,7 +212,7 @@ export const CoinResults = async (props: ListCryptocurrencyInput) => {
                         {hasCoins ? (
                             data.data.map((coin) => <CoinTableRow {...coin} />)
                         ) : (
-                            <tr>
+                            <tr id="coin-table-empty">
                                 <td colspan="6" class="py-16 text-center">
                                     <p class="font-medium">No coins yet</p>
                                     <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">

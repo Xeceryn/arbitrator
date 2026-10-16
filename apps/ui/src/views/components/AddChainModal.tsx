@@ -1,3 +1,9 @@
+import { ariaInvalidHandler, FormErrorRegion } from "./FormErrors";
+
+/**
+ * Add-chain dialog. Posts to `/chain`; the response is the new row plus
+ * partials that clear the inline error region and drop the empty-state row.
+ */
 export const AddChainModal = () => {
     return (
         <dialog
@@ -15,9 +21,18 @@ export const AddChainModal = () => {
                     hx-post="/chain"
                     hx-target="#chain-table-body"
                     hx-swap="afterbegin"
-                    hx-on:add-chain-success="add_chain_modal.close()"
+                    {...{
+                        "hx-status:422":
+                            "target:#chain-add-error swap:innerHTML",
+                        "hx-status:5xx": "swap:none",
+                        "hx-on:chain-validation-error": ariaInvalidHandler(),
+                        "hx-on:chain-created":
+                            "add_chain_modal.close(); this.reset();",
+                    }}
                     class="mt-4 flex flex-col gap-3"
                 >
+                    <FormErrorRegion id="chain-add-error" />
+
                     <label class="input input-bordered">
                         <span class="label">Name</span>
                         <input
@@ -26,6 +41,7 @@ export const AddChainModal = () => {
                             placeholder="Ethereum"
                             autocomplete="off"
                             required
+                            aria-describedby="chain-add-error"
                         />
                     </label>
 
@@ -37,6 +53,7 @@ export const AddChainModal = () => {
                             placeholder="ETH"
                             autocomplete="off"
                             required
+                            aria-describedby="chain-add-error"
                         />
                     </label>
 

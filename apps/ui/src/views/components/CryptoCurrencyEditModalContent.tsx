@@ -13,8 +13,8 @@ export const CryptocurrencyEditModalContent = (
             hx-swap="outerHTML"
             // htmx 4 swaps 4xx by default. Keep validation failures from nuking the row.
             {...{ "hx-status:422": "swap:none" }}
-            // Server sends `HX-Trigger: update_coin_success` on success.
-            hx-on:update_coin_success="cryptocurrency_edit_modal.close()"
+            // Server sends `HX-Trigger: coin-updated` on success.
+            hx-on:coin-updated="cryptocurrency_edit_modal.close()"
         >
             <h2 id="edit-coin-title" class="text-lg font-semibold">
                 Edit cryptocurrency

@@ -57,7 +57,7 @@ export const SortableHeader = ({
         : "none";
 
     return (
-        <th aria-sort={ariaSort} class={className}>
+        <th scope="col" aria-sort={ariaSort} class={className}>
             <button
                 type="button"
                 class="group inline-flex items-center gap-1 rounded-box text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
