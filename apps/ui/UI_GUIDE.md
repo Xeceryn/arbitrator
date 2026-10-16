@@ -84,6 +84,11 @@ return (
 );
 ```
 
+New responses should prefer `<hx-partial hx-target="#page-heading">` over
+`hx-swap-oob` when only the heading changes (partials apply after the main swap
+and after OOB); `PageHeading oob` remains valid. See
+[htmx 4 / HATEOAS conventions](#htmx-4--hateoas-conventions).
+
 A page renders **content only**:
 
 - No `<main>`, no page padding, no `bg-base-200` — the layout supplies them.
@@ -225,7 +230,19 @@ that the navbar heading follows htmx navigation.
 
 ## Known gaps for the next pass
 
-- `Home` is the only remaining screen on the old layout; it is reachable from
-  the brand logo (`/` redirects to `/home`) but has no sidebar entry.
+- `Home` uses the same layout as the other pages; it is reachable from the
+  brand logo (`/` redirects to `/home`) but has no sidebar entry.
 - The row delete button is styled and labelled but not wired to a request.
   When wiring it, add a confirmation step (`hx-confirm` or a dialog).
+
+## htmx 4 / HATEOAS conventions
+
+Every write endpoint returns the **smallest fragment that changed** (one card, one row, one cell) — never the whole list or table. Fragment markup is HATEOAS by construction: it embeds the URL for every next legal action, including state-dependent ones, so a region can always refresh itself from its own URL. No action URL exists only in client JS.
+
+**Region updates.** One primary target carries the main swap. Secondary regions come from the server in the same response: use `<hx-partial hx-target="#region" hx-swap="…">` when the server knows the exact target (preferred; partials apply after the main swap and after OOB), `<hx-partial>` is preferred over `hx-swap-oob`. Use the `HX-Trigger` response header when more than one listener may care, or when a region should refresh through its own embedded URL.
+
+**Events.** `HX-Trigger: <event>` or `HX-Trigger: {"<event>":{…detail…}}`; listeners are declarative: `hx-trigger="<event> from:body"` or an inline `hx-on:<event>="…"`. Custom event names are **colon-free and hyphenated** (`assignment-exchange-added`, `assignment-toggle-error`) so they cannot be confused with `hx-trigger` modifier tokens such as `from:`, `delay:`, `target:`. Inline `hx-on:*` handlers may read `event.detail` or toggle local presentation state; they must never issue requests or build URLs.
+
+**Composability.** Every requestable region is its own component: one card, one row, one candidate, one cell. A component that can be requested alone is a component; a component that is only ever rendered inside a bigger blob is markup.
+
+**htmx 4 specifics.** `hx-status:422` for validation; `hx-status:5xx="swap:none"` wherever a 5xx body must not swap (in v4 all statuses swap except 204/304); `hx-sync="this:replace"` to cancel stale requests (prefer `replace` over `abort`); `hx-include="closest form"` on GET/DELETE because v4 does not include enclosing form data; morph (`outerMorph`/`innerMorph`/`outerSync`) only where preserving focus, scroll, or input state matters; `:inherited` only where inheritance is intended (`hx-target:inherited="#x"`); `hx-indicator` for anything that can take time; `hx-morph-skip` on a region whose live DOM state must survive a morph. Keep ids stable and keep `HX-Push-Url` behavior consistent with the existing pages.
