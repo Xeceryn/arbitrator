@@ -1,7 +1,7 @@
 # mDNS / avahi
 
 There is nothing to publish here. The reverse proxy serves a single hostname —
-this machine's own mDNS name, `<hostname>.local` (currently `falcon.local`) —
+this machine's own mDNS name, `<hostname>.local` (currently `condor.local`) —
 which `avahi-daemon` publishes natively.
 
 Subdomain aliases (`arbitrator.<hostname>.local`, `rabbitmq.<hostname>.local`)

@@ -24,7 +24,7 @@ services:
             # host.docker.internal points back at the host from inside the container.
             UI_UPSTREAM: ${UI_UPSTREAM:-host.docker.internal:3000}
             # The single hostname nginx serves (the host's own mDNS name).
-            LOCAL_DOMAIN: ${LOCAL_DOMAIN:-falcon.local}
+            LOCAL_DOMAIN: ${LOCAL_DOMAIN:-condor.local}
             # Only substitute our variables; leave nginx's own $host, $scheme, etc.
             NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|LOCAL_DOMAIN)$$"
         ports:

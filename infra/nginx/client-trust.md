@@ -2,8 +2,8 @@
 
 nginx serves `https://<computer-hostname>.local/` (the UI) with a
 certificate signed by **your local mkcert CA**. `<computer-hostname>` is
-whatever `hostname` prints on the nginx host (e.g. `hostname` returns `falcon`,
-so clients use `falcon.local`).
+whatever `hostname` prints on the nginx host (e.g. `hostname` returns `condor`,
+so clients use `condor.local`).
 Every client — browser, phone, API client, CI job — must trust that CA once, or
 it will see a security warning (or refuse to connect).
 

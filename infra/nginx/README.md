@@ -4,7 +4,7 @@ nginx terminates TLS and proxies the UI dev server, which keeps running on the
 host at `http://localhost:3000` (`bun run --watch src/main.ts`). Nothing in the
 app changes — you just visit `https://<hostname>.local/` instead.
 
-There is a **single hostname** (the machine's own mDNS name, `falcon.local`
+There is a **single hostname** (the machine's own mDNS name, `condor.local`
 here) and **no subdomains**. Any additional service is mounted as a path prefix
 on that host, so there is no wildcard DNS, cert SAN or alias publisher to keep
 in sync.
@@ -28,7 +28,7 @@ docker compose up -d nginx
 
 Then run the UI as usual (`bun run dev` in `apps/ui`) and open
 `https://$(hostname).local/` — on this machine that is
-**`https://falcon.local/`**. `avahi-daemon` already publishes
+**`https://condor.local/`**. `avahi-daemon` already publishes
 `<hostname>.local`, so LAN clients need no DNS config (see
 [../avahi/README.md](../avahi/README.md)).
 
