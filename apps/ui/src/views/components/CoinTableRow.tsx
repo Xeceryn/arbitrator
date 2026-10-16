@@ -59,6 +59,8 @@ export const CoinTableRow = (props: CryptocurrencySelect) => {
                         type="button"
                         class="btn btn-square btn-outline btn-xs sm:btn-sm"
                         aria-label={`Manage assignments for ${props.name}`}
+                        aria-haspopup="dialog"
+                        aria-controls="coin_assignment_dialog"
                         title={`Manage assignments for ${props.name}`}
                         hx-get={`/coins/${props.id}/assignment`}
                         hx-target="#coin_assignment_panel"

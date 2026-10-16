@@ -1,11 +1,50 @@
-import type { PaginatedChainList } from "@arbitrator/lister/types";
+import type {
+    ChainSelect,
+    PaginatedChainList,
+} from "@arbitrator/lister/types";
 
-import { SearchIcon } from "./icons";
+/** Complete, current-state candidate URL. Every page control owns its URL. */
+function candidatePageUrl(
+    coinId: number,
+    marketId: number,
+    search: string,
+    page: number,
+): string {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    params.set("page", String(page));
+    return `/coins/${coinId}/assignments/${marketId}/available-chains?${params.toString()}`;
+}
 
-type Props = {
+export const AvailableChainRow = ({
+    coinId,
+    marketId,
+    chain,
+}: {
     coinId: number;
     marketId: number;
-};
+    chain: ChainSelect;
+}) => (
+    <li id={`available-chain-${marketId}-${chain.id}`}>
+        <button
+            type="button"
+            class="flex items-center justify-between gap-2"
+            aria-label={`Select ${chain.name}`}
+            hx-get={`/coins/${coinId}/assignments/${marketId}/chains/select?chainId=${chain.id}`}
+            hx-target={`#market-chain-staging-${marketId}`}
+            hx-swap="innerHTML"
+            hx-indicator="#coin-assignment-indicator"
+        >
+            <span class="truncate">{chain.name}</span>
+            <span class="flex items-center gap-2">
+                <span class="badge badge-ghost badge-sm font-mono uppercase">
+                    {chain.code}
+                </span>
+                <span class="text-xs font-medium text-primary">Select</span>
+            </span>
+        </button>
+    </li>
+);
 
 type AvailableProps = {
     coinId: number;
@@ -14,89 +53,99 @@ type AvailableProps = {
 };
 
 /**
- * Search results for the chain picker. Rendered inside the market's chain
- * form, so the pagination buttons submit that form (carrying `search`).
+ * Search results for the chain picker. Selecting a candidate only moves to
+ * step 2; assigning is a separate request.
  */
-export const AvailableChains = ({ coinId, marketId, data }: AvailableProps) => (
-    <div class="mt-1">
-        {data.data.length === 0 ? (
-            <p class="px-2 py-2 text-sm opacity-60">All chains assigned!</p>
-        ) : (
-            <ul class="menu w-full rounded-field border border-base-300 bg-base-100 p-1 shadow-sm">
-                {data.data.map((chain) => (
-                    <li>
-                        <button
-                            type="button"
-                            class="flex items-center justify-between gap-2"
-                            hx-post={`/coins/${coinId}/assignments/${marketId}/chains`}
-                            hx-vals={JSON.stringify({ chainId: chain.id })}
-                            hx-target={`#market-chains-${marketId}`}
-                            hx-swap="innerHTML"
-                            hx-indicator="#coin-assignment-indicator"
-                        >
-                            <span class="truncate" safe>
-                                {chain.name}
-                            </span>
-                            <span
-                                class="badge badge-ghost badge-sm font-mono"
-                                safe
+export const AvailableChains = ({
+    coinId,
+    marketId,
+    data,
+}: AvailableProps) => {
+    const search = data.meta.search;
+
+    return (
+        <div>
+            {data.data.length === 0 ? (
+                <div class="rounded-box border border-base-300 bg-base-100 px-3 py-3 text-center">
+                    {search ? (
+                        <>
+                            <p class="text-sm opacity-70">
+                                No chains match <span class="font-medium">{search}</span>
+                                .
+                            </p>
+                            <button
+                                type="button"
+                                class="btn btn-ghost btn-xs mt-2"
+                                hx-get={`/coins/${coinId}/assignments/${marketId}/available-chains`}
+                                hx-target={`#available-chains-${marketId}`}
+                                hx-swap="innerHTML"
+                                hx-sync={`#available-chains-${marketId}:replace`}
+                                hx-indicator={`#chain-search-indicator-${marketId}`}
                             >
-                                {chain.code}
-                            </span>
-                        </button>
-                    </li>
-                ))}
-            </ul>
-        )}
+                                Clear search
+                            </button>
+                        </>
+                    ) : (
+                        <p class="text-sm opacity-70">
+                            Every chain is already assigned to this market.
+                        </p>
+                    )}
+                </div>
+            ) : (
+                <ul class="menu w-full rounded-field border border-base-300 bg-base-100 p-1 shadow-sm">
+                    {data.data.map((chain) => (
+                        <AvailableChainRow
+                            coinId={coinId}
+                            marketId={marketId}
+                            chain={chain}
+                        />
+                    ))}
+                </ul>
+            )}
 
-        {data.meta.pages > 1 ? (
-            <div class="join mt-1 flex justify-center">
-                {Array.from(
-                    { length: data.meta.pages },
-                    (_, index) => index + 1,
-                ).map((page) => (
+            {data.meta.pages > 1 ? (
+                <div class="mt-2 flex items-center justify-between gap-2">
                     <button
-                        type="submit"
-                        name="page"
-                        value={page.toString()}
-                        class={`join-item btn btn-xs ${page === data.meta.page ? "btn-active" : ""}`}
+                        type="button"
+                        class="btn btn-xs"
+                        disabled={!data.meta.hasPreviousPage}
+                        aria-label="Previous page of chains"
+                        hx-get={candidatePageUrl(
+                            coinId,
+                            marketId,
+                            search,
+                            data.meta.page - 1,
+                        )}
+                        hx-target={`#available-chains-${marketId}`}
+                        hx-swap="innerHTML"
+                        hx-sync={`#available-chains-${marketId}:replace`}
+                        hx-indicator={`#chain-search-indicator-${marketId}`}
                     >
-                        {page}
+                        Previous
                     </button>
-                ))}
-            </div>
-        ) : null}
-    </div>
-);
-
-/**
- * Searchable, paginated chain picker (5 per page, by name). The `load` trigger
- * fills it the moment the chain panel is swapped in.
- */
-export const AssignChainDropdown = ({ coinId, marketId }: Props) => (
-    <form
-        class="flex flex-col"
-        hx-get={`/coins/${coinId}/assignments/${marketId}/available-chains`}
-        hx-target={`#available-chains-${marketId}`}
-        hx-swap="innerHTML"
-        hx-trigger="load, submit, input delay:300ms"
-        hx-indicator={`#available-chains-indicator-${marketId}`}
-    >
-        <label class="input input-bordered input-sm w-full">
-            <span class="sr-only">Search chains</span>
-            <SearchIcon />
-            <input
-                id={`chain-search-${marketId}`}
-                type="search"
-                name="search"
-                placeholder="Search chain"
-                autocomplete="off"
-            />
-        </label>
-        <span
-            id={`available-chains-indicator-${marketId}`}
-            class="htmx-indicator loading loading-spinner loading-xs"
-        ></span>
-        <div id={`available-chains-${marketId}`}></div>
-    </form>
-);
+                    <span class="text-xs opacity-60">
+                        Page {data.meta.page} of {data.meta.pages}
+                    </span>
+                    <button
+                        type="button"
+                        class="btn btn-xs"
+                        disabled={!data.meta.hasNextPage}
+                        aria-label="Next page of chains"
+                        hx-get={candidatePageUrl(
+                            coinId,
+                            marketId,
+                            search,
+                            data.meta.page + 1,
+                        )}
+                        hx-target={`#available-chains-${marketId}`}
+                        hx-swap="innerHTML"
+                        hx-sync={`#available-chains-${marketId}:replace`}
+                        hx-indicator={`#chain-search-indicator-${marketId}`}
+                    >
+                        Next
+                    </button>
+                </div>
+            ) : null}
+        </div>
+    );
+};

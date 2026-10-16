@@ -1,5 +1,6 @@
 import type { MarketWithRelations } from "@arbitrator/lister/types";
 
+import { ExchangeSymbolInput } from "./AssignmentStaging";
 import { ChevronDownIcon, PencilIcon, XIcon } from "./icons";
 
 type Props = {
@@ -10,10 +11,10 @@ type Props = {
 /**
  * One exchange assignment for a coin, as a self-contained card.
  *
- * The header row wraps on narrow widths. The trade toggle and unassign refresh
- * the whole list (outerMorph); the chain panel is marked `hx-morph-skip` so a
- * refresh does not drop an expanded chain list. The pencil reveals an inline
- * editor for `exchangeSymbol`.
+ * Every control here updates the smallest possible region: the trade toggle
+ * swaps nothing, the symbol editor morphs only this card, and unassign deletes
+ * only this card. The chain panel is `hx-morph-skip` so a card morph never
+ * drops an expanded chain list.
  */
 export const ExchangeAssignmentCard = ({ coinId, market }: Props) => {
     return (
@@ -30,18 +31,17 @@ export const ExchangeAssignmentCard = ({ coinId, market }: Props) => {
 
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
-                        <span class="truncate font-medium" safe>
+                        <span class="truncate font-medium">
                             {market.exchange.name}
                         </span>
                         <span
                             class="badge badge-outline font-mono text-xs"
                             title="Exchange symbol"
-                            safe
                         >
                             {market.exchangeSymbol}
                         </span>
                     </div>
-                    <div class="truncate text-sm opacity-60" safe>
+                    <div class="truncate text-sm opacity-60">
                         {market.exchange.slug}
                     </div>
                 </div>
@@ -57,7 +57,7 @@ export const ExchangeAssignmentCard = ({ coinId, market }: Props) => {
                         hx-vals="js:{ tradeEnabled: event.target.checked }"
                         hx-swap="none"
                         hx-indicator="#coin-assignment-indicator"
-                        hx-on:toggle-error="this.checked = event.detail.tradeEnabled"
+                        hx-on:assignment-toggle-error="this.checked = event.detail.tradeEnabled"
                     />
                 </label>
 
@@ -100,8 +100,8 @@ export const ExchangeAssignmentCard = ({ coinId, market }: Props) => {
                         title={`Unassign ${market.exchange.name}`}
                         hx-delete={`/coins/${coinId}/assignments/${market.id}`}
                         hx-confirm={`Unassign ${market.exchange.name} from this coin?`}
-                        hx-target="#coin-assignment-list"
-                        hx-swap="outerMorph"
+                        hx-target={`#market-card-${market.id}`}
+                        hx-swap="delete"
                         hx-indicator="#coin-assignment-indicator"
                     >
                         <XIcon />
@@ -113,18 +113,24 @@ export const ExchangeAssignmentCard = ({ coinId, market }: Props) => {
                 <form
                     class="flex flex-wrap items-center gap-2"
                     hx-patch={`/coins/${coinId}/assignments/${market.id}`}
-                    hx-target="#coin-assignment-list"
+                    hx-target={`#market-card-${market.id}`}
                     hx-swap="outerMorph"
                     hx-indicator="#coin-assignment-indicator"
+                    {...{
+                        "hx-status:422": `target:#symbol-error-${market.id} swap:innerHTML`,
+                    }}
+                    {...{ "hx-status:5xx": "swap:none" }}
                 >
-                    <input
-                        name="exchangeSymbol"
+                    <div class="w-full">
+                        <div
+                            id={`symbol-error-${market.id}`}
+                            role="alert"
+                        ></div>
+                    </div>
+                    <ExchangeSymbolInput
+                        id={`exchange-symbol-${market.id}`}
                         value={market.exchangeSymbol}
-                        required
-                        maxlength="255"
-                        autocomplete="off"
-                        aria-label="Exchange symbol"
-                        class="input input-bordered input-sm w-40 font-mono"
+                        describedBy={`symbol-error-${market.id}`}
                     />
                     <button type="submit" class="btn btn-sm btn-primary">
                         Save

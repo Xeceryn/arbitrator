@@ -165,6 +165,7 @@ export const BaseLayout = async ({
                     <dialog
                         id="coin_assignment_dialog"
                         class="modal modal-middle"
+                        aria-labelledby="coin_assignment_header"
                     >
                         <div class="modal-box flex max-w-3xl! flex-col overflow-hidden">
                             <header class="flex items-center gap-3 border-b border-base-300 pb-4">
