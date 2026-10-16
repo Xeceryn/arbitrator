@@ -2,7 +2,8 @@
  * How the UI names each worker state. Socket states come from the worker's own
  * `state` messages; `exited` is the process/thread dying, reported by the pool.
  * `reconnected` folds into "open"; a worker that hasn't reported yet is
- * "unknown". Colour is redundant — the label carries the meaning.
+ * "unknown". Colour is redundant — the label carries the meaning, and every
+ * health badge prints the count next to the state name.
  */
 export const WORKER_STATE_VIEW: Record<
     string,
@@ -42,6 +43,12 @@ export function normalizeState(state: string | undefined): string {
     return state;
 }
 
+/** Human label for a raw (or missing) worker state. */
+export function workerStateLabel(state: string | undefined): string {
+    const normalized = normalizeState(state);
+    return WORKER_STATE_VIEW[normalized]?.label ?? normalized;
+}
+
 export function countWorkerStates(
     workers: Array<{ state?: string }>,
 ): WorkerStateCounts {
@@ -55,13 +62,11 @@ export function countWorkerStates(
     return counts;
 }
 
-export function sumFailures(failures: Record<string, number> = {}): number {
-    return Object.values(failures).reduce((total, value) => total + value, 0);
-}
-
 /**
- * The per-row health cell. The socket replaces the whole row, hence the
- * stable `id`.
+ * The per-row health cell. Every badge carries the state name and its count, so
+ * colour is never the only cue. Below the badges, each of this exchange's own
+ * workers is listed with its id, normalized state and symbol count. An exchange
+ * with no workers says so in words.
  */
 export const WorkerHealthCell = ({
     slug,
@@ -72,21 +77,25 @@ export const WorkerHealthCell = ({
     states: WorkerStateCounts;
     workers: WorkerDetail[];
 }) => (
-    <td id={`worker-health-${slug}`}>
+    <td id={`worker-health-${slug}`} class="hidden sm:table-cell">
         <WorkerStateBadges states={states} />
         {workers.length > 0 ? (
-            <div class="mt-1 flex flex-wrap gap-1 font-mono text-[0.625rem] opacity-70">
+            <ul class="mt-1 space-y-0.5 font-mono text-[0.625rem] opacity-70">
                 {workers.map((worker) => (
-                    <span class="rounded bg-base-200 px-1" title={worker.id}>
-                        {(worker.state ?? "?") + "·" + worker.symbolCount}
-                    </span>
+                    <li
+                        class="truncate"
+                        safe
+                        title={`${worker.id} is ${workerStateLabel(worker.state)} with ${worker.symbolCount} coins`}
+                    >
+                        {`${worker.id} · ${workerStateLabel(worker.state)} · ${worker.symbolCount}`}
+                    </li>
                 ))}
-            </div>
+            </ul>
         ) : null}
     </td>
 );
 
-/** Compact health strip: one badge per non-zero state. */
+/** Compact health strip: one count+label badge per state present. */
 export const WorkerStateBadges = ({
     states,
 }: {
@@ -97,7 +106,7 @@ export const WorkerStateBadges = ({
     );
 
     if (visible.length === 0) {
-        return <span class="text-sm opacity-50">—</span>;
+        return <span class="text-xs opacity-60">No live workers</span>;
     }
 
     return (
@@ -107,11 +116,10 @@ export const WorkerStateBadges = ({
                 const count = states[state] ?? 0;
                 return (
                     <span
-                        class={`badge badge-sm gap-1 whitespace-nowrap ${view.className}`}
-                        title={`${count} ${view.label}`}
+                        class={`badge badge-sm gap-1 whitespace-nowrap tabular-nums ${view.className}`}
+                        safe
                     >
-                        <span class="font-semibold tabular-nums">{count}</span>
-                        <span safe>{view.label}</span>
+                        {`${count} ${view.label}`}
                     </span>
                 );
             })}

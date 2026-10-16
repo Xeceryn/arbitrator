@@ -3,7 +3,7 @@ import type { ExchangeSelect } from "@arbitrator/lister/types";
 
 import { ExchangeWorkerRow } from "../components/ExchangeWorkerRow";
 import { RefreshIcon } from "../components/icons";
-import { countWorkerStates, sumFailures } from "../components/worker-state";
+import { countWorkerStates } from "../components/worker-state";
 
 /** Shared sender snapshot; the single source of truth lives in contracts. */
 export type SenderStatus = OrchestratorStatus;
@@ -12,101 +12,10 @@ export type WorkersData =
     | { ok: true; status: SenderStatus; exchanges: ExchangeSelect[] }
     | { ok: false; message: string };
 
-const oob = (enabled?: boolean) => (enabled ? { "hx-swap-oob": "true" } : {});
-
-export const WorkersStats = ({
-    status,
-    oob: enabled,
-}: {
-    status: SenderStatus;
-    oob?: boolean;
-}) => {
-    const totalSymbols = status.workers.reduce(
-        (total, worker) => total + worker.symbols.length,
-        0,
-    );
-    const states = countWorkerStates(status.workers);
-    states.exited = (states.exited ?? 0) + sumFailures(status.failures);
-
-    return (
-        <div
-            id="workers-stats"
-            class="stats stats-vertical w-full border border-base-300 bg-base-100 sm:stats-horizontal"
-            {...oob(enabled)}
-        >
-            <div class="stat">
-                <div class="stat-title">Started exchanges</div>
-                <div class="stat-value tabular-nums">
-                    {status.started.length}
-                </div>
-            </div>
-            <div class="stat">
-                <div class="stat-title">Worker connections</div>
-                <div class="stat-value tabular-nums">
-                    {status.workers.length}
-                </div>
-            </div>
-            <div class="stat">
-                <div class="stat-title">Open</div>
-                <div class="stat-value tabular-nums text-success">
-                    {states.connected ?? 0}
-                </div>
-            </div>
-            <div class="stat">
-                <div class="stat-title">Reconnecting</div>
-                <div class="stat-value tabular-nums text-warning">
-                    {states.reconnecting ?? 0}
-                </div>
-            </div>
-            <div class="stat">
-                <div class="stat-title">Errored</div>
-                <div class="stat-value tabular-nums text-error">
-                    {states.error ?? 0}
-                </div>
-            </div>
-            <div class="stat">
-                <div class="stat-title">Exited</div>
-                <div class="stat-value tabular-nums">{states.exited ?? 0}</div>
-            </div>
-            <div class="stat">
-                <div class="stat-title">Streaming coins</div>
-                <div class="stat-value tabular-nums">{totalSymbols}</div>
-            </div>
-        </div>
-    );
-};
-
-export const WorkersHint = ({
-    status,
-    exchanges,
-    oob: enabled,
-}: {
-    status: SenderStatus;
-    exchanges: ExchangeSelect[];
-    oob?: boolean;
-}) => {
-    if (status.started.length !== 1) {
-        return <div id="workers-hint" class="hidden" {...oob(enabled)} />;
-    }
-    const slug = status.started[0]!;
-    const name =
-        exchanges.find((exchange) => exchange.slug === slug)?.name ?? slug;
-    return (
-        <div
-            id="workers-hint"
-            role="status"
-            class="alert alert-warning"
-            {...oob(enabled)}
-        >
-            <span safe>
-                {name} is started and waiting — start a second exchange to
-                stream the coins transferable between them.
-            </span>
-        </div>
-    );
-};
-
-/** Derive the props for one exchange's row from the current status. */
+/**
+ * Derive the props for one exchange's row from the current status. Every number
+ * here is scoped to a single exchange; there is deliberately no aggregate.
+ */
 export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
     const own = status.workers.filter(
         (worker) => worker.exchangeSlug === exchange.slug,
@@ -128,6 +37,8 @@ export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
         /** Alone: started but idle until a second exchange joins. */
         waiting: started && status.started.length < 2,
         workerCount: own.length,
+        desired,
+        capacity,
         symbolCount: own.reduce(
             (total, worker) => total + worker.symbols.length,
             0,
@@ -142,6 +53,22 @@ export function workerRowProps(status: SenderStatus, exchange: ExchangeSelect) {
     };
 }
 
+/**
+ * The single row renderer. The page and every push/write fragment call this, so
+ * the server-rendered row and the pushed row are byte-identical.
+ */
+export function renderWorkerRow(
+    status: SenderStatus,
+    exchange: ExchangeSelect,
+): string {
+    return String(<ExchangeWorkerRow {...workerRowProps(status, exchange)} />);
+}
+
+/** Wrap a rendered row in the `<hx-partial>` that morphs it in place. */
+export function wrapWorkerRowPartial(slug: string, html: string): string {
+    return `<hx-partial hx-target="#worker-row-${slug}" hx-swap="outerMorph">${html}</hx-partial>`;
+}
+
 const WorkersTable = ({
     status,
     exchanges,
@@ -151,31 +78,44 @@ const WorkersTable = ({
 }) => (
     <div class="w-full overflow-x-auto">
         <table class="table w-full table-pin-rows [&_td]:px-2 [&_th]:px-2 sm:[&_td]:px-4 sm:[&_th]:px-4">
+            <caption class="sr-only">
+                Orderbook workers, one row per exchange. Each row shows the
+                exchange's own status, worker counts, worker health and
+                streaming-coin count.
+            </caption>
             <thead>
                 <tr>
-                    <th class="w-1/3">Exchange</th>
-                    <th class="hidden w-24 md:table-cell">Base</th>
-                    <th class="w-28">Status</th>
-                    <th>Worker health</th>
-                    <th class="hidden w-20 text-right sm:table-cell">
+                    <th scope="col" class="w-1/3">
+                        Exchange
+                    </th>
+                    <th scope="col" class="w-20 sm:w-24">
+                        Status
+                    </th>
+                    <th scope="col" class="hidden w-28 sm:table-cell">
                         Workers
                     </th>
-                    <th class="hidden w-20 text-right sm:table-cell">Coins</th>
-                    <th class="w-32 text-right">
-                        <span class="sr-only">Action</span>
+                    <th scope="col" class="hidden w-32 sm:table-cell">
+                        Worker health
+                    </th>
+                    <th
+                        scope="col"
+                        class="hidden w-14 text-right sm:table-cell"
+                    >
+                        Coins
+                    </th>
+                    <th scope="col" class="w-20 text-right sm:w-24">
+                        Action
                     </th>
                 </tr>
             </thead>
             <tbody id="workers-tbody">
                 {exchanges.length > 0 ? (
-                    exchanges.map((exchange) => (
-                        <ExchangeWorkerRow
-                            {...workerRowProps(status, exchange)}
-                        />
-                    ))
+                    exchanges.map((exchange) =>
+                        renderWorkerRow(status, exchange),
+                    )
                 ) : (
                     <tr>
-                        <td colspan="7" class="py-16 text-center">
+                        <td colspan="6" class="py-16 text-center">
                             <p class="font-medium">No exchanges yet</p>
                             <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
                                 Add exchanges under Exchange Management first.
@@ -190,11 +130,10 @@ const WorkersTable = ({
 
 /**
  * The swap unit for an explicit refresh (`GET /workers/list`). Start/stop and
- * recompute never swap: their POSTs only toast and every visual change arrives
- * via the socket. The steady state never polls: `#workers-live` owns a
- * WebSocket and the server pushes `WorkersStatusUpdate` fragments out-of-band
- * on every sender event. The error card keeps a slow retry poll so a downed
- * sender recovers without a manual refresh.
+ * recompute never swap the list: their POSTs return only the changed rows as
+ * `<hx-partial>` fragments. The steady state never polls: `#workers-live` owns
+ * a WebSocket and the server pushes only the rows that changed. The error card
+ * keeps a slow retry poll so a downed sender recovers without a manual refresh.
  */
 export const WorkersResults = ({ data }: { data: WorkersData }) => {
     if (!data.ok) {
@@ -223,57 +162,18 @@ export const WorkersResults = ({ data }: { data: WorkersData }) => {
 
     return (
         <div id="workers-results" class="flex flex-col gap-4">
-            <WorkersStats status={data.status} />
-            <WorkersHint status={data.status} exchanges={data.exchanges} />
             <WorkersTable status={data.status} exchanges={data.exchanges} />
         </div>
     );
 };
 
 /**
- * WebSocket payload. The sender pushes its full status on every mutation; this
- * swaps stats, hint and the whole table body out-of-band, so nothing is ever
- * re-requested after the initial snapshot.
- *
- * Why a full `<tbody>` and not per-cell fragments: htmx parses responses
- * through `<template>`, which drops bare `<td>`/`<tr>` tags (only the first
- * table-ish element survives, and only in table context). Wrapping the rows in
- * `<table>` keeps the parser happy; the bare `<table>` shell is left behind in
- * the fragment and never swapped. When the exchange cache is cold there is no
- * row data, so the tbody is omitted and only stats/hint update.
- */
-export const WorkersStatusUpdate = ({
-    status,
-    exchanges,
-}: {
-    status: SenderStatus;
-    exchanges: ExchangeSelect[];
-}) => {
-    return (
-        <>
-            <WorkersStats status={status} oob />
-            <WorkersHint status={status} exchanges={exchanges} oob />
-            {exchanges.length > 0 ? (
-                <table>
-                    <tbody id="workers-tbody" hx-swap-oob="true">
-                        {exchanges.map((exchange) => (
-                            <ExchangeWorkerRow
-                                {...workerRowProps(status, exchange)}
-                            />
-                        ))}
-                    </tbody>
-                </table>
-            ) : null}
-        </>
-    );
-};
-
-/**
  * Static chrome: the header and refresh button stay put while the results swap.
  * `#workers-indicator` is shared by the refresh and every row's action button.
- * `#workers-live` owns the socket; only dynamic cells are swapped out-of-band,
- * so row buttons keep focus across pushes. Recompute is fire-and-forget like
- * start/stop: it toasts and the socket carries the result.
+ * `#workers-live` owns the socket; only changed rows are pushed as partials, so
+ * row buttons keep focus across pushes. Recompute, start and stop are
+ * fire-and-forget for the main swap (`hx-swap="none"`); their server response is
+ * a row partial.
  */
 export const WorkersPage = ({ data }: { data: WorkersData }) => {
     const wsAttributes: Record<string, string> = {
@@ -282,9 +182,9 @@ export const WorkersPage = ({ data }: { data: WorkersData }) => {
         "hx-swap": "none",
         "hx-trigger": "load",
         "hx-on:htmx:ws:after:connection":
-            "document.getElementById('workers-live-on')?.classList.remove('hidden');document.getElementById('workers-live-off')?.classList.add('hidden')",
+            "document.getElementById('workers-live-on')?.classList.remove('hidden');document.getElementById('workers-live-off')?.classList.add('hidden');const s=document.getElementById('workers-live-status');if(s)s.textContent='Worker status connection is live.'",
         "hx-on:htmx:ws:close":
-            "document.getElementById('workers-live-on')?.classList.add('hidden');document.getElementById('workers-live-off')?.classList.remove('hidden')",
+            "document.getElementById('workers-live-on')?.classList.add('hidden');document.getElementById('workers-live-off')?.classList.remove('hidden');const s=document.getElementById('workers-live-status');if(s)s.textContent='Worker status connection lost. Reconnecting.'",
         "hx-on:htmx:ws:after:message:incoming":
             "document.getElementById('workers-updated')&&(document.getElementById('workers-updated').textContent='Updated '+new Date().toLocaleTimeString())",
     };
@@ -300,8 +200,15 @@ export const WorkersPage = ({ data }: { data: WorkersData }) => {
                                     Orderbook workers
                                 </h2>
                                 <p class="max-w-prose text-sm opacity-60">
-                                    Start two or more exchanges to stream the
-                                    coins transferable between them.
+                                    Per-exchange worker status, live from the
+                                    orchestrator.
+                                </p>
+                                <p
+                                    id="workers-live-status"
+                                    role="status"
+                                    class="sr-only"
+                                >
+                                    Connecting to the worker status stream.
                                 </p>
                             </div>
                             <div class="flex items-center gap-2">
@@ -319,7 +226,7 @@ export const WorkersPage = ({ data }: { data: WorkersData }) => {
                                 </span>
                                 <span
                                     id="workers-updated"
-                                    class="hidden text-xs opacity-60 sm:inline"
+                                    class="hidden text-xs tabular-nums opacity-60 sm:inline"
                                 ></span>
                                 <span
                                     id="workers-indicator"

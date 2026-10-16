@@ -1,7 +1,7 @@
 import type { OrchestratorStatus } from "@arbitrator/contracts";
 import type { ExchangeSelect } from "@arbitrator/lister/types";
 import { htmx } from "@gtramontina.com/elysia-htmx";
-import { Elysia, redirect, status } from "elysia";
+import { Elysia, redirect } from "elysia";
 import z from "zod";
 
 import { BaseLayout } from "../helpers/BaseLayout";
@@ -9,10 +9,11 @@ import { type AppClients, clientsPlugin } from "../plugins/clients";
 import { getLastSenderStatus, subscribeToSenderStatus } from "../sender-stream";
 import { PageHeading } from "../views/components/PageHeading";
 import {
+    renderWorkerRow,
     type WorkersData,
     WorkersPage,
     WorkersResults,
-    WorkersStatusUpdate,
+    wrapWorkerRowPartial,
 } from "../views/pages/WorkersPage";
 
 const slugParam = z.object({ slug: z.string().min(1) });
@@ -64,8 +65,8 @@ type BrowserSocket = {
 
 /**
  * Exchange list from the last snapshot (`GET /workers`, `/workers/list`).
- * The sender only knows slugs, so the socket needs these names to render row
- * action buttons. Refreshed on every snapshot; never re-requested per event.
+ * The sender only knows slugs, so every render needs these names. Refreshed on
+ * every snapshot; never re-requested per event.
  */
 let cachedExchanges: ExchangeSelect[] = [];
 
@@ -74,28 +75,70 @@ function cacheExchanges(exchanges: ExchangeSelect[]): void {
 }
 
 /**
+ * Last row HTML sent for each exchange, keyed by slug. The sender pushes its
+ * full status on every mutation; the UI diffs the rendered rows against this
+ * map and sends only what changed. Kept in sync by both the socket push and the
+ * write endpoints, so a row is never sent twice for the same state.
+ */
+const lastPushedRows = new Map<string, string>();
+
+/** Render every exchange's row once, keyed by slug. */
+function buildRowState(status: OrchestratorStatus): Map<string, string> {
+    return new Map(
+        cachedExchanges.map((exchange) => [
+            exchange.slug,
+            renderWorkerRow(status, exchange),
+        ]),
+    );
+}
+
+function resetLastPushedRows(next: Map<string, string>): void {
+    lastPushedRows.clear();
+    for (const [slug, html] of next) lastPushedRows.set(slug, html);
+}
+
+/**
  * Every connected workers board. One shared sender stream feeds all of them:
- * the sender pushes its full status on every mutation and this fans the same
- * rendered `WorkersStatusUpdate` fragment out to each socket. The exchange
- * list is only fetched once per page load; nothing polls after that.
+ * on each status event the UI renders every exchange row, compares it with the
+ * last row it sent, and pushes only the changed ones as `<hx-partial>`
+ * fragments. `outerMorph` keeps focus and scroll inside a row across a push.
  */
 const browserSockets = new Set<BrowserSocket>();
 let unsubscribeSender: (() => void) | null = null;
 
 function broadcast(status: OrchestratorStatus): void {
     if (browserSockets.size === 0) return;
-    const html = (
-        <WorkersStatusUpdate status={status} exchanges={cachedExchanges} />
-    );
+
+    const changed: string[] = [];
+    const present = new Set<string>();
+    for (const exchange of cachedExchanges) {
+        present.add(exchange.slug);
+        const html = renderWorkerRow(status, exchange);
+        if (lastPushedRows.get(exchange.slug) !== html) {
+            lastPushedRows.set(exchange.slug, html);
+            changed.push(wrapWorkerRowPartial(exchange.slug, html));
+        }
+    }
+    // An exchange removed from the lister list no longer has a row to push.
+    for (const slug of lastPushedRows.keys()) {
+        if (!present.has(slug)) lastPushedRows.delete(slug);
+    }
+
+    if (changed.length === 0) {
+        console.log("[workers-ws] push skipped: no changed rows");
+        return;
+    }
+
+    const payload = changed.join("");
     let sent = 0;
     for (const ws of browserSockets) {
         if (ws.readyState === 1) {
-            ws.send(html);
+            ws.send(payload);
             sent += 1;
         }
     }
     console.log(
-        `[workers-ws] broadcast started=${status.started.length} workers=${status.workers.length} to ${sent}/${browserSockets.size} sockets`,
+        `[workers-ws] pushed ${changed.length} changed row(s) of ${cachedExchanges.length} to ${sent}/${browserSockets.size} sockets`,
     );
 }
 
@@ -109,6 +152,50 @@ function releaseSenderSubscription(): void {
         unsubscribeSender();
         unsubscribeSender = null;
     }
+}
+
+/**
+ * The current sender status for a write response. Prefer a fresh HTTP read;
+ * fall back to the last socket push if the sender is momentarily unreachable.
+ */
+async function freshSenderStatus(
+    sender: AppClients["sender"],
+): Promise<OrchestratorStatus | undefined> {
+    const { data, error } = await sender.exchanges.get();
+    if (error || !data) return getLastSenderStatus();
+    return data;
+}
+
+/** Minimal response for start/stop: just the affected exchange's row. */
+async function oneRowResponse(
+    sender: AppClients["sender"],
+    slug: string,
+): Promise<string> {
+    const status = await freshSenderStatus(sender);
+    const exchange = cachedExchanges.find(
+        (candidate) => candidate.slug === slug,
+    );
+    if (!status || !exchange) return "";
+    const html = renderWorkerRow(status, exchange);
+    lastPushedRows.set(slug, html);
+    return wrapWorkerRowPartial(slug, html);
+}
+
+/** Minimal response for reconcile: one partial per row that changed. */
+async function changedRowsResponse(
+    sender: AppClients["sender"],
+): Promise<string> {
+    const status = await freshSenderStatus(sender);
+    if (!status) return "";
+    const parts: string[] = [];
+    for (const exchange of cachedExchanges) {
+        const html = renderWorkerRow(status, exchange);
+        if (lastPushedRows.get(exchange.slug) !== html) {
+            lastPushedRows.set(exchange.slug, html);
+            parts.push(wrapWorkerRowPartial(exchange.slug, html));
+        }
+    }
+    return parts.join("");
 }
 
 export const WorkersController = new Elysia()
@@ -144,8 +231,9 @@ export const WorkersController = new Elysia()
     })
 
     /**
-     * Fire-and-forget: forward to the sender, toast the outcome, swap nothing.
-     * Every visual change (this tab and all others) arrives via the socket.
+     * Fire-and-forget mutation: forward to the sender, toast the outcome, and
+     * return one partial per changed exchange row. The main swap stays `none`;
+     * the partials morph the rows.
      */
     .post("/workers/reconcile", async ({ hx, sender }) => {
         const { error } = await sender.reconcile.post();
@@ -165,7 +253,7 @@ export const WorkersController = new Elysia()
             });
         }
         hx.reswap("none");
-        return status("No Content");
+        return changedRowsResponse(sender);
     })
 
     .post(
@@ -195,7 +283,7 @@ export const WorkersController = new Elysia()
             }
 
             hx.reswap("none");
-            return status("No Content");
+            return oneRowResponse(sender, params.slug);
         },
         { params: slugParam },
     )
@@ -227,35 +315,58 @@ export const WorkersController = new Elysia()
             }
 
             hx.reswap("none");
-            return status("No Content");
+            return oneRowResponse(sender, params.slug);
         },
         { params: slugParam },
     )
 
     /**
-     * The only workers WebSocket in the UI. One shared sender stream
-     * broadcasts a single rendered status fragment to every connected board;
-     * the subscription runs only while at least one socket is open.
+     * The only workers WebSocket in the UI. One shared sender stream broadcasts
+     * only the rows that changed to every connected board; the subscription
+     * runs only while at least one socket is open.
      */
     .ws("/workers/ws", {
-        open(ws) {
+        async open(ws) {
             const socket = ws as unknown as BrowserSocket;
             browserSockets.add(socket);
             ensureSenderSubscription();
             console.log(
                 `[workers-ws] browser connected (${browserSockets.size} sockets)`,
             );
-            // Catch-up: a browser joining an idle page gets the last known
-            // status immediately instead of waiting for the next sender event.
-            const last = getLastSenderStatus();
-            if (last && socket.readyState === 1) {
-                socket.send(
-                    <WorkersStatusUpdate
-                        status={last}
-                        exchanges={cachedExchanges}
-                    />,
-                );
+
+            // A board can connect before this process ever rendered a page, so
+            // the exchange list may be cold. Load it before rendering rows.
+            if (cachedExchanges.length === 0) {
+                try {
+                    await loadWorkersData(ws.data as unknown as AppClients);
+                } catch (error) {
+                    console.error(
+                        `[workers-ws] initial exchange load failed: ${error instanceof Error ? error.message : String(error)}`,
+                    );
+                }
             }
+
+            const status = getLastSenderStatus();
+            if (!status) {
+                console.log(
+                    "[workers-ws] initial sync deferred: no sender status yet",
+                );
+                return;
+            }
+            if (cachedExchanges.length === 0) {
+                console.log(
+                    "[workers-ws] initial sync skipped: no exchanges cached",
+                );
+                return;
+            }
+
+            const rows = buildRowState(status);
+            resetLastPushedRows(rows);
+            const payload = [...rows.entries()]
+                .map(([slug, html]) => wrapWorkerRowPartial(slug, html))
+                .join("");
+            if (socket.readyState === 1) socket.send(payload);
+            console.log(`[workers-ws] initial sync rows=${rows.size}`);
         },
         close(ws) {
             browserSockets.delete(ws as unknown as BrowserSocket);
