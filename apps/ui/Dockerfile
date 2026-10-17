@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
-FROM oven/bun:1.4.2 AS builder
+FROM oven/bun:1.4.3 AS builder
 WORKDIR /app
 
 # The UI imports the `@arbitrator/*` workspace packages directly from source, so
@@ -23,7 +23,7 @@ RUN cd apps/ui && bun run build
 # ---------------------------------------------------------------------------
 # Runtime
 # ---------------------------------------------------------------------------
-FROM oven/bun:1.4.2-slim AS runtime
+FROM oven/bun:1.4.3-slim AS runtime
 WORKDIR /app/apps/ui
 ENV NODE_ENV=production
 

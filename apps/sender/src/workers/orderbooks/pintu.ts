@@ -50,7 +50,7 @@ function stream(coins: string[]) {
 
     socket.on("message", async (message) => {
         const messageParsed = JSON.parse(message.toString());
-        const { method, data, request_id } = messageParsed;
+        const { method, data } = messageParsed;
 
         if (method == "subscription") {
             const cmcId = SymbolStore.get(messageParsed.channel);

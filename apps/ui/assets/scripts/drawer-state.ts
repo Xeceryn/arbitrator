@@ -20,8 +20,7 @@ function initDrawerState() {
     const toggle = document.querySelector<HTMLInputElement>("#left-drawer");
     if (!toggle) return;
 
-    const button =
-        document.querySelector<HTMLButtonElement>("#sidebar-toggle");
+    const button = document.querySelector<HTMLButtonElement>("#sidebar-toggle");
 
     // daisyUI's drawer toggle is visually hidden but still an <input>, so it
     // would otherwise be the first tab stop after the skip link. The navbar

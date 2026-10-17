@@ -256,10 +256,16 @@ export const ExchangeWorkerRow = ({
                         <div class="truncate font-medium" safe>
                             {exchange.name}
                         </div>
-                        <div class="hidden truncate font-mono text-xs opacity-60 sm:block sm:text-sm" safe>
+                        <div
+                            class="hidden truncate font-mono text-xs opacity-60 sm:block sm:text-sm"
+                            safe
+                        >
                             {exchange.slug}
                         </div>
-                        <span class="badge badge-outline badge-xs mt-1 font-mono uppercase" safe>
+                        <span
+                            class="badge badge-outline badge-xs mt-1 font-mono uppercase"
+                            safe
+                        >
                             {exchange.baseCurrency}
                         </span>
                     </div>

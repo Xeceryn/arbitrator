@@ -224,10 +224,7 @@ export const CryptocurrencyController = new Elysia()
                         fields: messages.map(({ field }) => field),
                     },
                 });
-                return status(
-                    422,
-                    <ValidationErrorList messages={messages} />,
-                );
+                return status(422, <ValidationErrorList messages={messages} />);
             }
 
             const [error, data] = await listerClient.cryptocurrency.add(
@@ -246,10 +243,7 @@ export const CryptocurrencyController = new Elysia()
                             .filter(Boolean),
                     },
                 });
-                return status(
-                    422,
-                    <ValidationErrorList messages={messages} />,
-                );
+                return status(422, <ValidationErrorList messages={messages} />);
             }
 
             hx.triggerEvent({

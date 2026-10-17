@@ -7,7 +7,7 @@
 # supervisor and the worker are bundled so the runtime image needs no
 # node_modules.
 # ---------------------------------------------------------------------------
-FROM oven/bun:1.4.2 AS builder
+FROM oven/bun:1.4.3 AS builder
 WORKDIR /app
 
 COPY package.json bun.lock tsconfig.base.json tsconfig.json ./
@@ -22,7 +22,7 @@ RUN cd apps/receiver && bun run build
 # ---------------------------------------------------------------------------
 # Runtime
 # ---------------------------------------------------------------------------
-FROM oven/bun:1.4.2-slim AS runtime
+FROM oven/bun:1.4.3-slim AS runtime
 WORKDIR /app/apps/receiver
 ENV NODE_ENV=production
 # main.ts spawns the bundled worker instead of the TypeScript source.

@@ -1,7 +1,4 @@
-import type {
-    ChainSelect,
-    PaginatedChainList,
-} from "@arbitrator/lister/types";
+import type { ChainSelect, PaginatedChainList } from "@arbitrator/lister/types";
 
 /** Complete, current-state candidate URL. Every page control owns its URL. */
 function candidatePageUrl(
@@ -56,11 +53,7 @@ type AvailableProps = {
  * Search results for the chain picker. Selecting a candidate only moves to
  * step 2; assigning is a separate request.
  */
-export const AvailableChains = ({
-    coinId,
-    marketId,
-    data,
-}: AvailableProps) => {
+export const AvailableChains = ({ coinId, marketId, data }: AvailableProps) => {
     const search = data.meta.search;
 
     return (
@@ -70,8 +63,8 @@ export const AvailableChains = ({
                     {search ? (
                         <>
                             <p class="text-sm opacity-70">
-                                No chains match <span class="font-medium">{search}</span>
-                                .
+                                No chains match{" "}
+                                <span class="font-medium">{search}</span>.
                             </p>
                             <button
                                 type="button"

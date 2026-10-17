@@ -161,16 +161,17 @@ export const AssignmentConfirmCard = ({
             {...{ "hx-status:422": "target:#assignment-error swap:innerHTML" }}
             {...{ "hx-status:5xx": "swap:none" }}
         >
-            <input type="hidden" name="exchangeId" value={String(exchange.id)} />
+            <input
+                type="hidden"
+                name="exchangeId"
+                value={String(exchange.id)}
+            />
 
             <div class="form-control w-full">
                 <label class="label-text" for="exchange-symbol-input">
                     Exchange symbol
                 </label>
-                <ExchangeSymbolInput
-                    value={defaultSymbol}
-                    ariaLabel={null}
-                />
+                <ExchangeSymbolInput value={defaultSymbol} ariaLabel={null} />
                 <span class="mt-1 text-xs opacity-60">
                     Optional. Leave the suggested value to use the coin symbol.
                 </span>

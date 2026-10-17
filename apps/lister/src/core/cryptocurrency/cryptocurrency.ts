@@ -1,4 +1,3 @@
-import { logger } from "@arbitrator/logger";
 import { count, eq } from "drizzle-orm";
 
 import { paginate } from "../../common/pagination";

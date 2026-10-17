@@ -8,7 +8,7 @@ declare let self: Worker;
 
 import { threadId as processId } from "node:worker_threads";
 
-import { DefaultLogger, WebsocketClientV2 } from "bitget-api";
+import { WebsocketClientV2 } from "bitget-api";
 
 import {
     WorkerMessageType,

@@ -154,10 +154,7 @@ export const ExchangeController = new Elysia()
                         fields: messages.map(({ field }) => field),
                     },
                 });
-                return status(
-                    422,
-                    <ValidationErrorList messages={messages} />,
-                );
+                return status(422, <ValidationErrorList messages={messages} />);
             }
 
             const [error, data] = await listerClient.exchange.add(parsed.data);
@@ -174,10 +171,7 @@ export const ExchangeController = new Elysia()
                             .filter(Boolean),
                     },
                 });
-                return status(
-                    422,
-                    <ValidationErrorList messages={messages} />,
-                );
+                return status(422, <ValidationErrorList messages={messages} />);
             }
 
             hx.triggerEvent({

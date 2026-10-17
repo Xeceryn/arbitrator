@@ -95,7 +95,10 @@ async function renderChainEmptyPartial(marketId: number) {
     const hasLinks = links.length > 0;
 
     return (
-        <hx-partial hx-target={`#market-chains-empty-${marketId}`} hx-swap="outerMorph">
+        <hx-partial
+            hx-target={`#market-chains-empty-${marketId}`}
+            hx-swap="outerMorph"
+        >
             <MarketChainEmpty marketId={marketId} hidden={hasLinks} />
         </hx-partial>
     );
@@ -134,7 +137,10 @@ export const AssignmentController = new Elysia()
                 await listerClient.cryptocurrency.findById(params.id);
             if (coinError || !coin) {
                 hx.triggerEvent({
-                    "make-toast": { level: "error", message: "Coin not found." },
+                    "make-toast": {
+                        level: "error",
+                        message: "Coin not found.",
+                    },
                 });
                 return status("No Content");
             }
@@ -310,10 +316,11 @@ export const AssignmentController = new Elysia()
                 return status("No Content");
             }
 
-            const [listError, markets] =
-                await listerClient.market.listDetailed({
+            const [listError, markets] = await listerClient.market.listDetailed(
+                {
                     cryptocurrencyId: params.id,
-                });
+                },
+            );
             const created = markets?.find((item) => item.id === market.id);
             if (listError || !created) {
                 hx.reswap("none");
@@ -371,7 +378,8 @@ export const AssignmentController = new Elysia()
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: "Assignment not found. Reopen the assignments.",
+                        message:
+                            "Assignment not found. Reopen the assignments.",
                     },
                 });
                 return status("No Content");
@@ -439,7 +447,12 @@ export const AssignmentController = new Elysia()
                 hx.triggerEvent({
                     "make-toast": { level: "success", message: "Symbol saved" },
                 });
-                return <ExchangeAssignmentCard coinId={params.id} market={updated} />;
+                return (
+                    <ExchangeAssignmentCard
+                        coinId={params.id}
+                        market={updated}
+                    />
+                );
             }
 
             const [error] = await listerClient.market.update({

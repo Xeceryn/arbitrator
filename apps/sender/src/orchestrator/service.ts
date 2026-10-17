@@ -145,7 +145,7 @@ export class Orchestrator {
             this.notifyQueued = false;
             if (this.listeners.size === 0) return;
             const status = this.status();
-            for (const listener of [...this.listeners]) listener(status);
+            for (const listener of this.listeners) listener(status);
             this.scheduleExpiryPush(status);
         });
     }
@@ -158,7 +158,7 @@ export class Orchestrator {
             this.expiryTimer = undefined;
             if (this.listeners.size === 0) return;
             const next = this.status();
-            for (const listener of [...this.listeners]) listener(next);
+            for (const listener of this.listeners) listener(next);
             this.scheduleExpiryPush(next);
         }, 16_000);
     }

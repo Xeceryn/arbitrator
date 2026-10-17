@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
-FROM oven/bun:1.4.2 AS builder
+FROM oven/bun:1.4.3 AS builder
 WORKDIR /app
 
 COPY package.json bun.lock tsconfig.base.json tsconfig.json ./
@@ -30,7 +30,7 @@ CMD ["bunx", "--bun", "drizzle-kit", "migrate"]
 # ---------------------------------------------------------------------------
 # Runtime
 # ---------------------------------------------------------------------------
-FROM oven/bun:1.4.2-slim AS runtime
+FROM oven/bun:1.4.3-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 

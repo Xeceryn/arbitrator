@@ -7,8 +7,8 @@ import { listChainSelectSchema } from "../../../lister/src/core/chain/chain.sche
 import { BaseLayout } from "../helpers/BaseLayout";
 import { addErrorMessage, createPushURL, validationMessages } from "../utils";
 import { ChainEditModalContent } from "../views/components/ChainEditModalContent";
-import { ValidationErrorList } from "../views/components/FormErrors";
 import { ChainTableRow } from "../views/components/ChainTableRow";
+import { ValidationErrorList } from "../views/components/FormErrors";
 import { PageHeading } from "../views/components/PageHeading";
 import { ChainPage, ChainResults } from "../views/pages/ChainPage";
 
@@ -163,10 +163,7 @@ export const ChainController = new Elysia()
                         fields: messages.map(({ field }) => field),
                     },
                 });
-                return status(
-                    422,
-                    <ValidationErrorList messages={messages} />,
-                );
+                return status(422, <ValidationErrorList messages={messages} />);
             }
 
             const [error, data] = await listerClient.chain.add(parsed.data);
@@ -183,10 +180,7 @@ export const ChainController = new Elysia()
                             .filter(Boolean),
                     },
                 });
-                return status(
-                    422,
-                    <ValidationErrorList messages={messages} />,
-                );
+                return status(422, <ValidationErrorList messages={messages} />);
             }
 
             hx.triggerEvent({

@@ -4,7 +4,11 @@ import type {
 } from "@arbitrator/lister/types";
 
 /** Complete, current-state candidate URL. Every page control owns its URL. */
-function candidatePageUrl(coinId: number, search: string, page: number): string {
+function candidatePageUrl(
+    coinId: number,
+    search: string,
+    page: number,
+): string {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     params.set("page", String(page));
@@ -65,8 +69,8 @@ export const AvailableExchanges = ({ coinId, data }: AvailableProps) => {
                     {search ? (
                         <>
                             <p class="text-sm opacity-70">
-                                No exchanges match <span class="font-medium">{search}</span>
-                                .
+                                No exchanges match{" "}
+                                <span class="font-medium">{search}</span>.
                             </p>
                             <button
                                 type="button"
