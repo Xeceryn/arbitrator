@@ -20,6 +20,7 @@
     },
     "dependencies": {
         "@arbitrator/contracts": "workspace:*",
+        "@arbitrator/env-loader": "workspace:*",
         "@arbitrator/logger": "workspace:*",
         "@arbitrator/messaging": "workspace:*",
         "@orpc/server": "catalog:core",

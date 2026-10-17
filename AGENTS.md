@@ -1,0 +1,86 @@
+# AGENTS.md
+
+Bun workspace monorepo (`apps/*`, `packages/*`). No turbo/nx/task runner — the
+root `package.json` scripts are the whole build system.
+
+**Every app and package has its own `AGENTS.md`. Read it before changing code
+there.** This root file covers only cross-cutting facts.
+
+## Environment
+
+- `bun install` from the repo root installs every workspace.
+- Env comes from `.env` files, not direnv. Bun loads only the `.env` in each
+  app's own directory (no walk-up), so every real app has `apps/<name>/.env`;
+  `docker compose` reads the root `.env`. `.envrc` is being retired.
+- Read env through `@arbitrator/env-loader` (`env`), never `process.env` /
+  `Bun.env` directly. Template: repo-root `.env.example`.
+- Bun version is pinned by the Dockerfiles (`oven/bun:1.4.3`).
+- Root `README.md` is a stub — not a source of truth.
+
+## Commands
+
+- `bun run format` — oxfmt (4-space indent, 80 cols, sorted imports).
+- `bun run lint` / `bun run lint:fix` — oxlint.
+- **Typecheck per app/package, not from the root.** `cd apps/<name>` (or
+  `packages/<name>`) and run its own `typecheck` script; not every package has
+  one. The root `typecheck` script exists but is not the workflow.
+- Sender-only check (excludes legacy workers):
+  `bunx tsc -p apps/sender/tsconfig.app.json --noEmit`.
+- Tests: `bun test apps/sender/src/orchestrator` (orchestrator pool + reconcile)
+  and `bun test` in `apps/chain-metadata-collector` (pure chain normalization).
+- Local infra: `docker compose up -d postgresql rabbitmq redis`.
+- Prod-ish stack: `docker compose -f deploy.compose.yaml up --build`.
+
+Run lint → typecheck (in the changed app/package) → test before declaring work
+done.
+
+## Repo map
+
+- `apps/lister` — source of truth. oRPC API `:3001`, Postgres/drizzle.
+- `apps/sender` — orchestrator + worker pool. Elysia `:3002`.
+- `apps/receiver` — RabbitMQ orderbook consumer (cluster per CPU).
+- `apps/ui` — server-rendered htmx app `:3000`.
+- `apps/cmc-collector` — CMC scrape/import CLI.
+- `apps/chain-metadata-collector` — per-exchange coin/chain crawl → lister chains
+  and chain links.
+- `apps/old-lister-migrator` — one-off migration scripts.
+- `apps/{ticker,galactus,potential,gate-proxy}` — empty scaffolds.
+- `packages/contracts` — shared zod schemas + RabbitMQ topology.
+- `packages/messaging` — shared RabbitMQ publish/subscribe.
+- `packages/logger` — winston factory.
+- `packages/sdk` — oRPC client to lister.
+- `packages/env-loader` — unused legacy env schema.
+
+## Dependencies and bun catalogs
+
+- Workspace deps use `workspace:*`.
+- Shared third-party deps use `catalog:<name>` from `workspaces.catalogs` in the
+  root `package.json`. Catalogs: `core`, `tools`, `sdk`, `types`.
+- **If a package could be reused by another app or package, add it to a catalog
+  and reference `catalog:<name>` instead of pinning a version in the leaf
+  `package.json`.** (Debt example: `apps/sender` pins `binance`, `bitget-api`,
+  `kucoin-api`, … directly even though the `sdk` catalog defines them.)
+
+## Cross-cutting gotchas
+
+- `verbatimModuleSyntax` and `noUncheckedIndexedAccess` are on: use `import
+type`, and guard or `!` indexed access.
+- Cross-package imports resolve through `tsconfig.base.json` `paths`, not only
+  `package.json` exports. `@arbitrator/lister/*` → `apps/lister/src/*`, so deep
+  imports like `@arbitrator/lister/core/opportunity/opportunity` work even though
+  they are absent from `apps/lister/package.json` exports.
+- Builds are `Bun.build` / `bun build --target=bun` into `dist`; Dockerfiles
+  consume `dist`.
+- Never hardcode a RabbitMQ routing key or queue name — import from
+  `@arbitrator/contracts`.
+- Data-plane rule (ADR 0002): worker `postMessage` carries **control only**;
+  orderbook data goes through RabbitMQ.
+- Reconcile is desired-state and idempotent (ADR 0001): recompute desired state
+  and diff; never apply an event diff directly.
+- Runtime ports: ui `3000`, lister `3001`, sender `3002`.
+
+## Reference docs
+
+- `docs/transfer-orchestration.md` — feature design + task tracker.
+- `docs/adr/0001-desired-state-reconciliation.md`, `0002-worker-control-vs-data-plane.md`.
+- `apps/ui/UI_GUIDE.md`, `infra/nginx/README.md`.

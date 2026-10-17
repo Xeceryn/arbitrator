@@ -1,3 +1,4 @@
+import { env } from "@arbitrator/env-loader";
 import {
     createLogger as createWinstonLogger,
     format,
@@ -7,7 +8,7 @@ const { label, printf, combine, colorize, timestamp, metadata } = format;
 
 export function createLogger(title: string) {
     const logger = createWinstonLogger({
-        level: process.env.NODE_ENV === "production" ? "info" : "debug",
+        level: env.NODE_ENV === "production" ? "info" : "debug",
         transports: [
             new transports.Console({
                 format: combine(
@@ -43,7 +44,7 @@ export function createLogger(title: string) {
         ],
     });
 
-    if (process.env.NODE_ENV === "production") {
+    if (env.NODE_ENV === "production") {
         logger.add(
             new transports.File({
                 format: combine(

@@ -1,3 +1,5 @@
+import { env } from "@arbitrator/env-loader";
+
 import type { CmcExchangeDetail, OldActiveCoinData } from "../types";
 
 const cmc_exchange_slugs = [
@@ -38,7 +40,7 @@ export async function get_exchange_cmc_details(): Promise<CmcExchangeDetail> {
         {
             method: "GET",
             headers: {
-                "X-CMC_PRO_API_KEY": Bun.env.CMC_API_KEY!,
+                "X-CMC_PRO_API_KEY": env.CMC_API_KEY ?? "",
             },
         },
     );

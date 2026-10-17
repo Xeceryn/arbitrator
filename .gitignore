@@ -9,6 +9,9 @@ dist
 # cmc-collector scraped snapshots
 apps/cmc-collector/data/
 
+# chain-metadata-collector scraped snapshots
+apps/chain-metadata-collector/data/
+
 # code coverage
 coverage
 *.lcov

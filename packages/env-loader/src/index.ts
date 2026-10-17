@@ -1,76 +1,113 @@
 import z from "zod";
 
-// Define the schema for your environment variables
+/**
+ * The single, typed environment surface for the monorepo.
+ *
+ * Import `env` (or the helpers) instead of reaching into `process.env` /
+ * `Bun.env`. Bun loads the `.env` of the *current* directory before the entry
+ * module runs, so `env` is populated by the time anything imports it; every
+ * variable has a development default, so a bare checkout works.
+ *
+ * Secrets and optional integration keys are `.optional()` and come back as
+ * `undefined` when unset (or blank), so callers can check truthiness and skip
+ * the integration rather than failing.
+ */
+
+/** A trimmed string that collapses a blank value to `undefined`. */
+const optionalString = z.preprocess(
+    (value) =>
+        typeof value === "string" && value.trim() === "" ? undefined : value,
+    z.string().trim().optional(),
+);
+
 const envSchema = z.object({
-    // Server configuration
     NODE_ENV: z
-        .enum(["development", "production", "test"])
+        .enum(["development", "test", "production"])
         .default("development"),
 
-    LISTER_PORT: z
+    // Postgres
+    DATABASE_URL: z
         .string()
-        .transform((val) => parseInt(val, 10))
-        .pipe(z.number().min(1).max(65535))
-        .default(3001),
-    LISTER_HOST_FROM_CLIENT: z.string().default("localhost"),
-    LISTER_HOST_FROM_SERVER: z.string().default("localhost"),
-    LISTER_POSTGRES_HOST: z.string().default("localhost"),
-    LISTER_POSTGRES_PORT: z
-        .string()
-        .transform((val) => parseInt(val, 10))
-        .pipe(z.number().min(1).max(65535))
-        .default(5432),
-    LISTER_POSTGRES_USER: z.string().default("postgres"),
-    LISTER_POSTGRES_PASSWORD: z.string().default("postgres"),
-    LISTER_POSTGRES_DB: z.string().default("lister"),
+        .min(1)
+        .default("postgres://postgres:postgres@localhost:5432/arbitrator"),
+    DATABASE_HOST: z.string().default("localhost"),
+    DATABASE_PORT: z.coerce.number().int().default(5432),
+    DATABASE_USER: z.string().default("postgres"),
+    DATABASE_PASSWORD: z.string().default("postgres"),
+    DATABASE_NAME: z.string().default("arbitrator"),
 
-    // Database configuration
-    DATABASE_URL: z.url("DATABASE_URL must be a valid URL"),
-    DB_HOST: z.string().min(1, "DB_HOST is required"),
-    DB_PORT: z
-        .string()
-        .transform((val) => parseInt(val, 10))
-        .pipe(z.number().min(1).max(65535)),
-    DB_NAME: z.string().min(1, "DB_NAME is required"),
-    DB_USER: z.string().min(1, "DB_USER is required"),
-    DB_PASSWORD: z.string().min(1, "DB_PASSWORD is required"),
+    // RabbitMQ
+    AMQP_URL: optionalString,
+    RABBITMQ_URL: optionalString,
+    AMQP_EXCHANGE: z.string().default("arbitrator"),
 
-    // External services
-    REDIS_URL: z.url("REDIS_URL must be a valid URL"),
-    // Feature flags
-    ENABLE_LOGGING: z
-        .string()
-        .transform((val) => val === "true")
-        .pipe(z.boolean())
-        .default(true),
-    DEBUG: z
-        .string()
-        .transform((val) => val === "true")
-        .pipe(z.boolean())
-        .default(true),
+    // Redis
+    REDIS_URL: z.string().default("redis://localhost:6379"),
 
-    // Optional environment variables
-    APP_NAME: z.string().default("My App"),
-    LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
+    // Services
+    LISTER_URL: z.string().default("http://localhost:3001"),
+    SENDER_URL: z.string().default("http://localhost:3002"),
+    PORT: z.coerce.number().int().default(3000),
+    RECEIVER_WORKER: z.string().default("src/index.ts"),
+
+    // External APIs / venue keys (absent -> the integration is skipped)
+    CMC_API_KEY: optionalString,
+    TYPESAFE_API_KEY: optionalString,
+    JEV_API_KEY: optionalString,
+    MEXC_API_KEY: optionalString,
+    MEXC_API_SECRET: optionalString,
+    OKX_API_KEY: optionalString,
+    OKX_API_SECRET: optionalString,
+    OKX_API_PASSPHRASE: optionalString,
+    BYBIT_API_KEY: optionalString,
+    BYBIT_API_SECRET: optionalString,
+
+    // nginx TLS reverse proxy
+    LOCAL_DOMAIN: z.string().default("localhost"),
+    UI_UPSTREAM: z.string().default("host.docker.internal:3000"),
+    NGINX_HTTP_PORT: z.coerce.number().int().default(80),
+    NGINX_HTTPS_PORT: z.coerce.number().int().default(443),
 });
 
-// Infer the type from the schema
-export type EnvConfig = z.infer<typeof envSchema>;
+export type Env = z.infer<typeof envSchema>;
 
-// Validate environment variables
-function validateEnv(): EnvConfig {
-    try {
-        return envSchema.parse(Bun.env);
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            console.error("❌ Environment validation failed:", error);
-
-            process.exit(1);
-        }
-        throw error;
+function loadEnv(): Env {
+    const parsed = envSchema.safeParse(process.env);
+    if (!parsed.success) {
+        const issues = parsed.error.issues
+            .map((issue) => {
+                const path = issue.path.join(".") || "(root)";
+                return `  - ${path}: ${issue.message}`;
+            })
+            .join("\n");
+        throw new Error(`Invalid environment variables:\n${issues}`);
     }
+    return parsed.data;
 }
 
-// Export validated environment variables
-export const EnvLoader = validateEnv();
-// Optional: Create a function to validate specific subsets
+/** Validated environment, evaluated once at import time. */
+export const env: Env = loadEnv();
+
+/** RabbitMQ URL, honoring the legacy `RABBITMQ_URL` alias. */
+export function amqpUrl(): string {
+    return (
+        env.AMQP_URL ??
+        env.RABBITMQ_URL ??
+        "amqp://arbitrator:arbitrator@localhost:5672"
+    );
+}
+
+/** lister base URL. */
+export function listerUrl(): string {
+    return env.LISTER_URL;
+}
+
+/** sender base URL. */
+export function senderUrl(): string {
+    return env.SENDER_URL;
+}
+
+/** Jev/TypeSafe key, honoring the legacy `JEV_API_KEY` alias. */
+export function typeSafeApiKey(): string | undefined {
+    return env.TYPESAFE_API_KEY ?? env.JEV_API_KEY;
+}

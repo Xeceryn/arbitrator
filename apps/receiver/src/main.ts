@@ -1,10 +1,12 @@
+import { env } from "@arbitrator/env-loader";
+
 const cpus = navigator.hardwareConcurrency;
 // const cpus = 4;
 const children: Bun.Subprocess[] = [];
 
 // In local development the worker is the TypeScript source. A built image ships
 // a bundle instead, so it sets RECEIVER_WORKER to e.g. `dist/index.js`.
-const worker = Bun.env.RECEIVER_WORKER ?? "src/index.ts";
+const worker = env.RECEIVER_WORKER;
 
 for (let index = 0; index < cpus; index++) {
     children.push(

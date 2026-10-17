@@ -1,3 +1,4 @@
+import { amqpUrl, env } from "@arbitrator/env-loader";
 import { createLogger } from "@arbitrator/logger";
 import { connect } from "amqplib";
 import type { Channel, ConsumeMessage, RecoveringChannelModel } from "amqplib";
@@ -5,15 +6,7 @@ import type { Channel, ConsumeMessage, RecoveringChannelModel } from "amqplib";
 const logger = createLogger("arbitrator/messaging");
 
 /** Topic exchange every service publishes to. */
-export const AMQP_EXCHANGE = Bun.env.AMQP_EXCHANGE ?? "arbitrator";
-
-function amqpUrl(): string {
-    return (
-        Bun.env.AMQP_URL ??
-        Bun.env.RABBITMQ_URL ??
-        "amqp://arbitrator:arbitrator@localhost:5672"
-    );
-}
+export const AMQP_EXCHANGE = env.AMQP_EXCHANGE;
 
 // ---------------------------------------------------------------- connection
 let model: RecoveringChannelModel | undefined;

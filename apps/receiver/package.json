@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@arbitrator/contracts": "workspace:*",
+        "@arbitrator/env-loader": "workspace:*",
         "@arbitrator/lister": "workspace:*",
         "@arbitrator/logger": "workspace:*",
         "@arbitrator/messaging": "workspace:*",

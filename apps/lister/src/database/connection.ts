@@ -1,18 +1,13 @@
+import { env } from "@arbitrator/env-loader";
 import { SQL } from "bun";
 import { drizzle } from "drizzle-orm/bun-sql";
 
 import { logger } from "../logger";
 import { relations } from "./relations";
 
-const url = () => {
-    return (
-        Bun.env.DATABASE_URL ||
-        "postgres://postgres:postgres@localhost:5432/arbitrator"
-    );
-};
 export const postgresConnection = new SQL({
     adapter: "postgres",
-    url: url(),
+    url: env.DATABASE_URL,
     onconnect() {
         logger.info("postgresql connected");
     },

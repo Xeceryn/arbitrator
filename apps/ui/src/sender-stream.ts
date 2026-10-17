@@ -2,8 +2,9 @@ import {
     senderStatusEventSchema,
     type OrchestratorStatus,
 } from "@arbitrator/contracts";
+import { env } from "@arbitrator/env-loader";
 
-const senderHttpUrl = () => process.env.SENDER_URL || "http://localhost:3002";
+const senderHttpUrl = () => env.SENDER_URL;
 
 const senderWsUrl = () =>
     `${senderHttpUrl().replace(/^http/, "ws")}/exchanges/ws`;
@@ -85,7 +86,7 @@ function connect(): void {
             return;
         }
         lastStatus = parsed.data.status;
-        for (const listener of [...listeners]) {
+        for (const listener of listeners) {
             listener(parsed.data.status);
         }
     });

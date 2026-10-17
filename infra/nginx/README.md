@@ -107,7 +107,7 @@ even if the domain resolves to a private/LAN IP:
 
 The default is the host's own mDNS name, which already resolves over multicast
 DNS to every LAN client — nothing to configure. To override it, set
-`LOCAL_DOMAIN` in `.envrc` (nginx reads it via
+`LOCAL_DOMAIN` in the root `.env` (nginx reads it via
 `NGINX_ENVSUBST_FILTER`) and add it to the certificate SAN.
 
 ### Single host (`/etc/hosts`), if mDNS is unavailable

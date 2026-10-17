@@ -1,13 +1,14 @@
 {
     "$schema": "https://json.schemastore.org/package.json",
     "name": "@arbitrator/env-loader",
-    "version": "0.0.0",
-    "description": "Arbitrator environment loader",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
     "exports": {
-        ".": "./src/index.js"
+        ".": "./src/index.ts"
     },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "typecheck": "bun --check"
     },
     "dependencies": {
         "zod": "catalog:core"

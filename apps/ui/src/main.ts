@@ -1,3 +1,4 @@
+import { env } from "@arbitrator/env-loader";
 import { serverTiming } from "@elysiajs/server-timing";
 import staticPlugin from "@elysiajs/static";
 import { faker } from "@faker-js/faker";
@@ -21,7 +22,7 @@ if (!process.argv.includes("--cluster")) {
     await bundleClientSideResources();
 }
 
-const port = Number(process.env.PORT ?? 3000);
+const port = env.PORT;
 
 new Elysia({ websocket: { perMessageDeflate: true } })
     .onError(({ code, error, request, set }) => {

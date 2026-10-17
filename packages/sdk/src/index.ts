@@ -1,12 +1,11 @@
+import { env } from "@arbitrator/env-loader";
 import type { router } from "@arbitrator/lister/router";
 import { createORPCClient, createSafeClient } from "@orpc/client";
 import {} from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { type RouterClient } from "@orpc/server";
 
-const url = () => {
-    return process.env.LISTER_URL || "http://localhost:3001";
-};
+const url = () => env.LISTER_URL;
 
 const link = new RPCLink({
     fetch: fetch,
