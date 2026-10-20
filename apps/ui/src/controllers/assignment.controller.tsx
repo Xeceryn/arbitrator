@@ -1,10 +1,10 @@
-import { listerClient } from "@arbitrator/sdk";
-import { htmx } from "@gtramontina.com/elysia-htmx";
+import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status } from "elysia";
 import z from "zod";
 
 import { listChainSelectSchema } from "../../../lister/src/core/chain/chain.schema";
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
+import { htmx } from "../plugins/htmx";
 import { AvailableChains } from "../views/components/AssignChainDropdown";
 import {
     ChainConfirmCard,
@@ -49,12 +49,9 @@ const chainLinkParam = z.object({
     chainLinkId: z.coerce.number(),
 });
 
-/** oRPC errors carry a `code`; the safe client types it loosely. */
-function errorCode(error: unknown): string | undefined {
-    if (error && typeof error === "object" && "code" in error) {
-        return (error as { code?: string }).code;
-    }
-    return undefined;
+/** Eden reports the HTTP status; a duplicate assignment is a 409. */
+function isConflict(error: { status: number } | null | undefined): boolean {
+    return error?.status === 409;
 }
 
 /**
@@ -63,8 +60,8 @@ function errorCode(error: unknown): string | undefined {
  * changes. Never emits a partial that deletes an element that could be absent.
  */
 async function renderAssignmentEmptyPartial(coinId: number) {
-    const [error, markets] = await listerClient.market.listDetailed({
-        cryptocurrencyId: coinId,
+    const { data: markets, error } = await lister.market.detailed.get({
+        query: { cryptocurrencyId: coinId },
     });
     if (error || !markets) {
         console.error(
@@ -83,8 +80,8 @@ async function renderAssignmentEmptyPartial(coinId: number) {
 
 /** Same idea as the exchange empty state, scoped to one market's chain list. */
 async function renderChainEmptyPartial(marketId: number) {
-    const [error, links] = await listerClient.chainLink.listDetailed({
-        marketId,
+    const { data: links, error } = await lister["chain-link"].detailed.get({
+        query: { marketId },
     });
     if (error || !links) {
         console.error(
@@ -106,8 +103,8 @@ async function renderChainEmptyPartial(marketId: number) {
 
 /** Initial (and only full) render of the expanded chain panel for a market. */
 async function renderMarketChains(coinId: number, marketId: number) {
-    const [error, links] = await listerClient.chainLink.listDetailed({
-        marketId,
+    const { data: links, error } = await lister["chain-link"].detailed.get({
+        query: { marketId },
     });
 
     if (error || !links) {
@@ -121,20 +118,25 @@ async function renderMarketChains(coinId: number, marketId: number) {
     return <MarketChains coinId={coinId} marketId={marketId} links={links} />;
 }
 
-export const AssignmentController = new Elysia()
+export const AssignmentController = new Elysia({
+    name: "assignment",
+    tags: ["assignment"],
+})
     .use(htmx())
 
     // Full side-panel content for a coin's assignments. Initial load only;
     // every later mutation returns the smallest fragment that changed.
     .get(
         "/coins/:id/assignment",
+        { params: idParam },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
 
-            const [coinError, coin] =
-                await listerClient.cryptocurrency.findById(params.id);
+            const { data: coin, error: coinError } = await lister
+                .cryptocurrency({ id: params.id })
+                .get();
             if (coinError || !coin) {
                 hx.triggerEvent({
                     "make-toast": {
@@ -145,9 +147,9 @@ export const AssignmentController = new Elysia()
                 return status("No Content");
             }
 
-            const [marketsError, markets] =
-                await listerClient.market.listDetailed({
-                    cryptocurrencyId: params.id,
+            const { data: markets, error: marketsError } =
+                await lister.market.detailed.get({
+                    query: { cryptocurrencyId: params.id },
                 });
             if (marketsError || !markets) {
                 hx.triggerEvent({
@@ -173,38 +175,41 @@ export const AssignmentController = new Elysia()
                 </>
             );
         },
-        { params: idParam },
     )
 
     // Step 1 of the staged add flow: choose an exchange.
     .get(
         "/coins/:id/assignment/new",
+        { params: idParam },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
             return <ExchangePicker coinId={params.id} />;
         },
-        { params: idParam },
     )
 
     // Searchable, paginated (5) list of not-yet-assigned exchanges.
     .get(
         "/coins/:id/available-exchanges",
+        { params: idParam, query: listExchangeSelectSchema },
         async ({ params, query, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
 
-            const [error, data] =
-                await listerClient.market.listAvailableExchanges({
+            const { data, error } = await lister.market[
+                "available-exchanges"
+            ].get({
+                query: {
                     ...query,
                     cryptocurrencyId: params.id,
                     limit: 5,
                     searchBy: "name",
                     orderBy: "name",
                     order: "asc",
-                });
+                },
+            });
 
             if (error || !data) {
                 return (
@@ -216,21 +221,26 @@ export const AssignmentController = new Elysia()
 
             return <AvailableExchanges coinId={params.id} data={data} />;
         },
-        { params: idParam, query: listExchangeSelectSchema },
     )
 
     // Step 2: confirm the chosen exchange before writing anything.
     .get(
         "/coins/:id/assignments/select",
+        {
+            params: idParam,
+            query: z.object({ exchangeId: z.coerce.number() }),
+        },
         async ({ params, query, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
 
-            const [coinError, coin] =
-                await listerClient.cryptocurrency.findById(params.id);
-            const [exchangeError, exchange] =
-                await listerClient.exchange.findById(query.exchangeId);
+            const { data: coin, error: coinError } = await lister
+                .cryptocurrency({ id: params.id })
+                .get();
+            const { data: exchange, error: exchangeError } = await lister
+                .exchange({ id: query.exchangeId })
+                .get();
             if (coinError || !coin || exchangeError || !exchange) {
                 hx.triggerEvent({
                     "make-toast": {
@@ -250,15 +260,19 @@ export const AssignmentController = new Elysia()
                 />
             );
         },
-        {
-            params: idParam,
-            query: z.object({ exchangeId: z.coerce.number() }),
-        },
     )
 
     // Step 3: assign. Returns only the new card plus the empty-state partial.
     .post(
         "/coins/:id/assignments",
+        {
+            params: idParam,
+            body: z.object({
+                exchangeId: z.coerce.number(),
+                exchangeSymbol: z.string().optional(),
+                tradeEnabled: booleanish.optional(),
+            }),
+        },
         async ({ params, body, hx }) => {
             let exchangeSymbol: string | undefined;
             if (body.exchangeSymbol !== undefined) {
@@ -290,7 +304,7 @@ export const AssignmentController = new Elysia()
                 }
             }
 
-            const [error, market] = await listerClient.market.assign({
+            const { data: market, error } = await lister.market.assign.post({
                 cryptocurrencyId: params.id,
                 exchangeId: body.exchangeId,
                 ...(exchangeSymbol !== undefined ? { exchangeSymbol } : {}),
@@ -300,7 +314,7 @@ export const AssignmentController = new Elysia()
             });
 
             if (error || !market) {
-                if (errorCode(error) === "CONFLICT") {
+                if (isConflict(error)) {
                     return status(
                         422,
                         <AssignmentError message="That exchange is already assigned. Choose another exchange." />,
@@ -316,11 +330,10 @@ export const AssignmentController = new Elysia()
                 return status("No Content");
             }
 
-            const [listError, markets] = await listerClient.market.listDetailed(
-                {
-                    cryptocurrencyId: params.id,
-                },
-            );
+            const { data: markets, error: listError } =
+                await lister.market.detailed.get({
+                    query: { cryptocurrencyId: params.id },
+                });
             const created = markets?.find((item) => item.id === market.id);
             if (listError || !created) {
                 hx.reswap("none");
@@ -355,24 +368,23 @@ export const AssignmentController = new Elysia()
                 </>
             );
         },
-        {
-            params: idParam,
-            body: z.object({
-                exchangeId: z.coerce.number(),
-                exchangeSymbol: z.string().optional(),
-                tradeEnabled: booleanish.optional(),
-            }),
-        },
     )
 
     // Step 5/6: edit the symbol (returns just this card) or flip the trade
     // toggle (returns nothing to swap).
     .patch(
         "/coins/:id/assignments/:marketId",
+        {
+            params: marketParam,
+            body: z.object({
+                tradeEnabled: booleanish.optional(),
+                exchangeSymbol: z.string().optional(),
+            }),
+        },
         async ({ params, body, hx }) => {
-            const [findError, market] = await listerClient.market.findById(
-                params.marketId,
-            );
+            const { data: market, error: findError } = await lister
+                .market({ id: params.marketId })
+                .get();
             if (findError || !market) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -408,7 +420,7 @@ export const AssignmentController = new Elysia()
                     );
                 }
 
-                const [error] = await listerClient.market.update({
+                const { error } = await lister.market.patch({
                     exchangeId: market.exchangeId,
                     cryptocurrencyId: market.cryptocurrencyId,
                     tradeEnabled: market.tradeEnabled,
@@ -425,9 +437,9 @@ export const AssignmentController = new Elysia()
                     return status("No Content");
                 }
 
-                const [listError, markets] =
-                    await listerClient.market.listDetailed({
-                        cryptocurrencyId: params.id,
+                const { data: markets, error: listError } =
+                    await lister.market.detailed.get({
+                        query: { cryptocurrencyId: params.id },
                     });
                 const updated = markets?.find(
                     (item) => item.id === params.marketId,
@@ -455,7 +467,7 @@ export const AssignmentController = new Elysia()
                 );
             }
 
-            const [error] = await listerClient.market.update({
+            const { error } = await lister.market.patch({
                 exchangeId: market.exchangeId,
                 cryptocurrencyId: market.cryptocurrencyId,
                 tradeEnabled: body.tradeEnabled,
@@ -477,23 +489,17 @@ export const AssignmentController = new Elysia()
 
             return status("No Content");
         },
-        {
-            params: marketParam,
-            body: z.object({
-                tradeEnabled: booleanish.optional(),
-                exchangeSymbol: z.string().optional(),
-            }),
-        },
     )
 
     // Step 4: unassign. The delete control removes its own card; the response
     // only carries the truthful empty-state partial and an event.
     .delete(
         "/coins/:id/assignments/:marketId",
+        { params: marketParam },
         async ({ params, hx }) => {
-            const [findError, market] = await listerClient.market.findById(
-                params.marketId,
-            );
+            const { data: market, error: findError } = await lister
+                .market({ id: params.marketId })
+                .get();
             if (findError || !market) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -505,7 +511,7 @@ export const AssignmentController = new Elysia()
                 return status("No Content");
             }
 
-            const [error] = await listerClient.market.unassign({
+            const { error } = await lister.market.unassign.post({
                 exchangeId: market.exchangeId,
                 cryptocurrencyId: market.cryptocurrencyId,
             });
@@ -529,24 +535,24 @@ export const AssignmentController = new Elysia()
             });
             return (await renderAssignmentEmptyPartial(params.id)) ?? "";
         },
-        { params: marketParam },
     )
 
     // Chain assignments for one market (loaded lazily on expand).
     .get(
         "/coins/:id/assignments/:marketId/chains",
+        { params: marketParam },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
             return await renderMarketChains(params.id, params.marketId);
         },
-        { params: marketParam },
     )
 
     // Step 1 of the staged chain flow.
     .get(
         "/coins/:id/assignments/:marketId/chains/new",
+        { params: marketParam },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
@@ -555,20 +561,23 @@ export const AssignmentController = new Elysia()
                 <ChainPicker coinId={params.id} marketId={params.marketId} />
             );
         },
-        { params: marketParam },
     )
 
     // Step 2 of the staged chain flow.
     .get(
         "/coins/:id/assignments/:marketId/chains/select",
+        {
+            params: marketParam,
+            query: z.object({ chainId: z.coerce.number() }),
+        },
         async ({ params, query, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
 
-            const [error, chain] = await listerClient.chain.findById(
-                query.chainId,
-            );
+            const { data: chain, error } = await lister
+                .chain({ id: query.chainId })
+                .get();
             if (error || !chain) {
                 hx.triggerEvent({
                     "make-toast": {
@@ -588,29 +597,29 @@ export const AssignmentController = new Elysia()
                 />
             );
         },
-        {
-            params: marketParam,
-            query: z.object({ chainId: z.coerce.number() }),
-        },
     )
 
     // Searchable, paginated (5) list of not-yet-linked chains.
     .get(
         "/coins/:id/assignments/:marketId/available-chains",
+        { params: marketParam, query: listChainSelectSchema },
         async ({ params, query, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
 
-            const [error, data] =
-                await listerClient.chainLink.listAvailableChains({
+            const { data, error } = await lister["chain-link"][
+                "available-chains"
+            ].get({
+                query: {
                     ...query,
                     marketId: params.marketId,
                     limit: 5,
                     searchBy: "name",
                     orderBy: "name",
                     order: "asc",
-                });
+                },
+            });
 
             if (error || !data) {
                 return (
@@ -628,20 +637,23 @@ export const AssignmentController = new Elysia()
                 />
             );
         },
-        { params: marketParam, query: listChainSelectSchema },
     )
 
     // Chain step 3: append only the new row plus the empty-state partial.
     .post(
         "/coins/:id/assignments/:marketId/chains",
+        {
+            params: marketParam,
+            body: z.object({ chainId: z.coerce.number() }),
+        },
         async ({ params, body, hx }) => {
-            const [error, link] = await listerClient.chainLink.add({
+            const { data: link, error } = await lister["chain-link"].post({
                 marketId: params.marketId,
                 chainId: body.chainId,
             });
 
             if (error || !link) {
-                if (errorCode(error) === "CONFLICT") {
+                if (isConflict(error)) {
                     return status(
                         422,
                         <ChainError message="That chain is already assigned to this market. Choose another." />,
@@ -657,10 +669,11 @@ export const AssignmentController = new Elysia()
                 return status("No Content");
             }
 
-            const [listError, links] =
-                await listerClient.chainLink.listDetailed({
-                    marketId: params.marketId,
-                });
+            const { data: links, error: listError } = await lister[
+                "chain-link"
+            ].detailed.get({
+                query: { marketId: params.marketId },
+            });
             const created = links?.find((item) => item.id === link.id);
             if (listError || !created) {
                 hx.reswap("none");
@@ -696,22 +709,24 @@ export const AssignmentController = new Elysia()
                 </>
             );
         },
-        {
-            params: marketParam,
-            body: z.object({ chainId: z.coerce.number() }),
-        },
     )
 
     // Toggle deposit/withdraw on a chain link (no swap on success).
     .patch(
         "/coins/:id/assignments/:marketId/chains/:chainLinkId",
+        {
+            params: chainLinkParam,
+            body: z.object({
+                depositEnabled: booleanish.optional(),
+                withdrawEnabled: booleanish.optional(),
+            }),
+        },
         async ({ params, body, hx }) => {
-            const [error] = await listerClient.chainLink.update({
+            const { error } = await lister["chain-link"]({
                 id: params.chainLinkId,
-                payload: {
-                    depositEnabled: body.depositEnabled,
-                    withdrawEnabled: body.withdrawEnabled,
-                },
+            }).patch({
+                depositEnabled: body.depositEnabled,
+                withdrawEnabled: body.withdrawEnabled,
             });
 
             if (error) {
@@ -738,22 +753,16 @@ export const AssignmentController = new Elysia()
 
             return status("No Content");
         },
-        {
-            params: chainLinkParam,
-            body: z.object({
-                depositEnabled: booleanish.optional(),
-                withdrawEnabled: booleanish.optional(),
-            }),
-        },
     )
 
     // Unassign a chain (the delete control removes its own row).
     .delete(
         "/coins/:id/assignments/:marketId/chains/:chainLinkId",
+        { params: chainLinkParam },
         async ({ params, hx }) => {
-            const [error] = await listerClient.chainLink.remove(
-                params.chainLinkId,
-            );
+            const { error } = await lister["chain-link"]({
+                id: params.chainLinkId,
+            }).delete();
 
             if (error) {
                 hx.reswap("none");
@@ -778,5 +787,4 @@ export const AssignmentController = new Elysia()
             });
             return (await renderChainEmptyPartial(params.marketId)) ?? "";
         },
-        { params: chainLinkParam },
     );

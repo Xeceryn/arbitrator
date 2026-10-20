@@ -1,7 +1,7 @@
 # apps/sender
 
-Exchange worker orchestrator. Elysia + Eden on `:3002`; owns a
-`node:worker_threads` pool and the desired-state reconciler.
+Exchange worker orchestrator. Elysia v2 + Eden on `:3002` (OpenAPI at
+`/openapi`); owns a `node:worker_threads` pool and the desired-state reconciler.
 
 ## Run
 
@@ -34,6 +34,15 @@ src/types, src/utils, src/vendor   legacy shims (delete once all workers migrate
 `POST /exchanges/:slug/start` (501 if no adapter), `POST /exchanges/:slug/stop`,
 `POST /reconcile` (force full reconcile), `GET /exchanges`, `GET /workers`,
 `WS /exchanges/ws` (server-push status; the UI fans this out, nothing polls).
+
+Elysia v2 rules: route options come **before** the handler, and `.ws()` needs
+`.use(websocket())` from `elysia/websocket`. Every route carries `detail`
+tags (`orchestrator`, `workers`, `events`); the WS route is hidden from OpenAPI.
+
+Lister calls go through `orchestrator/lister.ts` (`@arbitrator/sdk` Eden client).
+Eden **rejects** instead of returning an error tuple, so fire-and-forget
+reconciles (`schedule()`, `onStart`) always `.catch()` — a lister outage logs and
+keeps the server up.
 
 ## Non-obvious rules
 

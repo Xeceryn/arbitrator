@@ -38,8 +38,10 @@ export namespace ChainLink {
         if (filter.marketId) where.marketId = filter.marketId;
         if (filter.chainId) where.chainId = filter.chainId;
 
+        // Drizzle v1 throws on an explicit `where: undefined`, so the key is
+        // only present when there is a filter.
         const rows = await database.query.chainLink.findMany({
-            where: Object.keys(where).length > 0 ? where : undefined,
+            ...(Object.keys(where).length > 0 ? { where } : {}),
             with: { chain: true },
             orderBy: { id: "asc" },
         });

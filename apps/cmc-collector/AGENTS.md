@@ -20,7 +20,7 @@ Import options: `--prune` (delete delisted markets instead of disabling trading)
 
 - Snapshots land in `apps/cmc-collector/data/` (gitignored).
 - Import requires the lister DB (`DATABASE_URL`) and a reachable lister service;
-  it goes through `@arbitrator/sdk`'s safe client, unwrapped by `must()` in
+  it goes through `@arbitrator/sdk`'s Eden client, unwrapped by `must()` in
   `src/import.ts`.
 - Fresh markets are linked to the placeholder `UNMPD` chain unless
   `--no-unmapped-chain` is passed (`src/config.ts`).

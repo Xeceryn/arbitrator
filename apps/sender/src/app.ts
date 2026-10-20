@@ -5,7 +5,10 @@ import {
     senderStopResponseSchema,
     workerStatusSchema,
 } from "@arbitrator/contracts";
+import { openapiZodMap } from "@arbitrator/elysia-kit";
+import { openapi } from "@elysia/openapi";
 import { Elysia } from "elysia";
+import { websocket } from "elysia/websocket";
 import z from "zod";
 
 import { createOrchestrator } from "./orchestrator/bootstrap";
@@ -17,16 +20,59 @@ type SenderSocket = { send(data: string | unknown): unknown };
 
 const slugParams = z.object({ slug: z.string().min(1) });
 
+const workersResponseSchema = z.object({
+    workers: z.array(workerStatusSchema),
+});
+
 /** One sender WS subscriber per connected UI. Unsubscribed on close. */
 const statusSubscribers = new Map<SenderSocket, () => void>();
 
 export function createApp(orchestrator: Orchestrator) {
     return (
         new Elysia({ name: "arbitrator-sender" })
+            .use(
+                openapi({
+                    documentation: {
+                        info: {
+                            title: "Arbitrator Sender",
+                            version: "0.0.0",
+                        },
+                        tags: [
+                            {
+                                name: "orchestrator",
+                                description:
+                                    "Start/stop exchanges and force reconcile",
+                            },
+                            {
+                                name: "workers",
+                                description: "Worker pool status",
+                            },
+                            {
+                                name: "events",
+                                description: "Server-push status stream",
+                            },
+                        ],
+                    },
+                    mapJsonSchema: openapiZodMap,
+                }),
+            )
+            // v2 severable WebSocket capability: `.ws()` needs this provider.
+            .use(websocket())
             .use(orchestratorPlugin(orchestrator))
             .use(eventsPlugin(orchestrator))
             .post(
                 "/exchanges/:slug/start",
+                {
+                    params: slugParams,
+                    response: {
+                        200: senderStartResponseSchema,
+                        501: senderMessageSchema,
+                    },
+                    detail: {
+                        summary: "Start an exchange worker",
+                        tags: ["orchestrator"],
+                    },
+                },
                 ({ params, orchestrator, set }) => {
                     const result = orchestrator.start(params.slug);
                     if (!result.ok) {
@@ -35,23 +81,20 @@ export function createApp(orchestrator: Orchestrator) {
                     }
                     return { started: params.slug };
                 },
-                {
-                    params: slugParams,
-                    response: {
-                        200: senderStartResponseSchema,
-                        501: senderMessageSchema,
-                    },
-                },
             )
             .post(
                 "/exchanges/:slug/stop",
-                ({ params, orchestrator }) => {
-                    orchestrator.stop(params.slug);
-                    return { stopped: params.slug };
-                },
                 {
                     params: slugParams,
                     response: { 200: senderStopResponseSchema },
+                    detail: {
+                        summary: "Stop an exchange worker",
+                        tags: ["orchestrator"],
+                    },
+                },
+                ({ params, orchestrator }) => {
+                    orchestrator.stop(params.slug);
+                    return { stopped: params.slug };
                 },
             )
             /**
@@ -60,27 +103,41 @@ export function createApp(orchestrator: Orchestrator) {
              */
             .post(
                 "/reconcile",
+                {
+                    response: { 200: orchestratorStatusSchema },
+                    detail: {
+                        summary: "Force a full reconcile against lister",
+                        tags: ["orchestrator"],
+                    },
+                },
                 async ({ orchestrator }) => {
                     await orchestrator.runReconcile();
                     return orchestrator.status();
                 },
-                { response: { 200: orchestratorStatusSchema } },
             )
-            .get("/exchanges", ({ orchestrator }) => orchestrator.status(), {
-                response: { 200: orchestratorStatusSchema },
-            })
+            .get(
+                "/exchanges",
+                {
+                    response: { 200: orchestratorStatusSchema },
+                    detail: {
+                        summary: "Orchestrator status for every exchange",
+                        tags: ["workers"],
+                    },
+                },
+                ({ orchestrator }) => orchestrator.status(),
+            )
             .get(
                 "/workers",
+                {
+                    response: { 200: workersResponseSchema },
+                    detail: {
+                        summary: "Worker pool status",
+                        tags: ["workers"],
+                    },
+                },
                 ({ orchestrator }) => ({
                     workers: orchestrator.status().workers,
                 }),
-                {
-                    response: {
-                        200: z.object({
-                            workers: z.array(workerStatusSchema),
-                        }),
-                    },
-                },
             )
             /**
              * Event-driven status stream for the UI. Sends one `snapshot` on
@@ -88,8 +145,11 @@ export function createApp(orchestrator: Orchestrator) {
              * start/stop, reconcile topology change, worker state report,
              * unexpected death and respawn. The UI fans those pushes out to its
              * own `/workers/ws` browsers, so nothing polls `GET /exchanges`.
+             *
+             * Server-push only, so it stays out of the OpenAPI document.
              */
             .ws("/exchanges/ws", {
+                detail: { tags: ["events"], hide: true },
                 open(ws) {
                     const socket = ws as unknown as SenderSocket;
                     socket.send(

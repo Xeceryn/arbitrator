@@ -1,9 +1,11 @@
+import { openapiZodMap } from "@arbitrator/elysia-kit";
 import { env } from "@arbitrator/env-loader";
-import { serverTiming } from "@elysiajs/server-timing";
-import staticPlugin from "@elysiajs/static";
+import { openapi } from "@elysia/openapi";
+import { serverTiming } from "@elysia/server-timing";
+import { staticPlugin } from "@elysia/static";
 import { faker } from "@faker-js/faker";
-import { htmx } from "@gtramontina.com/elysia-htmx";
 import { Elysia, redirect } from "elysia";
+import { websocket } from "elysia/websocket";
 
 import { bundleClientSideResources } from "./bundler";
 import {
@@ -17,6 +19,7 @@ import { CryptocurrencyController } from "./controllers/coin.controller";
 import { ErrorPageController } from "./controllers/error-page.controller";
 import { HomeController } from "./controllers/home.controller";
 import { clientsPlugin } from "./plugins/clients";
+import { htmx } from "./plugins/htmx";
 
 if (!process.argv.includes("--cluster")) {
     await bundleClientSideResources();
@@ -24,9 +27,29 @@ if (!process.argv.includes("--cluster")) {
 
 const port = env.PORT;
 
-new Elysia({ websocket: { perMessageDeflate: true } })
-    .onError(({ code, error, request, set }) => {
-        if (code === "NOT_FOUND") {
+new Elysia()
+    .use(
+        openapi({
+            documentation: {
+                info: { title: "Arbitrator UI", version: "1.0.50" },
+            },
+            mapJsonSchema: openapiZodMap,
+            // `/public` is build output: CSS and browser bundles, not an API.
+            // `staticFile: true` alone does not drop plugin-registered static
+            // routes in this RC, so the prefix is excluded by path too.
+            exclude: {
+                staticFile: true,
+                paths: ["/public", /^\/public\//],
+            },
+        }),
+    )
+    .use(websocket({ perMessageDeflate: true }))
+    .onError(({ error, request, set }) => {
+        // Elysia v2 drops the `code` context member: the token now lives on the
+        // error itself (`not-found`, `validation`, `parse`, `internal-server-error`).
+        const code = (error as { code?: string }).code ?? "unknown";
+
+        if (code === "not-found") {
             // Browsers silently probe paths we don't define (e.g. Chrome's
             // `/.well-known/appspecific/com.chrome.devtools.json`, `robots.txt`,
             // `favicon.ico`). Those are not page navigations, so redirecting them to
@@ -43,10 +66,10 @@ new Elysia({ websocket: { perMessageDeflate: true } })
             set.status = 404;
             return "Not Found";
         }
-        if (code === "VALIDATION") {
+        if (code === "validation") {
             console.log(error);
         }
-        if (code === "INTERNAL_SERVER_ERROR" || code === "UNKNOWN") {
+        if (code === "internal-server-error" || code === "unknown") {
             console.error(`Unhandled error (${code}):`, error);
 
             const isHTMX =
@@ -77,6 +100,9 @@ new Elysia({ websocket: { perMessageDeflate: true } })
     .use(htmx())
     .onBeforeHandle(({ set, request }) => {
         console.log(request.url);
+        // Static assets carry their own content-type from the static plugin;
+        // stamping text/html on them makes browsers refuse the stylesheet.
+        if (request.url.includes("/public/")) return;
         set.headers["content-type"] = "text/html; charset=utf-8";
     })
     .use(staticPlugin({ prefix: "/public", assets: "./public" }))
@@ -90,19 +116,23 @@ new Elysia({ websocket: { perMessageDeflate: true } })
     .use(AssignmentController)
     .use(WorkersController)
     .use(SignalController)
-    .get("/", () => {
+    .get("/", { detail: { tags: ["ui"] } }, () => {
         return redirect("/home");
     })
-    .get("/testing/notification-toast", ({ set, hx }) => {
-        hx.triggerEvent({
-            "make-toast": {
-                level: "info",
-                message: faker.lorem.sentence(),
-            },
-        });
-        set.status = "No Content";
-        return;
-    })
+    .get(
+        "/testing/notification-toast",
+        { detail: { tags: ["ui"] } },
+        ({ set, hx }) => {
+            hx.triggerEvent({
+                "make-toast": {
+                    level: "info",
+                    message: faker.lorem.sentence(),
+                },
+            });
+            set.status = "No Content";
+            return;
+        },
+    )
 
     .listen(port, ({ hostname, port }) => {
         console.log(

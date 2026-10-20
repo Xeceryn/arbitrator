@@ -13,8 +13,9 @@
     "dependencies": {
         "@arbitrator/env-loader": "workspace:*",
         "@arbitrator/lister": "workspace:*",
-        "@arbitrator/sdk": "workspace:*",
-        "@orpc/client": "catalog:core",
-        "@orpc/server": "catalog:core"
+        "@elysia/eden": "catalog:elysia"
+    },
+    "devDependencies": {
+        "elysia": "catalog:elysia"
     }
 }

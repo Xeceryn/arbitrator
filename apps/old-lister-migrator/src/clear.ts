@@ -1,4 +1,4 @@
 export {};
-// import { listerClient } from "./client";
+// import { lister } from "@arbitrator/sdk";
 //
-// await listerClient.utility.clearDatabase();
+// await lister.utility["clear-database"].post();

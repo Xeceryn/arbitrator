@@ -1,8 +1,8 @@
 import { CryptocurrencySearchByOptions } from "@arbitrator/lister/constants";
 import type { ListCryptocurrencyInput } from "@arbitrator/lister/types";
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 
-import { capitalizeFirstLetter } from "../../utils";
+import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
 import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
 import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
@@ -104,14 +104,15 @@ const CoinFilter = (props: ListCryptocurrencyInput) => {
  * carry the sort.
  */
 export const CoinResults = async (props: ListCryptocurrencyInput) => {
-    const [error, data] = await listerClient.cryptocurrency.list(props);
+    const { data, error } = await lister.cryptocurrency.get({ query: props });
 
     if (error || !data) {
+        const message = apiErrorMessage(error);
         return (
             <div id="coin-list-results" class="flex flex-col gap-2">
                 <div class="alert alert-error" role="alert">
                     <span>Unable to load cryptocurrencies.</span>
-                    {error?.message ? <span safe>{error.message}</span> : null}
+                    {message ? <span safe>{message}</span> : null}
                 </div>
             </div>
         );

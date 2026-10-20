@@ -7,10 +7,21 @@ import {
 import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
 import { subscribe } from "@arbitrator/messaging";
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 import { redis } from "bun";
 
 const logger = createLogger("arbitrator/receiver");
+
+/** Eden reports a failure as `{ status, value }`; render it readably. */
+function formatEdenError(error: unknown): string {
+    if (error && typeof error === "object" && "value" in error) {
+        const value = (error as { value?: unknown }).value;
+        if (value !== undefined && value !== null) {
+            return typeof value === "string" ? value : JSON.stringify(value);
+        }
+    }
+    return String(error);
+}
 
 // ---------------------------------------------------------------- config
 const SEARCH_VOLUME_TARGET = 2_000_000;
@@ -29,13 +40,15 @@ const DIVIDERS: Record<string, Record<number, number>> = {
 };
 
 // ---------------------------------------------------------------- startup
-const [error, exchanges] = await listerClient.exchange.list({ limit: -1 });
-if (error) {
-    logger.error(`failed to load exchanges: ${String(error)}`);
+const exchangeList = await lister.exchange.get({ query: { limit: -1 } });
+if (exchangeList.error) {
+    logger.error(
+        `failed to load exchanges: ${formatEdenError(exchangeList.error)}`,
+    );
     process.exit(1);
 }
 const exchangeSlugIdMap = new Map<string, number>();
-for (const exchange of exchanges.data) {
+for (const exchange of exchangeList.data.data) {
     exchangeSlugIdMap.set(exchange.slug, exchange.id);
 }
 

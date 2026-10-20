@@ -1,8 +1,8 @@
 import { ChainSearchByOptions } from "@arbitrator/lister/constants";
 import type { ListChainInput } from "@arbitrator/lister/types";
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 
-import { capitalizeFirstLetter } from "../../utils";
+import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
 import { AddChainModal } from "../components/AddChainModal";
 import { ChainEditModal } from "../components/ChainEditModal";
 import { ChainTableRow } from "../components/ChainTableRow";
@@ -98,14 +98,15 @@ const ChainFilter = (props: ListChainInput) => {
  * carry the sort.
  */
 export const ChainResults = async (props: ListChainInput) => {
-    const [error, data] = await listerClient.chain.list(props);
+    const { data, error } = await lister.chain.get({ query: props });
 
     if (error || !data) {
+        const message = apiErrorMessage(error);
         return (
             <div id="chain-list-results" class="flex flex-col gap-2">
                 <div class="alert alert-error" role="alert">
                     <span>Unable to load chains.</span>
-                    {error?.message ? <span safe>{error.message}</span> : null}
+                    {message ? <span safe>{message}</span> : null}
                 </div>
             </div>
         );

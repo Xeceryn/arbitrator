@@ -1,4 +1,4 @@
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 
 import { UNMAPPED_CHAIN } from "./config";
 import { must } from "./lister";
@@ -77,17 +77,20 @@ export async function importSnapshot(
 
     const exchanges = must(
         "list exchanges",
-        await listerClient.exchange.list({ limit: -1 }),
+        await lister.exchange.get({ query: { limit: -1 } }),
     ).data;
     const exchangeBySlug = new Map(exchanges.map((e) => [e.slug, e]));
 
     const cryptocurrencies = must(
         "list cryptocurrencies",
-        await listerClient.cryptocurrency.list({ limit: -1 }),
+        await lister.cryptocurrency.get({ query: { limit: -1 } }),
     ).data;
     const coinById = new Map(cryptocurrencies.map((c) => [c.id, c]));
 
-    const markets = must("list markets", await listerClient.market.list({}));
+    const markets = must(
+        "list markets",
+        await lister.market.get({ query: {} }),
+    );
     const marketByExchangeSymbol = new Map<string, (typeof markets)[number]>();
     const marketByCoinSymbol = new Map<string, (typeof markets)[number]>();
     for (const market of markets) {
@@ -106,7 +109,7 @@ export async function importSnapshot(
 
     const chains = must(
         "list chains",
-        await listerClient.chain.list({ limit: -1 }),
+        await lister.chain.get({ query: { limit: -1 } }),
     ).data;
     const chainIdByCode = new Map<string, number>(
         chains.map((chain) => [chain.code.toUpperCase(), chain.id]),
@@ -117,7 +120,7 @@ export async function importSnapshot(
 
     const links = must(
         "list chain links",
-        await listerClient.chainLink.list({}),
+        await lister["chain-link"].get({ query: {} }),
     );
     const linkByMarketChain = new Map<string, (typeof links)[number]>();
     const unmappedLinksByMarket = new Map<
@@ -155,7 +158,7 @@ export async function importSnapshot(
 
         const created = must(
             `add chain ${code}`,
-            await listerClient.chain.add({ name, code }),
+            await lister.chain.post({ name, code }),
         );
         chainIdByCode.set(created.code.toUpperCase(), created.id);
         console.log(`+ chain ${created.code} (${created.name})`);
@@ -196,7 +199,7 @@ export async function importSnapshot(
             if (!dryRun) {
                 const created = must(
                     `add chain link ${row.exchangeSlug} ${row.exchangeSymbol} ${row.chainCode}`,
-                    await listerClient.chainLink.add({
+                    await lister["chain-link"].post({
                         marketId: market.id,
                         chainId,
                         withdrawEnabled: row.withdrawEnabled,
@@ -225,10 +228,9 @@ export async function importSnapshot(
                 if (!dryRun) {
                     must(
                         `update chain link ${existing.id}`,
-                        await listerClient.chainLink.update({
-                            id: existing.id,
-                            payload: changes,
-                        }),
+                        await lister["chain-link"]({ id: existing.id }).patch(
+                            changes,
+                        ),
                     );
                 }
                 summary.links.updated += 1;
@@ -251,7 +253,7 @@ export async function importSnapshot(
                 if (!dryRun) {
                     must(
                         `remove chain link ${link.id}`,
-                        await listerClient.chainLink.remove(link.id),
+                        await lister["chain-link"]({ id: link.id }).delete(),
                     );
                 }
                 summary.unmappedRemoved += 1;

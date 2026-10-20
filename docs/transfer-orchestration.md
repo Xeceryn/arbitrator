@@ -58,16 +58,16 @@ tracker is §10. Nothing else is required.
 
 ## 0. Verified baseline (as of this session)
 
-**lister** (`oRPC`, port 3001, Postgres via drizzle)
+**lister** (Elysia v2, port 3001, Postgres via drizzle)
 
 - Tables: `exchange` (slug, cmcId, baseCurrency), `cryptocurrency` (cmcId unique,
   slug, symbol), `chain` (code), `market` (exchangeId, cryptocurrencyId,
   `tradeEnabled`, `exchangeSymbol`), `chain_link` (marketId, chainId,
   `withdrawEnabled`, `depositEnabled`).
 - `Cryptocurrency.listRoutes(id)` computes **directed** routes for the UI matrix.
-- Mutations are oRPC handlers; `events/` now publishes `metadata.changed`.
+- Mutations are Elysia route handlers; `events/` now publishes `metadata.changed`.
 
-**sender** (`oRPC`, port 3002)
+**sender** (Elysia v2, port 3002)
 
 - `src/router.ts` is a stub with an unused `workerConfig[]` (indodax 30,
   binance 100, gate 100, mexc 20 subs/connection).
@@ -174,8 +174,10 @@ sender internals.
 
 ### 4.1 Framework
 
-Elysia + `@elysiajs/eden`; export the app type for an Eden client. Keep lister
-on oRPC. Shared dependencies are Elysia **plugins**, not module imports:
+Elysia v2 + `@elysia/eden`; export the app type for an Eden client. Both lister
+and sender expose their app type, and `@arbitrator/sdk` is the Eden client for
+lister (see `docs/elysia-2-migration.md`). Shared dependencies are Elysia
+**plugins**, not module imports:
 `orchestratorPlugin` decorates the orchestrator, `eventsPlugin` consumes
 `metadata.changed` in `onStart` and closes its consumer in `onStop`. The UI
 provides `lister`/`sender` through a

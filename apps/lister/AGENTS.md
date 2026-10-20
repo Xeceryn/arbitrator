@@ -1,8 +1,8 @@
 # apps/lister
 
-Source of truth for arbitration data. oRPC API on `:3001`, Postgres via
-drizzle (`drizzle-orm/bun-sql`). The UI, sender, receiver, cmc-collector and the
-migrator all read from it.
+Source of truth for arbitration data. Elysia API on `:3001` (OpenAPI at
+`/openapi`, spec at `/openapi/json`), Postgres via drizzle (`drizzle-orm/bun-sql`).
+The UI, sender, receiver, cmc-collector and the migrator all read from it.
 
 ## Run
 
@@ -15,26 +15,34 @@ bun run db:studio      # drizzle-kit studio
 bun run typecheck      # bun --check
 ```
 
-Entry: `src/index.ts` — `Bun.serve` wrapping the oRPC `RPCHandler`, plus
-`startLastPriceScheduler()`. `src/router.ts` aggregates the domain routers.
+Entry: `src/index.ts` — listens on `:3001` with the Elysia `app` from
+`src/app.ts`, then `startLastPriceScheduler()`. `src/app.ts` registers `cors()`,
+`openapi()` and every route plugin; it also exports the `App` type the SDK's Eden
+client is built from.
 
 ## Structure
 
 ```
 src/core/<entity>/     chain, chain-link, cryptocurrency, exchange, market, opportunity, utility
   <entity>.ts          data-access namespace / domain logic
-  <entity>.router.ts   oRPC procedures (os.input/os.output/os.handler)
+  <entity>.route.ts    Elysia route plugin (options before handler)
   <entity>.sql.ts      drizzle table (this is the schema glob target)
   <entity>.schema.ts   zod schemas
 src/core/{constants,schemas,types}.ts   public subpath exports (@arbitrator/lister/{types,constants,schemas})
 src/database/          connection.ts, relations.ts, schema.ts
 src/events/            metadata.ts (publishMetadataChanged), publisher.ts
-src/last-price/        router + Bun.cron scheduler
-src/common/            shared pagination helpers
+src/last-price/        route plugin + Bun.cron scheduler
+src/common/            shared pagination helpers + `{ message }` error schema
 ```
 
 ## Non-obvious rules
 
+- **Elysia v2 arg order.** `.get(path, { query, body, params, response, detail },
+handler)` — options _before_ the handler. The v1 handler-first order still
+  compiles but silently destroys inference. Register static segments
+  (`/market/detailed`) before their `/:id` siblings.
+- **Errors are HTTP statuses.** `set.status = 404 | 409 | 500` returning
+  `{ message }`; there is no `ORPCError` anymore.
 - **Publish after mutations.** Every mutation that changes transferability must
   call `void publishMetadataChanged({ entity, action, ... })` (from `src/events`).
   It is best-effort, validates against the contracts schema, and never throws —

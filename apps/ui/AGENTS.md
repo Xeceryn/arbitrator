@@ -1,7 +1,8 @@
 # apps/ui
 
-Server-rendered htmx app on `:3000`. Elysia + `@kitajs/html` JSX, Tailwind v4 +
-daisyUI 5, htmx 4. It reads lister (oRPC) and sender (Eden) and renders them.
+Server-rendered htmx app on `:3000`. Elysia v2 + `@kitajs/html` JSX, Tailwind v4 +
+daisyUI 5, htmx 4. It reads lister (Eden, via `@arbitrator/sdk`) and sender (Eden
+treaty) and renders them. OpenAPI at `/openapi`, spec at `/openapi/json`.
 
 **Before changing any screen, read [`UI_GUIDE.md`](./UI_GUIDE.md).** It covers the
 layout shell, htmx/HATEOAS fragment conventions, accessibility, responsive
@@ -26,6 +27,7 @@ src/views/pages/*.tsx    full-page content + data fetching
 src/views/components/*   reusable pieces (rows, modals, PageHeading, icons)
 src/helpers/BaseLayout.tsx   document shell (drawer, navbar, main, toasts)
 src/plugins/clients.ts   decorates context with `lister` + `sender` clients
+src/plugins/htmx.ts      vendored htmx plugin (`hx` context; `@gtramontina.com` is v1-only)
 src/sender.client.ts     Eden treaty client for the sender (typed from App)
 src/sender-stream.ts     fans sender WS pushes out to browsers
 src/bundler.ts           compiles assets -> public/ (CSS + browser scripts)
@@ -40,7 +42,13 @@ assets/{lib,scripts}/*   browser entrypoints bundled to public/dist
   classes) and run `bun run build:tailwind`. oxfmt/oxlint ignore `apps/ui/public`.
 - `src/main.ts` bundles client assets on boot unless started with `--cluster`.
 - Controllers read the clients from handler context (`clientsPlugin`) — don't
-  import `listerClient`/`senderClient` directly inside handlers.
+  import `lister`/`senderClient` directly inside handlers.
+- **`@elysia/html` must not be used here.** Its v2 typing breaks Elysia's route
+  overload, which silently turns every later handler's `query`/`hx` into `any`.
+  `BaseLayout` already emits `<!DOCTYPE html>` and `main.ts` sets the HTML
+  content-type (skipping `/public/*`, so static assets keep their own type).
+- `onError` in v2 has no `code` context member: read `error.code`
+  (`not-found`, `validation`, `parse`, `internal-server-error`).
 - daisyUI has `themes: all` (see `UI_GUIDE.md`): only semantic classes
   (`base-100`, `primary`, …) are safe. Raw hex or `gray-*`/`zinc-*` breaks theme
   switching.

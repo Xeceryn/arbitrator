@@ -1,30 +1,48 @@
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 
 import { UNMAPPED_CHAIN } from "./config";
 import type { Snapshot } from "./types";
 
+/** Eden reports a failure as `{ status, value }`; render it readably. */
+function formatEdenError(error: unknown): string {
+    if (error && typeof error === "object" && "value" in error) {
+        const value = (error as { value?: unknown }).value;
+        if (value !== undefined && value !== null) {
+            if (
+                typeof value === "object" &&
+                "message" in value &&
+                typeof (value as { message?: unknown }).message === "string"
+            ) {
+                return (value as { message: string }).message;
+            }
+            return typeof value === "string" ? value : JSON.stringify(value);
+        }
+    }
+    return String(error);
+}
+
 /**
- * The lister safe client resolves to a discriminated `{ isSuccess, data|error }`
- * result. `must` unwraps it and turns a failed call into a thrown error.
+ * Every lister call resolves to Eden's `{ data, error }` result. `must` unwraps
+ * it and turns a failed call into a thrown error.
  */
-type Outcome<T> =
-    | { isSuccess: true; data: T }
-    | { isSuccess: false; error: unknown };
+type Outcome<T> = { data: T | null; error: unknown };
 
 function must<T>(label: string, result: Outcome<T>): T {
-    if (!result.isSuccess) {
-        const error = result.error as { message?: string } | undefined;
-        throw new Error(`${label}: ${error?.message ?? String(result.error)}`);
+    if (result.error) {
+        throw new Error(`${label}: ${formatEdenError(result.error)}`);
+    }
+    if (result.data === null) {
+        throw new Error(`${label}: lister returned no data`);
     }
     return result.data;
 }
 
-type ExchangeUpdatePayload = Parameters<
-    typeof listerClient.exchange.update
->[0]["payload"];
-type CryptocurrencyUpdatePayload = Parameters<
-    typeof listerClient.cryptocurrency.update
->[0]["payload"];
+type ExchangeUpdatePayload = NonNullable<
+    Parameters<ReturnType<typeof lister.exchange>["patch"]>[0]
+>;
+type CryptocurrencyUpdatePayload = NonNullable<
+    Parameters<ReturnType<typeof lister.cryptocurrency>["patch"]>[0]
+>;
 
 export type ImportOptions = {
     /**
@@ -67,7 +85,7 @@ function warn(summary: ImportSummary, message: string): void {
 
 /** Confirm the lister service is reachable before doing any work. */
 export async function pingLister(): Promise<void> {
-    must("ping lister", await listerClient.utility.ping());
+    must("ping lister", await lister.utility.ping.get());
 }
 
 /**
@@ -110,7 +128,7 @@ export async function importSnapshot(
     // ---------------------------------------------------------------- exchange
     const existingExchanges = must(
         "list exchanges",
-        await listerClient.exchange.list({ limit: -1 }),
+        await lister.exchange.get({ query: { limit: -1 } }),
     ).data;
     const exchangeByCmcId = new Map(existingExchanges.map((e) => [e.cmcId, e]));
     const exchangeBySlug = new Map(existingExchanges.map((e) => [e.slug, e]));
@@ -128,7 +146,7 @@ export async function importSnapshot(
             } else {
                 const created = must(
                     `add exchange ${record.slug}`,
-                    await listerClient.exchange.add({
+                    await lister.exchange.post({
                         cmcId: record.cmcId,
                         name: record.name,
                         slug: record.slug,
@@ -163,10 +181,7 @@ export async function importSnapshot(
             if (!dryRun) {
                 must(
                     `update exchange ${record.slug}`,
-                    await listerClient.exchange.update({
-                        id: existing.id,
-                        payload: changes,
-                    }),
+                    await lister.exchange({ id: existing.id }).patch(changes),
                 );
             }
             summary.exchanges.updated += 1;
@@ -176,7 +191,7 @@ export async function importSnapshot(
     // --------------------------------------------------------- cryptocurrency
     const existingCoins = must(
         "list cryptocurrencies",
-        await listerClient.cryptocurrency.list({ limit: -1 }),
+        await lister.cryptocurrency.get({ query: { limit: -1 } }),
     ).data;
     const coinByCmcId = new Map(
         existingCoins.map((coin) => [coin.cmcId, coin]),
@@ -197,7 +212,7 @@ export async function importSnapshot(
             } else {
                 const created = must(
                     `add cryptocurrency ${record.slug}`,
-                    await listerClient.cryptocurrency.add({
+                    await lister.cryptocurrency.post({
                         cmcId: record.cmcId,
                         name: record.name,
                         symbol: record.symbol,
@@ -226,10 +241,9 @@ export async function importSnapshot(
             if (!dryRun) {
                 must(
                     `update cryptocurrency ${record.slug}`,
-                    await listerClient.cryptocurrency.update({
-                        id: existing.id,
-                        payload: changes,
-                    }),
+                    await lister
+                        .cryptocurrency({ id: existing.id })
+                        .patch(changes),
                 );
             }
             summary.cryptocurrencies.updated += 1;
@@ -238,7 +252,10 @@ export async function importSnapshot(
 
     // ----------------------------------------------------------------- market
     const managedExchangeIds = new Set(exchangeIdBySlug.values());
-    const allMarkets = must("list markets", await listerClient.market.list({}));
+    const allMarkets = must(
+        "list markets",
+        await lister.market.get({ query: {} }),
+    );
     const dbMarketByKey = new Map(
         allMarkets
             .filter((row) => managedExchangeIds.has(row.exchangeId))
@@ -280,7 +297,7 @@ export async function importSnapshot(
             } else {
                 const created = must(
                     `assign market ${record.exchangeSlug} ${record.exchangeSymbol}`,
-                    await listerClient.market.assign({
+                    await lister.market.assign.post({
                         exchangeId,
                         cryptocurrencyId,
                         exchangeSymbol: record.exchangeSymbol,
@@ -313,7 +330,7 @@ export async function importSnapshot(
             if (!dryRun) {
                 must(
                     `update market ${record.exchangeSlug} ${record.exchangeSymbol}`,
-                    await listerClient.market.update({
+                    await lister.market.patch({
                         exchangeId,
                         cryptocurrencyId,
                         ...changes,
@@ -335,7 +352,7 @@ export async function importSnapshot(
             if (!dryRun) {
                 must(
                     `unassign market ${row.exchangeId}/${row.cryptocurrencyId}`,
-                    await listerClient.market.unassign({
+                    await lister.market.unassign.post({
                         exchangeId: row.exchangeId,
                         cryptocurrencyId: row.cryptocurrencyId,
                     }),
@@ -352,7 +369,7 @@ export async function importSnapshot(
             if (!dryRun) {
                 must(
                     `disable market ${row.exchangeId}/${row.cryptocurrencyId}`,
-                    await listerClient.market.update({
+                    await lister.market.patch({
                         exchangeId: row.exchangeId,
                         cryptocurrencyId: row.cryptocurrencyId,
                         tradeEnabled: false,
@@ -370,7 +387,7 @@ export async function importSnapshot(
         if (unmappedChainId !== undefined) {
             const existingLinks = must(
                 "list chain links",
-                await listerClient.chainLink.list({}),
+                await lister["chain-link"].get({ query: {} }),
             );
             const linkedMarketIds = new Set(
                 existingLinks.map((link) => link.marketId),
@@ -387,7 +404,7 @@ export async function importSnapshot(
                 if (!dryRun) {
                     must(
                         `add chain link for market ${marketId}`,
-                        await listerClient.chainLink.add({
+                        await lister["chain-link"].post({
                             marketId,
                             chainId: unmappedChainId,
                             withdrawEnabled: true,
@@ -412,7 +429,7 @@ async function ensureUnmappedChain(
 ): Promise<number | undefined> {
     const chains = must(
         "list chains",
-        await listerClient.chain.list({ limit: -1 }),
+        await lister.chain.get({ query: { limit: -1 } }),
     ).data;
     const existing = chains.find((chain) => chain.code === UNMAPPED_CHAIN.code);
     if (existing) return existing.id;
@@ -420,7 +437,7 @@ async function ensureUnmappedChain(
 
     const created = must(
         `add chain ${UNMAPPED_CHAIN.code}`,
-        await listerClient.chain.add({
+        await lister.chain.post({
             name: UNMAPPED_CHAIN.name,
             code: UNMAPPED_CHAIN.code,
         }),

@@ -1,7 +1,4 @@
-import { listerClient } from "@arbitrator/sdk";
-import { html } from "@elysiajs/html";
-import { htmx } from "@gtramontina.com/elysia-htmx";
-import { ORPCError } from "@orpc/client";
+import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status } from "elysia";
 import z from "zod";
 
@@ -10,6 +7,7 @@ import {
     listCryptocurrencySelectSchema,
 } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
+import { htmx } from "../plugins/htmx";
 import { addErrorMessage, createPushURL, validationMessages } from "../utils";
 import {
     CoinRouteHeader,
@@ -34,11 +32,16 @@ const addCoinBody = z.object({
     logo: z.string().min(1, "Add a logo URL."),
 });
 
-export const CryptocurrencyController = new Elysia()
-    .use(html())
+export const CryptocurrencyController = new Elysia({
+    name: "cryptocurrency",
+    tags: ["coins"],
+})
     .use(htmx())
     .get(
         "/coins",
+        {
+            query: listCryptocurrencySelectSchema,
+        },
         ({ query, hx }) => {
             hx.pushURL(createPushURL("/coins", query));
             if (!hx.isHTMX) {
@@ -59,13 +62,13 @@ export const CryptocurrencyController = new Elysia()
                 </>
             );
         },
-        {
-            query: listCryptocurrencySelectSchema,
-        },
     )
 
     .get(
         "coins/list",
+        {
+            query: listCryptocurrencySelectSchema,
+        },
         async ({ query, hx }) => {
             // Canonical, reloadable URL in the address bar: /coins?page=2&search=...
             // `/coins` renders the full page, `/coins/list` only the swap unit.
@@ -76,35 +79,36 @@ export const CryptocurrencyController = new Elysia()
             // Exactly one root element = the swap target for hx-swap="outerMorph".
             return <CoinResults {...query} />;
         },
-        {
-            query: listCryptocurrencySelectSchema,
-        },
     )
 
     .get(
         "coins/:id",
-        async ({ params }) => {
-            // const { data, error } = await LolocoClient.coins({ id: params.id }).get();
-            const [error, data] = await listerClient.cryptocurrency.findById(
-                params.id,
-            );
-            if (error !== null) {
-                if (error instanceof ORPCError) {
-                    return redirect("/not-found");
-                }
-                return redirect("/internal-server-error");
-            }
-            return <CoinTableRow {...data} />;
-        },
         {
             params: z.object({
                 id: z.coerce.number(),
             }),
         },
+        async ({ params }) => {
+            const { data, error } = await lister
+                .cryptocurrency({ id: params.id })
+                .get();
+            if (error || !data) {
+                return error?.status === 404
+                    ? redirect("/not-found")
+                    : redirect("/internal-server-error");
+            }
+            return <CoinTableRow {...data} />;
+        },
     )
 
     .patch(
         "/coins/:id/edit",
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+            body: cryptocurrencyUpdateSchema,
+        },
         async ({ params, body, hx }) => {
             console.log("/coins/:id/edit", params, body);
 
@@ -116,11 +120,10 @@ export const CryptocurrencyController = new Elysia()
                 "coin-updated": {},
             });
 
-            const [error, data] = await listerClient.cryptocurrency.update({
-                id: params.id,
-                payload: body,
-            });
-            if (error !== null) {
+            const { data, error } = await lister
+                .cryptocurrency({ id: params.id })
+                .patch(body);
+            if (error || !data) {
                 hx.reswap("none");
                 hx.triggerEvent({
                     "make-toast": {
@@ -133,23 +136,23 @@ export const CryptocurrencyController = new Elysia()
 
             return <CoinTableRow {...data} />;
         },
-        {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
-            body: cryptocurrencyUpdateSchema,
-        },
     )
 
     .get(
         "/coins/:id/routes",
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+        },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
 
-            const [coinError, coin] =
-                await listerClient.cryptocurrency.findById(params.id);
+            const { data: coin, error: coinError } = await lister
+                .cryptocurrency({ id: params.id })
+                .get();
             if (coinError || !coin) {
                 hx.triggerEvent({
                     "make-toast": { level: "error", message: "coin not found" },
@@ -157,8 +160,9 @@ export const CryptocurrencyController = new Elysia()
                 return status("No Content");
             }
 
-            const [routesError, routeData] =
-                await listerClient.cryptocurrency.routes(params.id);
+            const { data: routeData, error: routesError } = await lister
+                .cryptocurrency({ id: params.id })
+                .routes.get();
             if (routesError || !routeData) {
                 hx.triggerEvent({
                     "make-toast": {
@@ -176,22 +180,22 @@ export const CryptocurrencyController = new Elysia()
                 </>
             );
         },
+    )
+
+    .get(
+        "/coins/:id/edit-modal",
         {
             params: z.object({
                 id: z.coerce.number(),
             }),
         },
-    )
-
-    .get(
-        "/coins/:id/edit-modal",
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
-            const [error, data] = await listerClient.cryptocurrency.findById(
-                params.id,
-            );
+            const { data, error } = await lister
+                .cryptocurrency({ id: params.id })
+                .get();
             if (!data || error) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -206,15 +210,19 @@ export const CryptocurrencyController = new Elysia()
                 <CryptocurrencyEditModalContent coinId={params.id} {...data} />
             );
         },
-        {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
-        },
     )
 
     .post(
         "/coins",
+        {
+            body: z.object({
+                name: z.optional(z.string()),
+                symbol: z.optional(z.string()),
+                slug: z.optional(z.string()),
+                cmcId: z.optional(z.string()),
+                logo: z.optional(z.string()),
+            }),
+        },
         async ({ body, hx }) => {
             const parsed = addCoinBody.safeParse(body);
             if (!parsed.success) {
@@ -227,7 +235,7 @@ export const CryptocurrencyController = new Elysia()
                 return status(422, <ValidationErrorList messages={messages} />);
             }
 
-            const [error, data] = await listerClient.cryptocurrency.add(
+            const { data, error } = await lister.cryptocurrency.post(
                 parsed.data,
             );
             if (error || !data) {
@@ -265,14 +273,5 @@ export const CryptocurrencyController = new Elysia()
                     ></hx-partial>
                 </>
             );
-        },
-        {
-            body: z.object({
-                name: z.optional(z.string()),
-                symbol: z.optional(z.string()),
-                slug: z.optional(z.string()),
-                cmcId: z.optional(z.string()),
-                logo: z.optional(z.string()),
-            }),
         },
     );

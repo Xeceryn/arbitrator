@@ -6,19 +6,20 @@ import {
 import { Opportunity } from "@arbitrator/lister/core/opportunity/opportunity";
 import { createLogger } from "@arbitrator/logger";
 import { type Delivery, subscribe } from "@arbitrator/messaging";
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 import { redis } from "bun";
 
 const logger = createLogger("arbitrator/receiver");
 
-const [error, exchanges] = await listerClient.exchange.list({ limit: -1 });
-if (error) {
+const exchangeList = await lister.exchange.get({ query: { limit: -1 } });
+if (exchangeList.error) {
     process.exit(1);
 }
+const exchanges = exchangeList.data.data;
 const exchangeSlugIdMap = new Map<string, number>();
 /** Exchanges that already quote prices in IDR (e.g. Indodax). */
 const idrExchangeSlugs = new Set<string>();
-for (const exchange of exchanges.data) {
+for (const exchange of exchanges) {
     exchangeSlugIdMap.set(exchange.slug, exchange.id);
     if (exchange.baseCurrency === "idr") idrExchangeSlugs.add(exchange.slug);
 }
@@ -215,7 +216,7 @@ async function handle(delivery: Delivery): Promise<void> {
 // block the others and the broker keeps a per-exchange backlog while no
 // receiver is up. `main.ts` runs one of these per CPU, so every process competes
 // on every queue.
-const subscriptions = exchanges.data.map((exchange) => {
+const subscriptions = exchanges.map((exchange) => {
     const queue = Queues.orderbookFor(exchange.slug);
     const consumer = subscribe({
         queue,

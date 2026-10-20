@@ -167,7 +167,16 @@ export class Orchestrator {
         if (this.debounce) clearTimeout(this.debounce);
         this.debounce = setTimeout(() => {
             this.debounce = undefined;
-            void this.runReconcile();
+            // Eden rejects on transport/HTTP errors (the old safe client returned
+            // an error tuple), so a lister outage must not become an unhandled
+            // rejection that takes the sender down.
+            void this.runReconcile().catch((error: unknown) => {
+                logger.error(
+                    `reconcile failed: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`,
+                );
+            });
         }, this.debounceMs);
     }
 

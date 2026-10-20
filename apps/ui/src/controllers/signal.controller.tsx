@@ -2,12 +2,13 @@ import type {
     ExchangeSelect,
     OpportunitySignal,
 } from "@arbitrator/lister/types";
-import { listerClient } from "@arbitrator/sdk";
-import { htmx } from "@gtramontina.com/elysia-htmx";
+import { lister } from "@arbitrator/sdk";
 import { Elysia } from "elysia";
 import z from "zod";
 
 import { BaseLayout } from "../helpers/BaseLayout";
+import { htmx } from "../plugins/htmx";
+import { apiErrorMessage } from "../utils";
 import { PageHeading } from "../views/components/PageHeading";
 import { SignalCard } from "../views/components/SignalCard";
 import {
@@ -42,15 +43,14 @@ const streamQuerySchema = z.object({
 
 /** Profitable signals for one stream, always ranked descending. */
 async function loadSignals(orderBy: OrderBy): Promise<SignalsData> {
-    const [error, data] = await listerClient.opportunity.list({
-        orderBy,
-        order: "desc",
+    const { data, error } = await lister.opportunity.get({
+        query: { orderBy, order: "desc" },
     });
 
     if (error || !data) {
         return {
             ok: false,
-            message: error?.message ?? "Unable to load signals.",
+            message: apiErrorMessage(error) ?? "Unable to load signals.",
         };
     }
 
@@ -58,7 +58,9 @@ async function loadSignals(orderBy: OrderBy): Promise<SignalsData> {
 }
 
 async function loadExchanges(): Promise<ExchangeSelect[]> {
-    const [error, data] = await listerClient.exchange.list({ limit: -1 });
+    const { data, error } = await lister.exchange.get({
+        query: { limit: -1 },
+    });
     if (error || !data) return [];
     return data.data;
 }
@@ -207,42 +209,37 @@ function stopTimer() {
     }
 }
 
-export const SignalController = new Elysia()
+export const SignalController = new Elysia({
+    name: "signal",
+    tags: ["signals"],
+})
     .use(htmx())
 
-    .get(
-        "/signals",
-        async ({ query, hx }) => {
-            const [data, exchanges] = await Promise.all([
-                loadSignals(query.orderBy),
-                loadExchanges(),
-            ]);
+    .get("/signals", { query: signalQuerySchema }, async ({ query, hx }) => {
+        const [data, exchanges] = await Promise.all([
+            loadSignals(query.orderBy),
+            loadExchanges(),
+        ]);
 
-            if (!hx.isHTMX) {
-                return (
-                    <BaseLayout title="Arbitrator - Signals" heading="Signals">
-                        <SignalPage
-                            query={query}
-                            data={data}
-                            exchanges={exchanges}
-                        />
-                    </BaseLayout>
-                );
-            }
+        if (!hx.isHTMX) {
             return (
-                <>
-                    <PageHeading heading="Signals" oob />
-                    <title>Signals</title>
+                <BaseLayout title="Arbitrator - Signals" heading="Signals">
                     <SignalPage
                         query={query}
                         data={data}
                         exchanges={exchanges}
                     />
-                </>
+                </BaseLayout>
             );
-        },
-        { query: signalQuerySchema },
-    )
+        }
+        return (
+            <>
+                <PageHeading heading="Signals" oob />
+                <title>Signals</title>
+                <SignalPage query={query} data={data} exchanges={exchanges} />
+            </>
+        );
+    })
 
     /**
      * The only WebSocket in the UI. Each socket subscribes to one of two rooms
@@ -254,7 +251,7 @@ export const SignalController = new Elysia()
     .ws("/signals/ws", {
         query: streamQuerySchema,
         open(ws) {
-            const { orderBy } = ws.data.query;
+            const { orderBy } = ws.query;
             rooms[orderBy].sockets.add(ws);
             subscription.set(ws.id, orderBy);
             startTimer();

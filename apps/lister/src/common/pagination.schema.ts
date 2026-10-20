@@ -27,13 +27,20 @@ export function createPaginationInputSchema<
     });
 }
 
+/**
+ * Output-only pagination metadata (`data`/`meta` envelope of list endpoints).
+ *
+ * Plain `z.number()`, never `z.coerce`: Elysia types a standard-schema response
+ * from its **input** side, and `z.coerce.number()` has an `unknown` input, so
+ * coercing here would surface `meta.items: unknown` to every Eden client.
+ */
 export const paginationMetadataSchema = z.object({
-    items: z.coerce.number(),
-    pages: z.coerce.number(),
-    page: z.coerce.number(),
-    limit: z.coerce.number(),
-    from: z.coerce.number(),
-    to: z.coerce.number(),
+    items: z.number(),
+    pages: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    from: z.number(),
+    to: z.number(),
     hasNextPage: z.boolean(),
     hasPreviousPage: z.boolean(),
     search: z.string(),

@@ -1,13 +1,14 @@
-import html from "@elysiajs/html";
-import { htmx } from "@gtramontina.com/elysia-htmx";
 import { Elysia } from "elysia";
 
 import { BaseLayout } from "../helpers/BaseLayout";
+import { htmx } from "../plugins/htmx";
 import { PageHeading } from "../views/components/PageHeading";
 import { InternalServerErrorPage, NotFoundPage } from "../views/pages/Error";
 
-export const ErrorPageController = new Elysia()
-    .use(html())
+export const ErrorPageController = new Elysia({
+    name: "error-page",
+    tags: ["errors"],
+})
     .use(htmx())
     .get("/not-found", async ({ hx }) => {
         if (hx.isHTMX) {

@@ -1,10 +1,10 @@
-import { listerClient } from "@arbitrator/sdk";
-import { htmx } from "@gtramontina.com/elysia-htmx";
+import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status } from "elysia";
 import z from "zod";
 
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
+import { htmx } from "../plugins/htmx";
 import { addErrorMessage, createPushURL, validationMessages } from "../utils";
 import { ExchangeEditModalContent } from "../views/components/ExchangeEditModalContent";
 import { ValidationErrorList } from "../views/components/FormErrors";
@@ -36,11 +36,17 @@ const exchangeForm = z.object({
     registeredOnCmc: z.optional(z.string()),
 });
 
-export const ExchangeController = new Elysia()
+export const ExchangeController = new Elysia({
+    name: "exchange",
+    tags: ["markets"],
+})
     .use(htmx())
 
     .get(
         "/markets",
+        {
+            query: listExchangeSelectSchema,
+        },
         ({ query, hx }) => {
             hx.pushURL(createPushURL("/markets", query));
             if (!hx.isHTMX) {
@@ -61,13 +67,13 @@ export const ExchangeController = new Elysia()
                 </>
             );
         },
-        {
-            query: listExchangeSelectSchema,
-        },
     )
 
     .get(
         "markets/list",
+        {
+            query: listExchangeSelectSchema,
+        },
         async ({ query, hx }) => {
             hx.pushURL(createPushURL("/markets", query));
             if (!hx.isHTMX) {
@@ -75,20 +81,22 @@ export const ExchangeController = new Elysia()
             }
             return <MarketResults {...query} />;
         },
-        {
-            query: listExchangeSelectSchema,
-        },
     )
 
     .get(
         "/markets/:id/edit-modal",
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+        },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/markets");
             }
-            const [error, data] = await listerClient.exchange.findById(
-                params.id,
-            );
+            const { data, error } = await lister
+                .exchange({ id: params.id })
+                .get();
             if (!data || error) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -104,20 +112,20 @@ export const ExchangeController = new Elysia()
                 <ExchangeEditModalContent exchangeId={params.id} {...data} />
             );
         },
-        {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
-        },
     )
 
     .patch(
         "/markets/:id/edit",
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+            body: exchangeUpdateBody,
+        },
         async ({ params, body, hx }) => {
-            const [error, data] = await listerClient.exchange.update({
-                id: params.id,
-                payload: body,
-            });
+            const { data, error } = await lister
+                .exchange({ id: params.id })
+                .patch(body);
             if (error || !data) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -135,16 +143,13 @@ export const ExchangeController = new Elysia()
             });
             return <MarketTableRow {...data} />;
         },
-        {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
-            body: exchangeUpdateBody,
-        },
     )
 
     .post(
         "/markets",
+        {
+            body: exchangeForm,
+        },
         async ({ body, hx }) => {
             const parsed = exchangeBody.safeParse(body);
             if (!parsed.success) {
@@ -157,7 +162,7 @@ export const ExchangeController = new Elysia()
                 return status(422, <ValidationErrorList messages={messages} />);
             }
 
-            const [error, data] = await listerClient.exchange.add(parsed.data);
+            const { data, error } = await lister.exchange.post(parsed.data);
             if (error || !data) {
                 const messages = [addErrorMessage("exchange", error)];
                 hx.triggerEvent({
@@ -191,8 +196,5 @@ export const ExchangeController = new Elysia()
                     ></hx-partial>
                 </>
             );
-        },
-        {
-            body: exchangeForm,
         },
     );

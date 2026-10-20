@@ -1,51 +1,57 @@
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 
-const [error, markets] = await listerClient.market.list({});
+import { formatEdenError } from "./client";
 
-if (error) {
+const markets = await lister.market.get({ query: {} });
+
+if (markets.error) {
+    console.error("marketListError", formatEdenError(markets.error));
     process.exit(1);
 }
 
-const [umappedChainExistsError, unmappedChainExists] =
-    await listerClient.chain.list({
-        searchBy: "code",
-        search: "unmapped",
-    });
-if (umappedChainExistsError) {
-    console.error("unmappedChainExistsError", umappedChainExistsError);
+const unmappedChainExists = await lister.chain.get({
+    query: { searchBy: "code", search: "unmapped" },
+});
+if (unmappedChainExists.error) {
+    console.error(
+        "unmappedChainExistsError",
+        formatEdenError(unmappedChainExists.error),
+    );
     process.exit(1);
 }
 
-if (unmappedChainExists.data.length < 1) {
-    const [addError, addedChain] = await listerClient.chain.add({
+if (unmappedChainExists.data.data.length < 1) {
+    const addedChain = await lister.chain.post({
         name: "Unmapped Chain",
         code: "UNMPD",
     });
-    console.log("adding", addError, addedChain);
+    console.log("adding", addedChain.error, addedChain.data);
 }
-console.log("unmappedChainExists", unmappedChainExists);
+console.log("unmappedChainExists", unmappedChainExists.data);
 
-const [targetChainError, targetChain] = await listerClient.chain.list({
-    searchBy: "code",
-    search: "UNMPD",
+const targetChain = await lister.chain.get({
+    query: { searchBy: "code", search: "UNMPD" },
 });
-console.log(targetChain);
-const target = targetChain?.data[0];
+console.log(targetChain.data);
+const target = targetChain.data?.data[0];
 console.log(target);
-if (targetChainError || !target) {
-    console.error("targetChainError", targetChainError);
+if (targetChain.error || !target) {
+    console.error(
+        "targetChainError",
+        targetChain.error && formatEdenError(targetChain.error),
+    );
     process.exit(1);
 }
 
-for (const coin of markets) {
-    const [error, result] = await listerClient.chainLink.add({
+for (const coin of markets.data) {
+    const result = await lister["chain-link"].post({
         chainId: target.id,
         marketId: coin.id,
         withdrawEnabled: true,
         depositEnabled: true,
     });
-    if (error) {
-        console.error("assinging error", error);
+    if (result.error) {
+        console.error("assinging error", formatEdenError(result.error));
     }
-    console.log("result", result);
+    console.log("result", result.data);
 }

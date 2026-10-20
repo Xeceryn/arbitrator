@@ -116,6 +116,31 @@ export function formatProfitPercentage(ratio: number): string {
 
 export type ValidationMessage = { field: string; message: string };
 
+/**
+ * Eden treaty never throws on an HTTP failure: it resolves to
+ * `{ data: null, error: { status, value } }`. Lister answers errors with
+ * `{ message }`, but a proxy or a crash can return a plain string.
+ */
+export type ApiError = { status: number; value: unknown } | null | undefined;
+
+/** The upstream message of an Eden error, when it carries one. */
+export function apiErrorMessage(error: ApiError): string | undefined {
+    const value = error?.value;
+    if (typeof value === "string") {
+        return value.length > 0 ? value : undefined;
+    }
+    if (value && typeof value === "object") {
+        const record = value as { message?: unknown; summary?: unknown };
+        if (typeof record.message === "string" && record.message.length > 0) {
+            return record.message;
+        }
+        if (typeof record.summary === "string" && record.summary.length > 0) {
+            return record.summary;
+        }
+    }
+    return undefined;
+}
+
 /** Turn a zod failure into field-scoped messages for inline rendering. */
 export function validationMessages(error: ZodError): ValidationMessage[] {
     return error.issues.map((issue) => ({
@@ -132,9 +157,9 @@ export function validationMessages(error: ZodError): ValidationMessage[] {
  */
 export function addErrorMessage(
     entity: string,
-    error: { message?: string } | null | undefined,
+    error: ApiError,
 ): ValidationMessage {
-    const raw = error?.message ?? "";
+    const raw = apiErrorMessage(error) ?? "";
     if (/cmc\s*id/i.test(raw)) {
         return {
             field: "cmcId",

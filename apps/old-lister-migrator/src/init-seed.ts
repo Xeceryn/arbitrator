@@ -1,14 +1,14 @@
-import { listerClient } from "@arbitrator/sdk";
-import { ORPCError } from "@orpc/client";
+import { lister } from "@arbitrator/sdk";
 
+import { errorMessage, formatEdenError } from "./client";
 import {
     CoinMarketCapExchange,
     get_exchange_cmc_details,
     get_old_data,
 } from "./lib/data-utils";
 
-const [pingError] = await listerClient.utility.ping();
-if (pingError) {
+const ping = await lister.utility.ping.get();
+if (ping.error) {
     console.error("Lister service is not online");
     process.exit(1);
 }
@@ -17,7 +17,7 @@ const raw_markets = await get_exchange_cmc_details();
 const old_data = await get_old_data();
 
 raw_markets.forEach(async (market) => {
-    const [error, result] = await listerClient.exchange.add({
+    const result = await lister.exchange.post({
         name: market.name,
         cmcId: market.id,
         slug: market.slug,
@@ -28,23 +28,22 @@ raw_markets.forEach(async (market) => {
                 : "usdt",
     });
 
-    if (error) {
-        if (error instanceof ORPCError) {
-            console.error(
-                `Error adding ${market.name} because ${error.message}`,
-            );
+    if (result.error) {
+        const message = errorMessage(result.error);
+        if (message !== undefined) {
+            console.error(`Error adding ${market.name} because ${message}`);
         } else {
             console.error("something wrong when adding exchange");
             process.exit(1);
         }
     }
-    if (result) {
-        console.log(`Added ${result.name}`);
+    if (result.data) {
+        console.log(`Added ${result.data.name}`);
     }
 });
 
 // register non cmc exchanges
-await listerClient.exchange.add({
+await lister.exchange.post({
     name: "Pintu Kemana Saja",
     slug: "pintu",
     logo: "https://s2.coinmarketcap.com/static/img/coins/64x64/14179.png",
@@ -53,19 +52,20 @@ await listerClient.exchange.add({
     registeredOnCmc: false,
 });
 
-const [getExchangeError, markets] = await listerClient.exchange.list({
-    limit: -1,
+const exchangeList = await lister.exchange.get({
+    query: { limit: -1 },
 });
-if (getExchangeError) {
-    console.error(getExchangeError);
+if (exchangeList.error) {
+    console.error(formatEdenError(exchangeList.error));
     process.exit(1);
 }
+const markets = exchangeList.data;
 console.log(markets.data.map((x) => x.slug));
 
 // add all old data coins
 
 for (const coin of old_data) {
-    await listerClient.cryptocurrency.add({
+    await lister.cryptocurrency.post({
         cmcId: coin.cmcId,
         slug: coin.slug,
         name: coin.name,
@@ -75,13 +75,12 @@ for (const coin of old_data) {
 }
 
 // get all current cryptocurrencies
-const [cryptoCurrencyListError, coins] = await listerClient.cryptocurrency.list(
-    { limit: -1 },
-);
-if (cryptoCurrencyListError) {
-    console.error("cryptoCurrencyListError", cryptoCurrencyListError);
+const coinList = await lister.cryptocurrency.get({ query: { limit: -1 } });
+if (coinList.error) {
+    console.error("cryptoCurrencyListError", formatEdenError(coinList.error));
     process.exit(1);
 }
+const coins = coinList.data;
 console.log(`total coin in database ${coins.data.length}`);
 
 // manage assignment from old data fields into coins and markets inserted as assignment
@@ -92,7 +91,7 @@ for (const coin of old_data) {
             (m) => m.slug === CoinMarketCapExchange.Indodax,
         )!.id;
 
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.indodaxAlternateSymbol,
@@ -105,7 +104,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.Bittime,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.bittimeAlternateSymbol,
@@ -118,7 +117,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.Binance,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.binanceAlternateSymbol,
@@ -131,7 +130,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.Kucoin,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.kucoinAlternateSymbol,
@@ -144,7 +143,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.GateIO,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.gateioAlternateSymbol,
@@ -157,7 +156,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.Okx,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.okxAlternateSymbol,
@@ -170,7 +169,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.Bitmart,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.bitmartAlternateSymbol,
@@ -183,7 +182,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.Htx,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.huobiAlternateSymbol,
@@ -196,7 +195,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.MEXC,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.mexcAlternateSymbol,
@@ -209,7 +208,7 @@ for (const coin of old_data) {
         const marketId = markets.data.find(
             (m) => m.slug === CoinMarketCapExchange.Bitget,
         )!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.bitgetAlternateSymbol,
@@ -220,7 +219,7 @@ for (const coin of old_data) {
     if (coin.pintuAlternateSymbol !== "") {
         const coinId = coins.data.find((c) => c.slug === coin.slug)!.id;
         const marketId = markets.data.find((m) => m.slug === "pintu")!.id;
-        await listerClient.market.assign({
+        await lister.market.assign.post({
             exchangeId: marketId,
             cryptocurrencyId: coinId,
             exchangeSymbol: coin.pintuAlternateSymbol,

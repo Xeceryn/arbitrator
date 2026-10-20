@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "name": "@arbitrator/elysia-kit",
+    "version": "0.0.0",
+    "description": "Shared Elysia v2 wiring for the arbitrator services",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "typecheck": "bun --check"
+    },
+    "dependencies": {
+        "zod": "catalog:core"
+    }
+}

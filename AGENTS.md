@@ -36,10 +36,12 @@ done.
 
 ## Repo map
 
-- `apps/lister` — source of truth. oRPC API `:3001`, Postgres/drizzle.
-- `apps/sender` — orchestrator + worker pool. Elysia `:3002`.
+- `apps/lister` — source of truth. Elysia v2 API `:3001` (OpenAPI at
+  `/openapi`), Postgres/drizzle.
+- `apps/sender` — orchestrator + worker pool. Elysia v2 `:3002` (OpenAPI at
+  `/openapi`).
 - `apps/receiver` — RabbitMQ orderbook consumer (cluster per CPU).
-- `apps/ui` — server-rendered htmx app `:3000`.
+- `apps/ui` — server-rendered htmx app `:3000` (Elysia v2).
 - `apps/cmc-collector` — CMC scrape/import CLI.
 - `apps/chain-metadata-collector` — per-exchange coin/chain crawl → lister chains
   and chain links.
@@ -48,14 +50,20 @@ done.
 - `packages/contracts` — shared zod schemas + RabbitMQ topology.
 - `packages/messaging` — shared RabbitMQ publish/subscribe.
 - `packages/logger` — winston factory.
-- `packages/sdk` — oRPC client to lister.
+- `packages/sdk` — Eden Treaty client to lister (exports `lister`; every call
+  returns `{ data, error }`).
 - `packages/env-loader` — unused legacy env schema.
+- `packages/elysia-kit` — shared Elysia v2 wiring (the zod → OpenAPI schema
+  mapper used by every service).
 
 ## Dependencies and bun catalogs
 
 - Workspace deps use `workspace:*`.
 - Shared third-party deps use `catalog:<name>` from `workspaces.catalogs` in the
-  root `package.json`. Catalogs: `core`, `tools`, `sdk`, `types`.
+  root `package.json`. Catalogs: `core`, `elysia`, `tools`, `sdk`, `types`.
+- **Everything Elysia lives in the `elysia` catalog** (`elysia`, `@elysia/*`,
+  plus the `typebox` / `exact-mirror` / `openapi-types` peers). Bump the version
+  there, never in a leaf `package.json`.
 - **If a package could be reused by another app or package, add it to a catalog
   and reference `catalog:<name>` instead of pinning a version in the leaf
   `package.json`.** (Debt example: `apps/sender` pins `binance`, `bitget-api`,
@@ -80,6 +88,9 @@ type`, and guard or `!` indexed access.
 - Runtime ports: ui `3000`, lister `3001`, sender `3002`.
 
 ## Reference docs
+
+- `docs/elysia-2-migration.md` — Elysia v2 conventions, lister REST route map,
+  Eden call shapes. Read it before touching any HTTP surface.
 
 - `docs/transfer-orchestration.md` — feature design + task tracker.
 - `docs/adr/0001-desired-state-reconciliation.md`, `0002-worker-control-vs-data-plane.md`.

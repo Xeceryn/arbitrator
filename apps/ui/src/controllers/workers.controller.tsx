@@ -1,11 +1,11 @@
 import type { OrchestratorStatus } from "@arbitrator/contracts";
 import type { ExchangeSelect } from "@arbitrator/lister/types";
-import { htmx } from "@gtramontina.com/elysia-htmx";
 import { Elysia, redirect } from "elysia";
 import z from "zod";
 
 import { BaseLayout } from "../helpers/BaseLayout";
 import { type AppClients, clientsPlugin } from "../plugins/clients";
+import { htmx } from "../plugins/htmx";
 import { getLastSenderStatus, subscribeToSenderStatus } from "../sender-stream";
 import { PageHeading } from "../views/components/PageHeading";
 import {
@@ -18,7 +18,12 @@ import {
 
 const slugParam = z.object({ slug: z.string().min(1) });
 
-type SenderCallError = { status: number; value: unknown } | null | undefined;
+/**
+ * Eden reports a failed call as `{ status, value }`. Elysia keeps the status
+ * union wide (`unknown`) when a route declares several statuses, so only
+ * `value` is used here — never treat `status` as a number.
+ */
+type SenderCallError = { status: unknown; value: unknown } | null | undefined;
 
 /** Sender failures arrive as `{ message }` (501) or a validation body. */
 function senderErrorMessage(error: SenderCallError, fallback: string): string {
@@ -49,7 +54,9 @@ async function loadWorkersData({
         };
     }
 
-    const [listError, list] = await lister.exchange.list({ limit: -1 });
+    const { data: list, error: listError } = await lister.exchange.get({
+        query: { limit: -1 },
+    });
     if (listError || !list) {
         return { ok: false, message: "Unable to load exchanges." };
     }
@@ -198,7 +205,10 @@ async function changedRowsResponse(
     return parts.join("");
 }
 
-export const WorkersController = new Elysia()
+export const WorkersController = new Elysia({
+    name: "workers",
+    tags: ["workers"],
+})
     .use(htmx())
     .use(clientsPlugin)
 
@@ -258,6 +268,7 @@ export const WorkersController = new Elysia()
 
     .post(
         "/workers/:slug/start",
+        { params: slugParam },
         async ({ params, hx, sender }) => {
             const { error } = await sender
                 .exchanges({ slug: params.slug })
@@ -285,11 +296,11 @@ export const WorkersController = new Elysia()
             hx.reswap("none");
             return oneRowResponse(sender, params.slug);
         },
-        { params: slugParam },
     )
 
     .post(
         "/workers/:slug/stop",
+        { params: slugParam },
         async ({ params, hx, sender }) => {
             const { error } = await sender
                 .exchanges({ slug: params.slug })
@@ -317,7 +328,6 @@ export const WorkersController = new Elysia()
             hx.reswap("none");
             return oneRowResponse(sender, params.slug);
         },
-        { params: slugParam },
     )
 
     /**
@@ -338,7 +348,10 @@ export const WorkersController = new Elysia()
             // the exchange list may be cold. Load it before rendering rows.
             if (cachedExchanges.length === 0) {
                 try {
-                    await loadWorkersData(ws.data as unknown as AppClients);
+                    await loadWorkersData({
+                        lister: ws.lister,
+                        sender: ws.sender,
+                    });
                 } catch (error) {
                     console.error(
                         `[workers-ws] initial exchange load failed: ${error instanceof Error ? error.message : String(error)}`,

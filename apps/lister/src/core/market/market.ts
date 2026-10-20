@@ -112,8 +112,10 @@ export namespace Market {
             where.cryptocurrencyId = filter.cryptocurrencyId;
         }
 
+        // Drizzle v1 throws on an explicit `where: undefined`, so the key is
+        // only present when there is a filter.
         const rows = await database.query.market.findMany({
-            where: Object.keys(where).length > 0 ? where : undefined,
+            ...(Object.keys(where).length > 0 ? { where } : {}),
             with: { exchange: true, cryptocurrency: true },
             orderBy: { id: "asc" },
         });

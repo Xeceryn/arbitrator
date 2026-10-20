@@ -1,8 +1,8 @@
 import { ExchangeSearchByOptions } from "@arbitrator/lister/constants";
 import type { ListExchangeInput } from "@arbitrator/lister/types";
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 
-import { capitalizeFirstLetter } from "../../utils";
+import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
 import { AddExchangeModal } from "../components/AddExchangeModal";
 import { ExchangeEditModal } from "../components/ExchangeEditModal";
 import { SearchIcon, PlusIcon } from "../components/icons";
@@ -98,14 +98,15 @@ const MarketFilter = (props: ListExchangeInput) => {
  * carry the sort.
  */
 export const MarketResults = async (props: ListExchangeInput) => {
-    const [error, data] = await listerClient.exchange.list(props);
+    const { data, error } = await lister.exchange.get({ query: props });
 
     if (error || !data) {
+        const message = apiErrorMessage(error);
         return (
             <div id="market-list-results" class="flex flex-col gap-2">
                 <div class="alert alert-error" role="alert">
                     <span>Unable to load exchanges.</span>
-                    {error?.message ? <span safe>{error.message}</span> : null}
+                    {message ? <span safe>{message}</span> : null}
                 </div>
             </div>
         );

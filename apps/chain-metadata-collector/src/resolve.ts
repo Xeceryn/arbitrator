@@ -1,4 +1,4 @@
-import { listerClient } from "@arbitrator/sdk";
+import { lister } from "@arbitrator/sdk";
 
 import {
     overrideKey,
@@ -338,7 +338,7 @@ export async function resolveAliases(
     const groups = collectGroups(snapshot);
     const listerChains = must(
         "list chains",
-        await listerClient.chain.list({ limit: -1 }),
+        await lister.chain.get({ query: { limit: -1 } }),
     ).data as ChainRow[];
 
     // Candidate vocabulary = lister's own chains plus every canonical code the

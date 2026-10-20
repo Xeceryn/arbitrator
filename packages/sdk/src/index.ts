@@ -1,18 +1,12 @@
 import { env } from "@arbitrator/env-loader";
-import type { router } from "@arbitrator/lister/router";
-import { createORPCClient, createSafeClient } from "@orpc/client";
-import {} from "@orpc/client";
-import { RPCLink } from "@orpc/client/fetch";
-import { type RouterClient } from "@orpc/server";
+import type { App } from "@arbitrator/lister/app";
+import { treaty } from "@elysia/eden";
 
-const url = () => env.LISTER_URL;
-
-const link = new RPCLink({
-    fetch: fetch,
-    url: "/",
-    origin: url(),
-});
-
-const listerUnsafeClient: RouterClient<typeof router> = createORPCClient(link);
-
-export const listerClient = createSafeClient(listerUnsafeClient);
+/**
+ * Eden Treaty client for the lister HTTP surface.
+ *
+ * Every call returns `{ data, error }`: `data` is `null` when `error` is set,
+ * `error` is `null` on success. The types come from lister's `App` instance, so
+ * a new lister route shows up here with no codegen.
+ */
+export const lister = treaty<App>(env.LISTER_URL);

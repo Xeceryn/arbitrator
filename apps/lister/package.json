@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "private": true,
     "exports": {
-        ".": "./src/router.ts",
+        ".": "./src/app.ts",
         "./types": "./src/core/types.ts",
         "./schemas": "./src/core/schemas.ts",
         "./constants": "./src/core/constants.ts"
@@ -20,16 +20,22 @@
     },
     "dependencies": {
         "@arbitrator/contracts": "workspace:*",
+        "@arbitrator/elysia-kit": "workspace:*",
         "@arbitrator/env-loader": "workspace:*",
         "@arbitrator/logger": "workspace:*",
         "@arbitrator/messaging": "workspace:*",
-        "@orpc/server": "catalog:core",
+        "@elysia/cors": "catalog:elysia",
+        "@elysia/openapi": "catalog:elysia",
         "drizzle-kit": "catalog:tools",
         "drizzle-orm": "catalog:core",
         "drizzle-seed": "catalog:tools",
         "drizzle-zod": "catalog:core",
         "effect": "^4.0.0",
+        "elysia": "catalog:elysia",
+        "exact-mirror": "catalog:elysia",
+        "openapi-types": "catalog:elysia",
         "pg": "catalog:core",
+        "typebox": "catalog:elysia",
         "zod": "catalog:core"
     }
 }

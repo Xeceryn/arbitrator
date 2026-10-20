@@ -1,10 +1,10 @@
-import { listerClient } from "@arbitrator/sdk";
-import { htmx } from "@gtramontina.com/elysia-htmx";
+import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status } from "elysia";
 import z from "zod";
 
 import { listChainSelectSchema } from "../../../lister/src/core/chain/chain.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
+import { htmx } from "../plugins/htmx";
 import { addErrorMessage, createPushURL, validationMessages } from "../utils";
 import { ChainEditModalContent } from "../views/components/ChainEditModalContent";
 import { ChainTableRow } from "../views/components/ChainTableRow";
@@ -25,11 +25,17 @@ const chainForm = z.object({
     code: z.optional(z.string()),
 });
 
-export const ChainController = new Elysia()
+export const ChainController = new Elysia({
+    name: "chain",
+    tags: ["chains"],
+})
     .use(htmx())
 
     .get(
         "/chain",
+        {
+            query: listChainSelectSchema,
+        },
         ({ query, hx }) => {
             hx.pushURL(createPushURL("/chain", query));
             if (!hx.isHTMX) {
@@ -47,13 +53,13 @@ export const ChainController = new Elysia()
                 </>
             );
         },
-        {
-            query: listChainSelectSchema,
-        },
     )
 
     .get(
         "chain/list",
+        {
+            query: listChainSelectSchema,
+        },
         async ({ query, hx }) => {
             hx.pushURL(createPushURL("/chain", query));
             if (!hx.isHTMX) {
@@ -61,18 +67,20 @@ export const ChainController = new Elysia()
             }
             return <ChainResults {...query} />;
         },
-        {
-            query: listChainSelectSchema,
-        },
     )
 
     .get(
         "/chain/:id/edit-modal",
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+        },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
                 return redirect("/chain");
             }
-            const [error, data] = await listerClient.chain.findById(params.id);
+            const { data, error } = await lister.chain({ id: params.id }).get();
             if (!data || error) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -86,20 +94,20 @@ export const ChainController = new Elysia()
 
             return <ChainEditModalContent chainId={params.id} {...data} />;
         },
-        {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
-        },
     )
 
     .patch(
         "/chain/:id/edit",
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+            body: chainUpdateBody,
+        },
         async ({ params, body, hx }) => {
-            const [error, data] = await listerClient.chain.update({
-                id: params.id,
-                payload: body,
-            });
+            const { data, error } = await lister
+                .chain({ id: params.id })
+                .patch(body);
             if (error || !data) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -117,18 +125,17 @@ export const ChainController = new Elysia()
             });
             return <ChainTableRow {...data} />;
         },
-        {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
-            body: chainUpdateBody,
-        },
     )
 
     .delete(
         "/chain/:id",
+        {
+            params: z.object({
+                id: z.coerce.number(),
+            }),
+        },
         async ({ params, hx }) => {
-            const [error] = await listerClient.chain.remove(params.id);
+            const { error } = await lister.chain({ id: params.id }).delete();
             if (error) {
                 hx.reswap("none");
                 hx.triggerEvent({
@@ -145,15 +152,13 @@ export const ChainController = new Elysia()
             });
             return status("OK");
         },
-        {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
-        },
     )
 
     .post(
         "/chain",
+        {
+            body: chainForm,
+        },
         async ({ body, hx }) => {
             const parsed = chainBody.safeParse(body);
             if (!parsed.success) {
@@ -166,7 +171,7 @@ export const ChainController = new Elysia()
                 return status(422, <ValidationErrorList messages={messages} />);
             }
 
-            const [error, data] = await listerClient.chain.add(parsed.data);
+            const { data, error } = await lister.chain.post(parsed.data);
             if (error || !data) {
                 const messages = [addErrorMessage("chain", error)];
                 hx.triggerEvent({
@@ -200,8 +205,5 @@ export const ChainController = new Elysia()
                     ></hx-partial>
                 </>
             );
-        },
-        {
-            body: chainForm,
         },
     );

@@ -1,6 +1,6 @@
 import { env } from "@arbitrator/env-loader";
 import type { App } from "@arbitrator/sender/app";
-import { treaty } from "@elysiajs/eden";
+import { treaty } from "@elysia/eden";
 
 const senderUrl = () => env.SENDER_URL;
 
