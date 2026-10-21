@@ -90,6 +90,13 @@ type`, and guard or `!` indexed access.
   JIT on the first request. Anything with import-time side effects (listen,
   schedulers, asset bundling, broker connections) must be guarded with
   `inAotBuild()` from `elysia`, and the entry must export `app`.
+- **`patches/elysia@<version>.patch` is temporary.** It fixes three AOT-plugin
+  bugs in rc.0 (missing `hasSyncHmac` export in the cookie stub, `InvalidCookie`
+  extending `ElysiaError` in the wrong module order, and cookie stubbing on WS
+  apps). Bump `elysia` in the `elysia` catalog, delete the patch, drop the
+  `patchedDependencies` entry, and re-run the three builds. Never hand-edit
+  `node_modules` — bun hardlinks it to `~/.bun/install/cache`; use
+  `bun patch elysia@<version>` + `bun patch --commit node_modules/elysia`.
 - Elysia resources are **plugins, not module imports**: `databasePlugin` and
   `eventsPlugin` (lister), `orchestratorPlugin`/`eventsPlugin`/`listerPlugin`
   (sender), `clientsPlugin` (ui) decorate the context. Handlers read `db`,

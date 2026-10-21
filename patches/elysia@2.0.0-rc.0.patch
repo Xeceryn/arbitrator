@@ -1,0 +1,37 @@
+diff --git a/dist/cookie/error.mjs b/dist/cookie/error.mjs
+index 751b2743ec56af2e8fd68572e5e76c67e4bb94d1..15f42d90e4f9cc9b75905136f56c444c13406b33 100644
+--- a/dist/cookie/error.mjs
++++ b/dist/cookie/error.mjs
+@@ -1,9 +1,8 @@
+ // @bun
+ import { isProduction } from "../universal/is-production.mjs";
+-import { ElysiaError } from "../error.mjs";
+ 
+ //#region src/cookie/error.ts
+-var InvalidCookie = class InvalidCookie extends ElysiaError {
++var InvalidCookie = class InvalidCookie extends Error {
+ 	constructor(key, response = key ? `"${key}" is an invalid cookie` : "Invalid Cookie", status) {
+ 		super(response);
+ 		this.key = key;
+diff --git a/dist/plugin/aot/core.mjs b/dist/plugin/aot/core.mjs
+index 1a94b0d2f89becb3508a0a49b90e79428879d33e..8069b0232efe60ee26c7de7a33851e1c92b475dc 100644
+--- a/dist/plugin/aot/core.mjs
++++ b/dist/plugin/aot/core.mjs
+@@ -68,7 +68,7 @@ const NO_STUB = {
+ function planFromReport(strip, report, hasWS, mayTrace, aliases, allBridgeFree, zeroCapture, adapterStub = false, productionStub = true, wsCookie = false, exactMirror = false, key = "", evidence) {
+ 	const jit = report.jit;
+ 	if (strip === true && !jit) throw new Error(`[elysia-aot] strip: true requires every route${key && ` of app "${key}"`} to be covered by the AOT handler manifest, but handler JIT is still reachable (${report.reasons.join(", ") || "unknown"}). Use strip: 'auto' to skip stubbing when the app is not fully precompiled.`);
+-	const cookie = jit && !aliases.has("cc") && !wsCookie;
++	const cookie = jit && !aliases.has("cc") && !wsCookie && !hasWS;
+ 	const quiet = !!evidence && jit && !hasWS && !mayTrace && !evidence.hasMount;
+ 	const mode = !jit ? "off" : allBridgeFree ? "sealed" : hasWS && zeroCapture ? "off" : "wired";
+ 	return {
+@@ -222,7 +222,7 @@ const STUB_SOURCES = {
+ 	cookie: [
+ 		{
+ 			filter: /[\\/]elysia[\\/](dist|src)[\\/]cookie[\\/]crypto\.(m?js|ts)$/,
+-			source: `export function resolvePendingCookie(){throw new Error("[elysia-aot] cookie support was stripped (strip mode) but a signed cookie was read. Rebuild with strip:false.")}\n`
++			source: `export const hasSyncHmac=false\nexport function resolvePendingCookie(){throw new Error("[elysia-aot] cookie support was stripped (strip mode) but a signed cookie was read. Rebuild with strip:false.")}\n`
+ 		},
+ 		{
+ 			filter: /[\\/]elysia[\\/](dist|src)[\\/]cookie[\\/]utils\.(m?js|ts)$/,

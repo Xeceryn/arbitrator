@@ -63,6 +63,9 @@
         "oxlint": "^1.86.0",
         "typescript": "^7.0.2"
     },
+    "patchedDependencies": {
+        "elysia@2.0.0-rc.0": "patches/elysia@2.0.0-rc.0.patch"
+    },
     "trustedDependencies": [
         "@bufbuild/buf",
         "@tailwindcss/oxide",

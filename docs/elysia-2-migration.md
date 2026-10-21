@@ -314,24 +314,48 @@ server does no per-route JIT compilation:
 - everything with import-time side effects is guarded with `inAotBuild()`:
   `listen()`, `startLastPriceScheduler()`, the orchestrator bootstrap, the UI
   asset bundling;
-- `strip: false` is **required** on `elysia@2.0.0-rc.0`. The default
-  `strip: 'auto'` stubs cookie signing in `cookie/crypto.mjs`, which
-  `ws/route.mjs` (pulled in by `websocket()`) still imports, so the build fails
-  with `No matching export … hasSyncHmac`; with the stub active, codec response
-  schemas also crash the bundle at startup with `The superclass is not a
-constructor`. Revisit after the next release — `strip: true` is the faster
-  bundle.
-- Measured on this machine (`/tmp/bench.ts`, warm DB, 500-800 reqs):
+- Dockerfiles build with `bun run build` and run `dist/index.js` unchanged.
 
-    | app    | startup             | RSS                | rps (`/utility/ping`)               |
-    | ------ | ------------------- | ------------------ | ----------------------------------- |
-    | lister | 308 ms → **201 ms** | 124 MB → **90 MB** | 71.5k → **96.2k**                   |
-    | sender | 174 ms → **88 ms**  | 72 MB → **54 MB**  | 47.8k → **76.4k**                   |
-    | ui     | 235 ms → **120 ms** | 100 MB → **56 MB** | 5.3k → 4.2k (HTML render, see note) |
+#### The temporary `elysia` patch
 
-    DB-bound routes are unchanged (`/exchange`: 1.12 ms vs 1.14 ms p50) — AOT
-    removes framework overhead, not query time. The UI loses a little throughput
-    because its handlers render JSX; the win there is startup + memory.
+`elysia@2.0.0-rc.0`'s AOT plugin cannot build these apps unpatched.
+`patches/elysia@2.0.0-rc.0.patch` (wired through `patchedDependencies`) fixes
+three bugs, all in the **default** `strip: 'auto'` path:
+
+1. `dist/plugin/aot/core.mjs` — the `cookie/crypto.mjs` stub only exports
+   `resolvePendingCookie`, but `ws/route.mjs` and `compile/handler/descriptor.mjs`
+   import `hasSyncHmac`, so any app using `websocket()` fails to bundle with
+   `No matching export … hasSyncHmac`. The patch re-adds the export (the sibling
+   `cookie/utils.mjs` stub already declares it).
+2. `dist/cookie/error.mjs` — `InvalidCookie` eagerly extends `ElysiaError`, and
+   once stubs reshuffle the module graph Bun emits `cookie/error.mjs` before
+   `error.mjs`, so the bundle dies at startup with `The superclass is not a
+constructor`. The patch extends `Error` instead (same fields: `status`,
+   `code`, `response`; no app here uses signed cookies).
+3. `dist/plugin/aot/core.mjs` (`planFromReport`) — the stub plan computed
+   `cookie = jit && !aliases.has("cc") && !wsCookie`, which strips the cookie jar
+   even for WS apps that need it at request time (`cookie support was stripped …
+but a route used cookies`). The patch adds `&& !hasWS`.
+
+**Drop the patch on the next `elysia` release and re-run the builds.** Do not
+hand-edit `node_modules`: bun hardlinks the store to `~/.bun/install/cache`, so an
+in-place edit silently patches the cache too. Use `bun patch elysia@<version>` →
+edit → `bun patch --commit node_modules/elysia`.
+
+Measured with the patch (`strip: 'auto'`) vs the previous `strip: false`
+configuration — the stripped build is the same speed, ~2% smaller bundle, and
+keeps the framework's JIT graph out:
+
+| app    | startup             | RSS        | rps                   | bundle         |
+| ------ | ------------------- | ---------- | --------------------- | -------------- |
+| lister | 207 ms → **194 ms** | 89 → 92 MB | 89.5k → 80.1k (noise) | 4.80 → 4.69 MB |
+| sender | 89 ms → **85 ms**   | 54 → 54 MB | 82.8k → 82.1k         | 1.9 MB         |
+| ui     | 101 ms → **100 ms** | 56 → 56 MB | 4.0k → 4.4k           | 2.6 MB         |
+
+Versus running from source (the pre-AOT baseline) the win is startup and memory:
+lister 308 ms → 194 ms and 124 MB → 92 MB; sender 174 ms → 85 ms and 72 MB → 54 MB;
+ui 235 ms → 100 ms and 100 MB → 56 MB. DB-bound routes are unchanged
+(`/exchange` p50 ~1.1 ms) — AOT removes framework overhead, not query time.
 
 - no network happens at build time: env has dev defaults and the Postgres/AMQP
   clients are created lazily;

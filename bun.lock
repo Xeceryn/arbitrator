@@ -208,6 +208,9 @@
     "esbuild",
     "@bufbuild/buf",
   ],
+  "patchedDependencies": {
+    "elysia@2.0.0-rc.0": "patches/elysia@2.0.0-rc.0.patch",
+  },
   "catalogs": {
     "core": {
       "amqplib": "^2.2.0",
