@@ -6,6 +6,7 @@ import {
 import { createLogger } from "@arbitrator/logger";
 import { type Consumer, subscribe } from "@arbitrator/messaging";
 import { Elysia } from "elysia";
+import { Value } from "typebox/value";
 
 import type { Orchestrator } from "../orchestrator/service";
 
@@ -36,10 +37,7 @@ export const eventsPlugin = (orchestrator: Orchestrator) => {
             // Drain in the background; do not block the start hook.
             void (async () => {
                 for await (const delivery of consumer) {
-                    if (
-                        !metadataChangedSchema.safeParse(delivery.json())
-                            .success
-                    ) {
+                    if (!Value.Check(metadataChangedSchema, delivery.json())) {
                         delivery.ack();
                         continue;
                     }

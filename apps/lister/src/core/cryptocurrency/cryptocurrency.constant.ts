@@ -1,9 +1,11 @@
 import {
-    cryptocurrencyOrderByKeysSchema,
-    cryptocurrencySearchByKeysSchema,
+    cryptocurrencyOrderByKeys,
+    cryptocurrencySearchByKeys,
 } from "./cryptocurrency.schema";
 
-export const CryptocurrencySearchByOptions =
-    cryptocurrencySearchByKeysSchema.options;
-export const CryptocurrencyOrderByOptions =
-    cryptocurrencyOrderByKeysSchema.options;
+export const CryptocurrencySearchByOptions: string[] = [
+    ...cryptocurrencySearchByKeys,
+];
+export const CryptocurrencyOrderByOptions: string[] = [
+    ...cryptocurrencyOrderByKeys,
+];

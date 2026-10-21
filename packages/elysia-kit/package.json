@@ -10,6 +10,8 @@
         "typecheck": "bun --check"
     },
     "dependencies": {
+        "elysia": "catalog:elysia",
+        "typebox": "catalog:elysia",
         "zod": "catalog:core"
     }
 }

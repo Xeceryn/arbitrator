@@ -1,6 +1,6 @@
-import z from "zod";
+import { type Static, Type as t } from "typebox";
 
-export const orderbookLevelSchema = z.tuple([z.number(), z.number()]);
+export const orderbookLevelSchema = t.Tuple([t.Number(), t.Number()]);
 
 /**
  * Canonical orderbook shape. Workers normalize exchange-specific payloads into
@@ -9,12 +9,10 @@ export const orderbookLevelSchema = z.tuple([z.number(), z.number()]);
  * parse routing-key tokens. There is no raw tier — this is the only orderbook
  * payload on the wire.
  */
-export const normalizedOrderbookSchema = z.object({
-    exchange: z.string(),
-    cmcId: z.number(),
-    asks: z.array(orderbookLevelSchema),
-    bids: z.array(orderbookLevelSchema),
+export const normalizedOrderbookSchema = t.Object({
+    exchange: t.String(),
+    cmcId: t.Number(),
+    asks: t.Array(orderbookLevelSchema),
+    bids: t.Array(orderbookLevelSchema),
 });
-export type NormalizedOrderbookEvent = z.infer<
-    typeof normalizedOrderbookSchema
->;
+export type NormalizedOrderbookEvent = Static<typeof normalizedOrderbookSchema>;

@@ -43,17 +43,17 @@
         "@arbitrator/messaging": "workspace:*",
         "@elysia/cors": "catalog:elysia",
         "@elysia/openapi": "catalog:elysia",
+        "@sinclair/typebox": "catalog:elysia",
         "drizzle-kit": "catalog:tools",
         "drizzle-orm": "catalog:core",
         "drizzle-seed": "catalog:tools",
-        "drizzle-zod": "catalog:core",
+        "drizzle-typebox": "catalog:elysia",
         "effect": "^4.0.0",
         "elysia": "catalog:elysia",
         "exact-mirror": "catalog:elysia",
         "openapi-types": "catalog:elysia",
         "pg": "catalog:core",
         "typebox": "catalog:elysia",
-        "zod": "catalog:core",
       },
     },
     "apps/old-lister-migrator": {
@@ -83,7 +83,6 @@
       "name": "@arbitrator/sender",
       "dependencies": {
         "@arbitrator/contracts": "workspace:*",
-        "@arbitrator/elysia-kit": "workspace:*",
         "@arbitrator/logger": "workspace:*",
         "@arbitrator/messaging": "workspace:*",
         "@arbitrator/sdk": "workspace:*",
@@ -103,7 +102,6 @@
         "typebox": "catalog:elysia",
         "winston": "^3.19.0",
         "ws": "^8.21.1",
-        "zod": "catalog:core",
       },
       "devDependencies": {
         "@types/amqplib": "^0.10.8",
@@ -138,7 +136,6 @@
         "openapi-types": "catalog:elysia",
         "theme-change": "^3.0.4",
         "typebox": "catalog:elysia",
-        "zod": "catalog:core",
       },
       "devDependencies": {
         "@tailwindcss/aspect-ratio": "^0.4.2",
@@ -154,13 +151,15 @@
       "version": "0.0.0",
       "dependencies": {
         "@arbitrator/contracts": "workspace:*",
-        "zod": "catalog:core",
+        "typebox": "catalog:elysia",
       },
     },
     "packages/elysia-kit": {
       "name": "@arbitrator/elysia-kit",
       "version": "0.0.0",
       "dependencies": {
+        "elysia": "catalog:elysia",
+        "typebox": "catalog:elysia",
         "zod": "catalog:core",
       },
     },
@@ -223,6 +222,8 @@
       "@elysia/openapi": "2.0.0-rc.0",
       "@elysia/server-timing": "2.0.0-rc.0",
       "@elysia/static": "2.0.0-rc.0",
+      "@sinclair/typebox": "^0.34.52",
+      "drizzle-typebox": "1.0.0-beta.14-a36c63d",
       "elysia": "2.0.0-rc.0",
       "exact-mirror": "^1.2.6",
       "openapi-types": "^12.1.3",
@@ -489,6 +490,8 @@
 
     "@parcel/watcher-win32-x64": ["@parcel/watcher-win32-x64@2.5.1", "", { "os": "win32", "cpu": "x64" }, "sha512-9lHBdJITeNR++EvSQVUcaZoWupyHfXe1jZvGZ06O/5MflPcuPLtEphScIBL+AiCWBO46tDSHzWyD0uDmmZqsgA=="],
 
+    "@sinclair/typebox": ["@sinclair/typebox@0.34.52", "", {}, "sha512-XiMQh7qqVlxZzcVD+kkGMNGMzcTrDMLWI7S4x7z1MkCkbDPrekpZXEUK0eZqZFMuHQg2a2DZOcDIh9o5v3Gonw=="],
+
     "@so-ric/colorspace": ["@so-ric/colorspace@1.1.6", "", { "dependencies": { "color": "^5.0.2", "text-hex": "1.0.x" } }, "sha512-/KiKkpHNOBgkFJwu9sh48LkHSMYGyuTcSFK/qMBdnOAlrRJzRSXAOFB5qwzaVQuDl8wAvHVMkaASQDReTahxuw=="],
 
     "@tailwindcss/aspect-ratio": ["@tailwindcss/aspect-ratio@0.4.2", "", { "peerDependencies": { "tailwindcss": ">=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1" } }, "sha512-8QPrypskfBa7QIMuKHg2TA7BqES6vhBrDLOv8Unb6FcFyd3TjKbc6lcmb9UPQHxfl24sXoJ41ux/H7qQQvfaSQ=="],
@@ -641,7 +644,7 @@
 
     "drizzle-seed": ["drizzle-seed@1.0.0-rc.5-ab785fc", "", { "dependencies": { "pure-rand": "^6.1.0" }, "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2" } }, "sha512-PWczx16j7xF7HoMwlqKnXvad8i1mdU5H1RYnvot6gkBqZrdPyzQ9veWyiCB8TyFlcgS8o4D6o+G7/YozooJikA=="],
 
-    "drizzle-zod": ["drizzle-zod@1.0.0-beta.9-e89174b", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-beta.2", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-dnEHqeFk5KHuC5sqYEbXxk0FXcijiYRtLwI2/p/z4AclfyGBOcnCAakoVwbOdNHrF0emlc6ufyRl0NffVP1XRw=="],
+    "drizzle-typebox": ["drizzle-typebox@1.0.0-beta.14-a36c63d", "", { "peerDependencies": { "@sinclair/typebox": ">=0.34.8", "drizzle-orm": ">=1.0.0-beta.2" } }, "sha512-RSokv5jG/k0mh914/+xoCcWgLCvu9vDC2hiHcblH70XJuG4e6bpLi9tRjlkDl4bq4w3DFzstwwUKed6tlNTViw=="],
 
     "dunder-proto": ["dunder-proto@1.0.1", "", { "dependencies": { "call-bind-apply-helpers": "^1.0.1", "es-errors": "^1.3.0", "gopd": "^1.2.0" } }, "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A=="],
 

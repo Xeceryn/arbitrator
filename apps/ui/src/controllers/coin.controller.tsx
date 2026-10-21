@@ -1,6 +1,5 @@
 import { lister } from "@arbitrator/sdk";
-import { Elysia, redirect, status } from "elysia";
-import z from "zod";
+import { Elysia, redirect, status, t } from "elysia";
 
 import {
     cryptocurrencyUpdateSchema,
@@ -8,7 +7,12 @@ import {
 } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
 import { htmx } from "../plugins/htmx";
-import { addErrorMessage, createPushURL, validationMessages } from "../utils";
+import {
+    addErrorMessage,
+    createPushURL,
+    formParse,
+    resolvedQuery,
+} from "../utils";
 import {
     CoinRouteHeader,
     CoinRoutePanel,
@@ -20,16 +24,26 @@ import { PageHeading } from "../views/components/PageHeading";
 import { CoinPage, CoinResults } from "../views/pages/CryptocurrencyPage";
 
 /**
- * Add form body. HTML sends strings, so `cmcId` is coerced; the other fields
- * must be non-empty. Kept separate from the API insert schema so validation
- * failures can be rendered inline instead of as an Elysia 422 envelope.
+ * Add form rules. HTML sends strings, so `cmcId` is coerced by `formParse`; the
+ * other fields must be non-empty. Kept separate from the API insert schema, and
+ * validated in the handler, so failures render inline instead of as an Elysia
+ * 422 envelope.
  */
-const addCoinBody = z.object({
-    name: z.string().min(1, "Enter the coin name."),
-    symbol: z.string().min(1, "Enter the ticker symbol."),
-    slug: z.string().min(1, "Enter the CoinMarketCap slug."),
-    cmcId: z.coerce.number().int().positive("Enter a positive CMC ID."),
-    logo: z.string().min(1, "Add a logo URL."),
+const addCoinBody = t.Object({
+    name: t.String({ minLength: 1, error: "Enter the coin name." }),
+    symbol: t.String({ minLength: 1, error: "Enter the ticker symbol." }),
+    slug: t.String({ minLength: 1, error: "Enter the CoinMarketCap slug." }),
+    cmcId: t.Integer({ minimum: 1, error: "Enter a positive CMC ID." }),
+    logo: t.String({ minLength: 1, error: "Add a logo URL." }),
+});
+
+/** Loose route body: every field is posted as a string (or not at all). */
+const addCoinForm = t.Object({
+    name: t.Optional(t.String()),
+    symbol: t.Optional(t.String()),
+    slug: t.Optional(t.String()),
+    cmcId: t.Optional(t.String()),
+    logo: t.Optional(t.String()),
 });
 
 export const CryptocurrencyController = new Elysia({
@@ -50,7 +64,7 @@ export const CryptocurrencyController = new Elysia({
                         title="Arbitrator - Cryptocurrencies"
                         heading="Cryptocurrencies"
                     >
-                        <CoinPage {...query} />
+                        <CoinPage {...resolvedQuery(query)} />
                     </BaseLayout>
                 );
             }
@@ -58,7 +72,7 @@ export const CryptocurrencyController = new Elysia({
                 <>
                     <PageHeading heading="Cryptocurrencies" oob />
                     <title>Cryptocurrencies</title>
-                    <CoinPage {...query} />
+                    <CoinPage {...resolvedQuery(query)} />
                 </>
             );
         },
@@ -77,16 +91,14 @@ export const CryptocurrencyController = new Elysia({
                 return redirect(createPushURL("/coins", query));
             }
             // Exactly one root element = the swap target for hx-swap="outerMorph".
-            return <CoinResults {...query} />;
+            return <CoinResults {...resolvedQuery(query)} />;
         },
     )
 
     .get(
         "coins/:id",
         {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
+            params: t.Object({ id: t.Integer() }),
         },
         async ({ params }) => {
             const { data, error } = await lister
@@ -104,9 +116,7 @@ export const CryptocurrencyController = new Elysia({
     .patch(
         "/coins/:id/edit",
         {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
+            params: t.Object({ id: t.Integer() }),
             body: cryptocurrencyUpdateSchema,
         },
         async ({ params, body, hx }) => {
@@ -141,9 +151,7 @@ export const CryptocurrencyController = new Elysia({
     .get(
         "/coins/:id/routes",
         {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
+            params: t.Object({ id: t.Integer() }),
         },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
@@ -185,9 +193,7 @@ export const CryptocurrencyController = new Elysia({
     .get(
         "/coins/:id/edit-modal",
         {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
+            params: t.Object({ id: t.Integer() }),
         },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
@@ -215,18 +221,12 @@ export const CryptocurrencyController = new Elysia({
     .post(
         "/coins",
         {
-            body: z.object({
-                name: z.optional(z.string()),
-                symbol: z.optional(z.string()),
-                slug: z.optional(z.string()),
-                cmcId: z.optional(z.string()),
-                logo: z.optional(z.string()),
-            }),
+            body: addCoinForm,
         },
         async ({ body, hx }) => {
-            const parsed = addCoinBody.safeParse(body);
-            if (!parsed.success) {
-                const messages = validationMessages(parsed.error);
+            const parsed = formParse(addCoinBody, body);
+            if (!parsed.ok) {
+                const messages = parsed.messages;
                 hx.triggerEvent({
                     "coin-validation-error": {
                         fields: messages.map(({ field }) => field),
@@ -236,7 +236,7 @@ export const CryptocurrencyController = new Elysia({
             }
 
             const { data, error } = await lister.cryptocurrency.post(
-                parsed.data,
+                parsed.value,
             );
             if (error || !data) {
                 const messages = [addErrorMessage("coin", error)];

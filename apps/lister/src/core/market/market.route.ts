@@ -1,10 +1,14 @@
 import { and, eq, notExists } from "drizzle-orm";
-import { Elysia, t } from "elysia";
-import z from "zod";
+import { Elysia, status, t } from "elysia";
 
 import { messageSchema } from "../../common/http.schema";
-import { database } from "../../database/connection";
-import { publishMetadataChanged } from "../../events";
+import {
+    isPaginationLimitValid,
+    paginationLimitMessage,
+} from "../../common/pagination.schema";
+import { extendSchema } from "../../common/typebox";
+import { databasePlugin } from "../../plugins/database";
+import { eventsPlugin } from "../../plugins/events";
 import { Cryptocurrency } from "../cryptocurrency/cryptocurrency";
 import { Exchange } from "../exchange/exchange";
 import {
@@ -12,10 +16,12 @@ import {
     paginatedExchangeSelectSchema,
 } from "../exchange/exchange.schema";
 import { exchange } from "../exchange/exchange.sql";
+import type { ListExchangeInput } from "../exchange/exchange.type";
 import { Market } from "./market";
 import {
     listTransferableCoinsInputSchema,
     marketAssignSchema,
+    marketFilterExistsSchema,
     marketSelectSchema,
     marketUpdatePayloadSchema,
     marketWithRelationsSchema,
@@ -25,12 +31,15 @@ import { market } from "./market.sql";
 
 const marketIdParams = t.Object({ id: t.Numeric() });
 
-const marketFilterSchema = z
-    .object({
-        exchangeId: z.coerce.number().optional(),
-        cryptocurrencyId: z.coerce.number().optional(),
-    })
-    .optional();
+const marketFilterSchema = t.Object({
+    exchangeId: t.Optional(t.Integer()),
+    cryptocurrencyId: t.Optional(t.Integer()),
+});
+
+/** Exchange pagination plus the coin whose unassigned exchanges we want. */
+const availableExchangeQuerySchema = extendSchema<
+    ListExchangeInput & { cryptocurrencyId: number }
+>(listExchangeSelectSchema, { cryptocurrencyId: t.Integer() });
 
 const assignmentNotFound = {
     message: "exchange-cryptocurrency assignment not found",
@@ -41,11 +50,13 @@ export const marketRoutes = new Elysia({
     prefix: "/market",
     tags: ["market"],
 })
+    .use(databasePlugin)
+    .use(eventsPlugin)
     .get(
         "",
         {
             query: marketFilterSchema,
-            response: { 200: z.array(marketSelectSchema) },
+            response: { 200: t.Array(marketSelectSchema) },
             detail: { summary: "List exchange-cryptocurrency assignments" },
         },
         async ({ query }) => await Market.getAll(query),
@@ -58,7 +69,7 @@ export const marketRoutes = new Elysia({
         "/detailed",
         {
             query: marketFilterSchema,
-            response: { 200: z.array(marketWithRelationsSchema) },
+            response: { 200: t.Array(marketWithRelationsSchema) },
             detail: { summary: "List assignments with exchange and coin" },
         },
         async ({ query }) => await Market.getAllWithRelations(query),
@@ -67,19 +78,21 @@ export const marketRoutes = new Elysia({
     .get(
         "/available-exchanges",
         {
-            query: listExchangeSelectSchema.extend({
-                cryptocurrencyId: z.coerce.number(),
-            }),
+            query: availableExchangeQuerySchema,
             response: { 200: paginatedExchangeSelectSchema },
             detail: { summary: "Exchanges not yet assigned to a coin" },
         },
-        async ({ query }) => {
+        async ({ db, query }) => {
             const { cryptocurrencyId, ...pagination } = query;
+
+            if (!isPaginationLimitValid(pagination.limit)) {
+                throw status(422, { message: paginationLimitMessage });
+            }
 
             return await Exchange.listExcluding(
                 pagination,
                 notExists(
-                    database
+                    db
                         .select({ id: market.id })
                         .from(market)
                         .where(
@@ -118,7 +131,7 @@ export const marketRoutes = new Elysia({
             },
             detail: { summary: "Assign a coin to an exchange" },
         },
-        async ({ body, set }) => {
+        async ({ body, db, events, set }) => {
             if (await Market.exists(body)) {
                 set.status = 409;
                 return {
@@ -134,12 +147,12 @@ export const marketRoutes = new Elysia({
                 return { message: "cryptocurrency not found" };
             }
 
-            const result = await database
+            const result = await db
                 .insert(market)
                 .values({
                     exchangeId: body.exchangeId,
                     cryptocurrencyId: body.cryptocurrencyId,
-                    tradeEnabled: body.tradeEnabled,
+                    tradeEnabled: body.tradeEnabled ?? true,
                     exchangeSymbol:
                         body.exchangeSymbol ??
                         cryptocurrency.symbol.toUpperCase(),
@@ -156,7 +169,7 @@ export const marketRoutes = new Elysia({
                 };
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "market",
                 action: "created",
                 exchangeIds: [result.exchangeId],
@@ -170,15 +183,12 @@ export const marketRoutes = new Elysia({
     .post(
         "/unassign",
         {
-            body: marketSelectSchema.pick({
-                exchangeId: true,
-                cryptocurrencyId: true,
-            }),
+            body: marketFilterExistsSchema,
             response: { 200: marketSelectSchema, 404: messageSchema },
             detail: { summary: "Unassign a coin from an exchange" },
         },
-        async ({ body, set }) => {
-            const result = await database
+        async ({ body, db, events, set }) => {
+            const result = await db
                 .delete(market)
                 .where(
                     and(
@@ -194,7 +204,7 @@ export const marketRoutes = new Elysia({
                 return assignmentNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "market",
                 action: "deleted",
                 exchangeIds: [result.exchangeId],
@@ -217,7 +227,7 @@ export const marketRoutes = new Elysia({
             },
             detail: { summary: "Update an assignment" },
         },
-        async ({ body, set }) => {
+        async ({ body, events, set }) => {
             if (!(await Market.exists(body))) {
                 set.status = 404;
                 return assignmentNotFound;
@@ -232,7 +242,7 @@ export const marketRoutes = new Elysia({
                 };
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "market",
                 action: "updated",
                 exchangeIds: [result.exchangeId],

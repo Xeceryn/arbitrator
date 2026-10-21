@@ -176,8 +176,13 @@ Already Elysia 1.4. Upgrade only:
   `orchestrator`, `workers`, `events`).
 - keep the WS stream (`/exchanges/ws`) behaviour byte-for-byte: snapshot on open,
   `status` pushes, unsubscribe on close.
-- keep response schemas (zod) and the 501 `{ message }` body.
+- keep response schemas — now TypeBox (`typebox@1`) taken straight from
+  `@arbitrator/contracts`, so `openapi()` needs no `mapJsonSchema` — and the 501
+  `{ message }` body.
 - routes unchanged otherwise.
+- `src/index.ts` exports `app` (named + default) and gates `app.listen` behind
+  `inAotBuild()`; the SDK client is decorated by `src/plugins/lister.ts`, not
+  imported inside handlers.
 
 ## `apps/ui` — Elysia v2 + Eden (port 3000)
 
@@ -260,9 +265,91 @@ the existing domain logic.
 10. **Peer deps matter.** Without `typebox`, `exact-mirror` and `openapi-types`
     installed next to `elysia`, the `.d.ts` degrades and _every_ handler loses
     its parameter types. They are part of the `elysia` catalog.
+11. **`@arbitrator/contracts` is TypeBox, not zod.** The package imports
+    `{ Type as t }` from `typebox` (framework-free) and Elysia accepts those
+    objects directly. Call sites use `Value.Check` / `Value.Parse` from
+    `typebox/value`; `Value.Check` enforces `format`, so `date-time` stays
+    strict. Using `elysia`'s `t` inside `packages/contracts` would drag the
+    framework into every consumer — don't.
+12. **`.use(websocket())` breaks the bun AOT plugin in this RC.** Building an
+    app that registers the WebSocket capability with
+    `aot("./src/index.ts")` throws a bare `Bundle failed` (with
+    `ELYSIA_AOT_VERBOSE=1` the validators are captured fine first). Plain
+    `bun build --target=bun` bundles. The sender keeps the WS route, so its
+    AOT build stays blocked until this is fixed upstream.
 
 ## Shared package
 
 `packages/elysia-kit` (`@arbitrator/elysia-kit`) holds the zod → OpenAPI mapper
 and anything else that must stay identical across services. Services keep their
 own OpenAPI title/tags in `src/app.ts`.
+
+---
+
+## TypeBox, AOT and Elysia idioms (second pass)
+
+The first pass kept the zod schemas and only moved the transport. The second
+pass makes the services native Elysia v2: TypeBox schemas, ahead-of-time
+compiled routes, and resources as plugins.
+
+### Schemas: drizzle → TypeBox
+
+- `drizzle-typebox` + `toElysiaSchema()` (`@arbitrator/elysia-kit`) turn a
+  drizzle table into an Elysia `t` schema. `drizzle-typebox` still emits
+  TypeBox 0.34 objects, which Elysia v2 rejects at registration —
+  `toElysiaSchema` is the bridge (dates → ISO strings, `anyOf` → unions,
+  integer bounds preserved so query strings coerce, non-required → optional).
+- Composition is TypeBox's static helpers: `t.Omit`, `t.Pick`, `t.Partial`,
+  `t.Intersect`. Schemas are plain objects; there are no `.omit()` methods.
+- Types are `Static<typeof schema>` from `typebox` (v1), never `z.infer`.
+- zod remains only for env validation (`@arbitrator/env-loader`).
+
+### AOT — wired, currently disabled (upstream RC bugs)
+
+`apps/{lister,sender,ui}/build.ts` are built for AOT (`elysia/plugin/aot/bun`);
+the entries export `app` and guard side effects with `inAotBuild()`. AOT itself
+is behind an `AOT = false` flag because `elysia@2.0.0-rc.0` cannot compile these
+apps yet:
+
+- **codec response schemas** (`t.Encode` for the timestamp columns) produce a
+  bundle that dies at startup with `The superclass is not a constructor`
+  (module ordering; the same failure as elysiajs/elysia#2024, which fires for
+  `t.Union` of literals in a response schema). `t.UnionEnum` avoids the union
+  case; codecs have no AOT-safe equivalent yet.
+- **sender** fails inside the plugin's own replay build (`Bundle failed`) once
+  the orchestrator bootstrap is in the graph.
+- A minimal app on this machine: JIT 98 ms / 63 MB vs AOT 24 ms / 33 MB, so the
+  payoff is real — flip the flag per app once upstream lands the fixes.
+
+Plain bundles are used in the meantime; they already beat running from source
+(lister: startup 192 ms vs 310 ms, RSS 91 MB vs 115 MB, 72k vs 63k req/s on
+`/utility/ping`).
+
+The plugin evaluates the entry at build time and emits precompiled handlers into
+`dist/`:
+
+- the entry must **export** the app (`export { app }` / `export default app`);
+- everything with import-time side effects is wrapped in `inAotBuild()`:
+  `listen()`, `startLastPriceScheduler()`, the orchestrator bootstrap, the UI
+  asset bundling;
+- no network happens at build time: env has dev defaults and the Postgres/AMQP
+  clients are created lazily;
+- Dockerfiles build with `bun run build` and run `dist/index.js` unchanged.
+
+Measured on a two-route app on this machine: startup-to-first-200 98 ms → 24 ms,
+RSS 63 MB → 33 MB.
+
+### Resources are plugins
+
+| app    | plugin               | decorates                                        |
+| ------ | -------------------- | ------------------------------------------------ |
+| lister | `databasePlugin`     | `db` (drizzle handle)                            |
+| lister | `eventsPlugin`       | `events.publishMetadataChanged`                  |
+| sender | `orchestratorPlugin` | `orchestrator`                                   |
+| sender | `eventsPlugin`       | `metadata.changed` consumer (`onStart`/`onStop`) |
+| sender | `listerPlugin`       | `lister` (Eden client)                           |
+| ui     | `clientsPlugin`      | `lister` + `sender` clients                      |
+
+Handlers read resources from context (`({ db, events })`) instead of importing
+singletons. Domain/repository modules (`core/<entity>/<entity>.ts`, worker
+adapters) stay framework-free — they are not Elysia code.

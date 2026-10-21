@@ -1,7 +1,11 @@
-import { Elysia, t } from "elysia";
+import { Elysia, status, t } from "elysia";
 
 import { messageSchema } from "../../common/http.schema";
-import { publishMetadataChanged } from "../../events";
+import {
+    isPaginationLimitValid,
+    paginationLimitMessage,
+} from "../../common/pagination.schema";
+import { eventsPlugin } from "../../plugins/events";
 import { Chain } from "./chain";
 import {
     chainInsertSchema,
@@ -20,6 +24,7 @@ export const chainRoutes = new Elysia({
     prefix: "/chain",
     tags: ["chain"],
 })
+    .use(eventsPlugin)
     .get(
         "",
         {
@@ -27,7 +32,13 @@ export const chainRoutes = new Elysia({
             response: { 200: paginatedChainSelectSChema },
             detail: { summary: "List chains" },
         },
-        async ({ query }) => await Chain.list(query),
+        async ({ query }) => {
+            if (!isPaginationLimitValid(query.limit)) {
+                throw status(422, { message: paginationLimitMessage });
+            }
+
+            return await Chain.list(query);
+        },
     )
     .post(
         "",
@@ -40,7 +51,7 @@ export const chainRoutes = new Elysia({
             },
             detail: { summary: "Add a chain" },
         },
-        async ({ body, set }) => {
+        async ({ body, events, set }) => {
             if (await Chain.codeExists(body.code)) {
                 set.status = 409;
                 return { message: "chain with this code already exists" };
@@ -52,7 +63,7 @@ export const chainRoutes = new Elysia({
                 return { message: "something wrong when adding chain" };
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "chain",
                 action: "created",
                 chainIds: [result.id],
@@ -90,7 +101,7 @@ export const chainRoutes = new Elysia({
             },
             detail: { summary: "Update a chain" },
         },
-        async ({ params, body, set }) => {
+        async ({ params, body, events, set }) => {
             const target = await Chain.getById(params.id);
             if (!target) {
                 set.status = 404;
@@ -111,7 +122,7 @@ export const chainRoutes = new Elysia({
                 return chainNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "chain",
                 action: "updated",
                 chainIds: [result.id],
@@ -127,14 +138,14 @@ export const chainRoutes = new Elysia({
             response: { 200: chainSelectSchema, 404: messageSchema },
             detail: { summary: "Remove a chain" },
         },
-        async ({ params, set }) => {
+        async ({ params, events, set }) => {
             const result = await Chain.remove(params.id);
             if (!result) {
                 set.status = 404;
                 return chainNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "chain",
                 action: "deleted",
                 chainIds: [result.id],

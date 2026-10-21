@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type { Static } from "typebox";
 
 import type {
     chainLinkFilterExistsSchema,
@@ -10,12 +10,12 @@ import type {
 import { chainLink } from "./chain-link.sql";
 
 export type ChainLink = typeof chainLink.$inferSelect;
-export type ChainLinkInsert = z.infer<typeof chainLinkInsertSchema>;
+export type ChainLinkInsert = Static<typeof chainLinkInsertSchema>;
 
-export type ChainLinkUpdate = z.infer<typeof chainLinkUpdateSchema>;
+export type ChainLinkUpdate = Static<typeof chainLinkUpdateSchema>;
 
-export type ChainLinkSelect = z.infer<typeof chainLinkSelectSchema>;
+export type ChainLinkSelect = Static<typeof chainLinkSelectSchema>;
 
-export type ChainLinkFilterExists = z.infer<typeof chainLinkFilterExistsSchema>;
+export type ChainLinkFilterExists = Static<typeof chainLinkFilterExistsSchema>;
 
-export type ChainLinkWithChain = z.infer<typeof chainLinkWithChainSchema>;
+export type ChainLinkWithChain = Static<typeof chainLinkWithChainSchema>;

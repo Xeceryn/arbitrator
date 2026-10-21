@@ -1,7 +1,11 @@
-import { Elysia, t } from "elysia";
+import { Elysia, status, t } from "elysia";
 
 import { messageSchema } from "../../common/http.schema";
-import { publishMetadataChanged } from "../../events";
+import {
+    isPaginationLimitValid,
+    paginationLimitMessage,
+} from "../../common/pagination.schema";
+import { eventsPlugin } from "../../plugins/events";
 import { Cryptocurrency } from "./cryptocurrency";
 import {
     cryptocurrencyInsertSchema,
@@ -21,6 +25,7 @@ export const cryptocurrencyRoutes = new Elysia({
     prefix: "/cryptocurrency",
     tags: ["cryptocurrency"],
 })
+    .use(eventsPlugin)
     .get(
         "",
         {
@@ -28,7 +33,13 @@ export const cryptocurrencyRoutes = new Elysia({
             response: { 200: paginatedCryptocurrencySelectSchema },
             detail: { summary: "List cryptocurrencies" },
         },
-        async ({ query }) => await Cryptocurrency.list(query),
+        async ({ query }) => {
+            if (!isPaginationLimitValid(query.limit)) {
+                throw status(422, { message: paginationLimitMessage });
+            }
+
+            return await Cryptocurrency.list(query);
+        },
     )
     .post(
         "",
@@ -41,7 +52,7 @@ export const cryptocurrencyRoutes = new Elysia({
             },
             detail: { summary: "Add a cryptocurrency" },
         },
-        async ({ body, set }) => {
+        async ({ body, events, set }) => {
             if (await Cryptocurrency.cmcIdExists(body.cmcId)) {
                 set.status = 409;
                 return {
@@ -57,7 +68,7 @@ export const cryptocurrencyRoutes = new Elysia({
                 };
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "cryptocurrency",
                 action: "created",
                 cryptocurrencyIds: [result.id],
@@ -105,7 +116,7 @@ export const cryptocurrencyRoutes = new Elysia({
             },
             detail: { summary: "Update a cryptocurrency" },
         },
-        async ({ params, body, set }) => {
+        async ({ params, body, events, set }) => {
             const target = await Cryptocurrency.getById(params.id);
             if (!target) {
                 set.status = 404;
@@ -126,7 +137,7 @@ export const cryptocurrencyRoutes = new Elysia({
                 return cryptocurrencyNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "cryptocurrency",
                 action: "updated",
                 cryptocurrencyIds: [result.id],
@@ -142,14 +153,14 @@ export const cryptocurrencyRoutes = new Elysia({
             response: { 200: cryptocurrencySelectSchema, 404: messageSchema },
             detail: { summary: "Remove a cryptocurrency" },
         },
-        async ({ params, set }) => {
+        async ({ params, events, set }) => {
             const result = await Cryptocurrency.remove(params.id);
             if (!result) {
                 set.status = 404;
                 return cryptocurrencyNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "cryptocurrency",
                 action: "deleted",
                 cryptocurrencyIds: [result.id],

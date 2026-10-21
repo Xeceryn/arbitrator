@@ -1,4 +1,6 @@
-import type { ZodError } from "zod";
+import { t } from "elysia";
+import type { Static, TSchema } from "typebox";
+import { Value } from "typebox/value";
 
 export const dateFormatter = new Intl.DateTimeFormat(undefined, {
     dateStyle: "long",
@@ -117,6 +119,79 @@ export function formatProfitPercentage(ratio: number): string {
 export type ValidationMessage = { field: string; message: string };
 
 /**
+ * Validate a posted HTML form against a TypeBox schema and, when it fails, hand
+ * back the inline copy for every offending field.
+ *
+ * HTML posts every value as a string, so the routes keep a *loose* body schema
+ * (`t.Optional(t.String())` fields) and validate here instead: `Value.Convert`
+ * coerces `"270"` into `270`, and the failure never becomes an Elysia 422
+ * envelope, which keeps the form's own error region and `aria-invalid` trigger
+ * intact. Each property's `error` option holds the copy `ValidationErrorList`
+ * renders, so the rule and its message are declared once and the same option
+ * documents the field in OpenAPI.
+ */
+export function formParse<T extends TSchema>(
+    schema: T,
+    body: Record<string, unknown>,
+):
+    | { ok: true; value: Static<T> }
+    | { ok: false; messages: ValidationMessage[] } {
+    const value = Value.Convert(schema, Value.Clone(body));
+    const errors = Value.Errors(schema, value);
+    if (errors.length === 0) return { ok: true, value: value as Static<T> };
+
+    const properties =
+        (schema as { properties?: Record<string, { error?: unknown }> })
+            .properties ?? {};
+
+    // A union reports one error per member (plus the `anyOf` summary), so keep
+    // the first failure per field: one line of copy per invalid field.
+    const seen = new Set<string>();
+    const messages: ValidationMessage[] = [];
+    for (const error of errors) {
+        const field = error.instancePath.replace(/^\//, "");
+        if (seen.has(field)) continue;
+        seen.add(field);
+        const copy = properties[field]?.error;
+        messages.push({
+            field,
+            message: typeof copy === "string" ? copy : error.message,
+        });
+    }
+
+    return { ok: false, messages };
+}
+
+/**
+ * Normalise a form-posted checkbox/select: browsers send `"true"`/`"false"`
+ * strings, API clients send real booleans. `Boolean("false")` is `true`, so the
+ * two literals are compared explicitly.
+ */
+export function toBoolean(
+    value: string | boolean | undefined,
+): boolean | undefined {
+    if (value === undefined) return undefined;
+    return value === true || value === "true";
+}
+
+/**
+ * `"true"`/`"false"` from a form, or a real boolean from an API client.
+ * Elysia does not coerce booleans in form bodies, so the route schemas accept
+ * both shapes and the handlers normalise them with {@link toBoolean}.
+ */
+export const formBoolean = t.Union([
+    t.Literal("true"),
+    t.Literal("false"),
+    t.Boolean(),
+]);
+
+/** A repeated query param arrives as a string, an array, or nothing. */
+export function toStringArray(value: string | string[] | undefined): string[] {
+    if (value === undefined) return [];
+    return Array.isArray(value) ? value : [value];
+}
+
+/**
  * Eden treaty never throws on an HTTP failure: it resolves to
  * `{ data: null, error: { status, value } }`. Lister answers errors with
  * `{ message }`, but a proxy or a crash can return a plain string.
@@ -139,14 +214,6 @@ export function apiErrorMessage(error: ApiError): string | undefined {
         }
     }
     return undefined;
-}
-
-/** Turn a zod failure into field-scoped messages for inline rendering. */
-export function validationMessages(error: ZodError): ValidationMessage[] {
-    return error.issues.map((issue) => ({
-        field: issue.path.map(String).join("."),
-        message: issue.message,
-    }));
 }
 
 /**
@@ -185,4 +252,14 @@ export function addErrorMessage(
         field: "",
         message: `Could not add the ${entity}. Check the details are unique, then try again.`,
     };
+}
+
+/**
+ * Elysia fills the pagination schema defaults before the handler runs, so every
+ * field is present at runtime — only the TypeBox *static* type says `Partial`
+ * (fields are `t.Optional` so Eden clients may send `{ limit: -1 }` alone).
+ * This is the one place that asserts what the framework already guarantees.
+ */
+export function resolvedQuery<T extends object>(query: T): Required<T> {
+    return query as Required<T>;
 }

@@ -1,38 +1,59 @@
 import {
+    createInsertSchema,
     createSelectSchema,
     createUpdateSchema,
-    createInsertSchema,
-} from "drizzle-zod";
-import z from "zod";
+} from "drizzle-typebox";
+import { t } from "elysia";
 
 import {
     createPaginatedOutputSchema,
     createPaginationInputSchema,
 } from "../../common/pagination.schema";
+import { fromDrizzle, literalUnion, typedSchema } from "../../common/typebox";
 import { chain } from "./chain.sql";
 
-export const chainInsertSchema = createInsertSchema(chain).omit({
-    createdAt: true,
-    updatedAt: true,
-});
+/**
+ * Static shapes of the drizzle-generated schemas. Drizzle stays the source of
+ * truth: these are attached to the TypeBox values so `Static<typeof schema>`
+ * agrees with the columns the repository reads and writes.
+ */
+type ChainRow = typeof chain.$inferSelect;
+type ChainInsertRow = Omit<
+    typeof chain.$inferInsert,
+    "createdAt" | "updatedAt"
+>;
+type ChainUpdateRow = Partial<ChainInsertRow>;
 
-export const chainUpdateSchema = createUpdateSchema(chain).omit({
-    createdAt: true,
-    updatedAt: true,
-});
+const chainInsertColumns = fromDrizzle(createInsertSchema(chain));
+const chainUpdateColumns = fromDrizzle(createUpdateSchema(chain));
 
-export const chainSelectSchema = createSelectSchema(chain);
-export const chainSearchByKeysSchema = z.keyof(
-    chainSelectSchema.omit({
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-    }),
+export const chainInsertSchema = typedSchema<ChainInsertRow>(
+    t.Omit(chainInsertColumns, ["createdAt", "updatedAt"]),
 );
-export const chainOrderByKeysSchema = z.keyof(chainSelectSchema);
+export const chainUpdateSchema = typedSchema<ChainUpdateRow>(
+    t.Omit(chainUpdateColumns, ["createdAt", "updatedAt"]),
+);
+export const chainSelectSchema = fromDrizzle<ChainRow>(
+    createSelectSchema(chain),
+);
+
+/** Searchable columns: no id, no timestamps. */
+export const chainSearchByKeys = ["name", "code"] as const;
+
+/** Sortable columns: every column. */
+export const chainOrderByKeys = [
+    "id",
+    ...chainSearchByKeys,
+    "createdAt",
+    "updatedAt",
+] as const;
+
+export const chainSearchByKeysSchema = literalUnion(chainSearchByKeys);
+export const chainOrderByKeysSchema = literalUnion(chainOrderByKeys);
+
 export const listChainSelectSchema = createPaginationInputSchema({
-    searchByKeys: chainSearchByKeysSchema,
-    orderByKeys: chainOrderByKeysSchema,
+    searchByKeys: chainSearchByKeys,
+    orderByKeys: chainOrderByKeys,
     defaultSearchBy: "name",
     defaultOrderBy: "id",
 });

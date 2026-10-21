@@ -1,8 +1,11 @@
-import { lister } from "@arbitrator/sdk";
+import type { lister as listerSingleton } from "@arbitrator/sdk";
 
 import type { ListerGateway, TransferableCoinsResult } from "./service";
 
-export function createListerGateway(): ListerGateway {
+/** The concrete Eden treaty client, injected by `app.ts` via `plugins/lister`. */
+export type ListerClient = typeof listerSingleton;
+
+export function createListerGateway(lister: ListerClient): ListerGateway {
     return {
         async resolveExchangeIds(slugs) {
             const { data, error } = await lister.exchange.get({

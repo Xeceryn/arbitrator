@@ -3,6 +3,7 @@ import {
     type OrchestratorStatus,
 } from "@arbitrator/contracts";
 import { env } from "@arbitrator/env-loader";
+import { Value } from "typebox/value";
 
 const senderHttpUrl = () => env.SENDER_URL;
 
@@ -78,16 +79,17 @@ function connect(): void {
             console.warn("[sender-stream] dropped non-JSON frame");
             return;
         }
-        const parsed = senderStatusEventSchema.safeParse(json);
-        if (!parsed.success) {
+        // The contracts schemas are Elysia `t` (TypeBox); `Value.Check` is the
+        // type guard, so `json` narrows to `SenderStatusEvent` below.
+        if (!Value.Check(senderStatusEventSchema, json)) {
             console.warn(
                 `[sender-stream] dropped invalid frame: ${event.data.slice(0, 160)}`,
             );
             return;
         }
-        lastStatus = parsed.data.status;
+        lastStatus = json.status;
         for (const listener of listeners) {
-            listener(parsed.data.status);
+            listener(json.status);
         }
     });
 

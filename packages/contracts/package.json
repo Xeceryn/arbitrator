@@ -8,6 +8,6 @@
     },
     "dependencies": {
         "@arbitrator/contracts": "workspace:*",
-        "zod": "catalog:core"
+        "typebox": "catalog:elysia"
     }
 }

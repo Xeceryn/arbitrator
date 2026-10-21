@@ -1,10 +1,9 @@
-import { openapiZodMap } from "@arbitrator/elysia-kit";
 import { env } from "@arbitrator/env-loader";
 import { openapi } from "@elysia/openapi";
 import { serverTiming } from "@elysia/server-timing";
 import { staticPlugin } from "@elysia/static";
 import { faker } from "@faker-js/faker";
-import { Elysia, redirect } from "elysia";
+import { Elysia, inAotBuild, redirect } from "elysia";
 import { websocket } from "elysia/websocket";
 
 import { bundleClientSideResources } from "./bundler";
@@ -21,19 +20,23 @@ import { HomeController } from "./controllers/home.controller";
 import { clientsPlugin } from "./plugins/clients";
 import { htmx } from "./plugins/htmx";
 
-if (!process.argv.includes("--cluster")) {
+/**
+ * Browser assets (CSS, scripts) are generated at boot. An AOT build evaluates
+ * this module for its route graph only, and `--cluster` workers must not race
+ * each other writing `public/`.
+ */
+if (!process.argv.includes("--cluster") && !inAotBuild()) {
     await bundleClientSideResources();
 }
 
 const port = env.PORT;
 
-new Elysia()
+const app = new Elysia()
     .use(
         openapi({
             documentation: {
                 info: { title: "Arbitrator UI", version: "1.0.50" },
             },
-            mapJsonSchema: openapiZodMap,
             // `/public` is build output: CSS and browser bundles, not an API.
             // `staticFile: true` alone does not drop plugin-registered static
             // routes in this RC, so the prefix is excluded by path too.
@@ -132,10 +135,20 @@ new Elysia()
             set.status = "No Content";
             return;
         },
-    )
+    );
 
-    .listen(port, ({ hostname, port }) => {
+/**
+ * The app is exported so the AOT compiler can import the route graph without
+ * side effects: `bun run build` evaluates this module to precompile the
+ * handlers, and binding the port during a build would poison it.
+ */
+export default app;
+export { app };
+
+if (!inAotBuild()) {
+    app.listen(port, ({ hostname, port }) => {
         console.log(
             `UI running on http://${hostname}:${port} with PID ${process.pid}`,
         );
     });
+}

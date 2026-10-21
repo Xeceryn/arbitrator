@@ -1,7 +1,4 @@
-import {
-    exchangeSearchByKeysSchema,
-    exchangeOrderByKeysSchema,
-} from "./exchange.schema";
+import { exchangeOrderByKeys, exchangeSearchByKeys } from "./exchange.schema";
 
-export const ExchangeSearchByOptions = exchangeSearchByKeysSchema.options;
-export const ExchangeOrderByOptions = exchangeOrderByKeysSchema.options;
+export const ExchangeSearchByOptions: string[] = [...exchangeSearchByKeys];
+export const ExchangeOrderByOptions: string[] = [...exchangeOrderByKeys];

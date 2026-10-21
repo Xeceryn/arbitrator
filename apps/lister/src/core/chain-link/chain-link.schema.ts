@@ -2,29 +2,49 @@ import {
     createInsertSchema,
     createSelectSchema,
     createUpdateSchema,
-} from "drizzle-zod";
+} from "drizzle-typebox";
+import { t } from "elysia";
 
+import { extendSchema, fromDrizzle, typedSchema } from "../../common/typebox";
 import { chainSelectSchema } from "../chain/chain.schema";
+import type { ChainSelect } from "../chain/chain.type";
 import { chainLink } from "./chain-link.sql";
 
-export const chainLinkInsertSchema = createInsertSchema(chainLink).omit({
-    createdAt: true,
-    updatedAt: true,
-});
+/**
+ * Static shapes of the drizzle-generated schemas. Drizzle stays the source of
+ * truth: these are attached to the TypeBox values so `Static<typeof schema>`
+ * agrees with the columns the repository reads and writes.
+ */
+type ChainLinkRow = typeof chainLink.$inferSelect;
+type ChainLinkInsertRow = Omit<
+    typeof chainLink.$inferInsert,
+    "createdAt" | "updatedAt"
+>;
+type ChainLinkUpdateRow = Partial<ChainLinkInsertRow>;
+type ChainLinkFilterExistsRow = Pick<ChainLinkRow, "marketId" | "chainId">;
+type ChainLinkWithChainRow = ChainLinkRow & { chain: ChainSelect };
 
-export const chainLinkUpdateSchema = createUpdateSchema(chainLink).omit({
-    createdAt: true,
-    updatedAt: true,
-});
+const chainLinkInsertColumns = fromDrizzle(createInsertSchema(chainLink));
+const chainLinkUpdateColumns = fromDrizzle(createUpdateSchema(chainLink));
 
-export const chainLinkSelectSchema = createSelectSchema(chainLink);
+export const chainLinkInsertSchema = typedSchema<ChainLinkInsertRow>(
+    t.Omit(chainLinkInsertColumns, ["createdAt", "updatedAt"]),
+);
+export const chainLinkUpdateSchema = typedSchema<ChainLinkUpdateRow>(
+    t.Omit(chainLinkUpdateColumns, ["createdAt", "updatedAt"]),
+);
+export const chainLinkSelectSchema = fromDrizzle<ChainLinkRow>(
+    createSelectSchema(chainLink),
+);
 
-export const chainLinkFilterExistsSchema = chainLinkSelectSchema.pick({
-    marketId: true,
-    chainId: true,
-});
+/** The `(market, chain)` pair that identifies an existing link. */
+export const chainLinkFilterExistsSchema =
+    typedSchema<ChainLinkFilterExistsRow>(
+        t.Pick(chainLinkSelectSchema, ["marketId", "chainId"]),
+    );
 
 /** A chain-link row with its chain embedded. */
-export const chainLinkWithChainSchema = chainLinkSelectSchema.extend({
-    chain: chainSelectSchema,
-});
+export const chainLinkWithChainSchema = extendSchema<ChainLinkWithChainRow>(
+    chainLinkSelectSchema,
+    { chain: chainSelectSchema },
+);

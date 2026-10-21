@@ -11,6 +11,12 @@ import {
 /** On the collapsed rail these items show an icon and a tooltip. */
 const navItemClass = "is-drawer-close:tooltip is-drawer-close:tooltip-right";
 
+/**
+ * A page-level link. These deliberately do **not** use htmx: switching pages is
+ * a normal navigation, so the browser loads the full document (layout, navbar,
+ * drawer state) instead of swapping `#main-content` in place. Fragments inside a
+ * page keep using htmx.
+ */
 const SideBarItem = ({
     title,
     path,
@@ -19,12 +25,6 @@ const SideBarItem = ({
     <li>
         <a
             href={`/${path}`}
-            hx-target="#main-content"
-            hx-get={path}
-            hx-swap="innerHTML"
-            hx-trigger="click"
-            hx-push-url="true"
-            hx-indicator=".progress"
             class={navItemClass}
             data-tip={title}
             onclick="document.getElementById('coin_assignment_dialog')?.close()"

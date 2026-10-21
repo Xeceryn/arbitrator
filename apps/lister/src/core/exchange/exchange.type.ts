@@ -1,4 +1,4 @@
-import type z from "zod";
+import type { Static } from "typebox";
 
 import type {
     exchangeInsertSchema,
@@ -10,10 +10,10 @@ import type {
 import { exchange } from "./exchange.sql";
 
 export type Exchange = typeof exchange.$inferSelect;
-export type ExchangeSelect = z.infer<typeof exchangeSelectSchema>;
-export type ExchangeInsert = z.infer<typeof exchangeInsertSchema>;
-export type ExchangeUpdate = z.infer<typeof exchangeUpdateSchema>;
-export type ListExchangeInput = z.infer<typeof listExchangeSelectSchema>;
-export type PaginatedExchangeList = z.infer<
+export type ExchangeSelect = Static<typeof exchangeSelectSchema>;
+export type ExchangeInsert = Static<typeof exchangeInsertSchema>;
+export type ExchangeUpdate = Static<typeof exchangeUpdateSchema>;
+export type ListExchangeInput = Static<typeof listExchangeSelectSchema>;
+export type PaginatedExchangeList = Static<
     typeof paginatedExchangeSelectSchema
 >;

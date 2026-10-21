@@ -1,6 +1,6 @@
 import { createLogger } from "@arbitrator/logger";
 
-import { createListerGateway } from "./lister";
+import { createListerGateway, type ListerClient } from "./lister";
 import { WorkerPool, spawnThreadWorker } from "./pool";
 import { Orchestrator } from "./service";
 
@@ -16,7 +16,7 @@ const logger = createLogger("arbitrator/sender/orchestrator");
  * logs; a worker that dies is respawned by the pool, not by a reconcile.
  * `onChanged` forwards every pool mutation to the orchestrator's subscribers.
  */
-export function createOrchestrator(): Orchestrator {
+export function createOrchestrator(lister: ListerClient): Orchestrator {
     const holder: { current: Orchestrator | undefined } = {
         current: undefined,
     };
@@ -46,7 +46,7 @@ export function createOrchestrator(): Orchestrator {
         },
     });
 
-    const orchestrator = new Orchestrator(pool, createListerGateway());
+    const orchestrator = new Orchestrator(pool, createListerGateway(lister));
     holder.current = orchestrator;
     return orchestrator;
 }

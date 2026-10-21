@@ -3,43 +3,41 @@ import type {
     OpportunitySignal,
 } from "@arbitrator/lister/types";
 import { lister } from "@arbitrator/sdk";
-import { Elysia } from "elysia";
-import z from "zod";
+import { Elysia, t } from "elysia";
 
 import { BaseLayout } from "../helpers/BaseLayout";
 import { htmx } from "../plugins/htmx";
-import { apiErrorMessage } from "../utils";
+import { apiErrorMessage, toStringArray } from "../utils";
 import { PageHeading } from "../views/components/PageHeading";
 import { SignalCard } from "../views/components/SignalCard";
 import {
     SignalBoard,
     SignalPage,
+    type SignalQuery,
     type SignalsData,
 } from "../views/pages/SignalPage";
-
-/**
- * `hide` arrives as a repeated query param (`hide=a&hide=b`), a single value,
- * or nothing. Normalise all three to a string array.
- */
-const hideSchema = z
-    .union([z.string(), z.array(z.string())])
-    .optional()
-    .transform((value) =>
-        value === undefined ? [] : Array.isArray(value) ? value : [value],
-    );
 
 const ORDER_BY_VALUES = ["profitPercentage", "profitVolume"] as const;
 type OrderBy = (typeof ORDER_BY_VALUES)[number];
 
-const signalQuerySchema = z.object({
-    orderBy: z.enum(ORDER_BY_VALUES).default("profitPercentage"),
-    hide: hideSchema,
+/** `orderBy` picks the stream; it defaults to the profit-percentage board. */
+const orderBySchema = t.Union(
+    [t.Literal("profitPercentage"), t.Literal("profitVolume")],
+    { default: "profitPercentage" },
+);
+
+/**
+ * `hide` arrives as a repeated query param (`hide=a&hide=b`), a single value, or
+ * nothing. The handler normalises all three to a string array with
+ * `toStringArray`.
+ */
+const signalQuerySchema = t.Object({
+    orderBy: orderBySchema,
+    hide: t.Optional(t.Union([t.String(), t.Array(t.String())])),
 });
 
 /** The same `orderBy` choice, but for the socket's subscription query. */
-const streamQuerySchema = z.object({
-    orderBy: z.enum(ORDER_BY_VALUES).default("profitPercentage"),
-});
+const streamQuerySchema = t.Object({ orderBy: orderBySchema });
 
 /** Profitable signals for one stream, always ranked descending. */
 async function loadSignals(orderBy: OrderBy): Promise<SignalsData> {
@@ -59,7 +57,16 @@ async function loadSignals(orderBy: OrderBy): Promise<SignalsData> {
 
 async function loadExchanges(): Promise<ExchangeSelect[]> {
     const { data, error } = await lister.exchange.get({
-        query: { limit: -1 },
+        // The lister schema declares these as defaults, which Elysia applies on
+        // the server; Eden types the whole query, so pass them explicitly.
+        query: {
+            page: 1,
+            limit: -1,
+            search: "",
+            searchBy: "name",
+            orderBy: "id",
+            order: "asc",
+        },
     });
     if (error || !data) return [];
     return data.data;
@@ -216,8 +223,14 @@ export const SignalController = new Elysia({
     .use(htmx())
 
     .get("/signals", { query: signalQuerySchema }, async ({ query, hx }) => {
+        // `hide` is a repeated query param, a single value, or nothing.
+        const filters: SignalQuery = {
+            orderBy: query.orderBy,
+            hide: toStringArray(query.hide),
+        };
+
         const [data, exchanges] = await Promise.all([
-            loadSignals(query.orderBy),
+            loadSignals(filters.orderBy),
             loadExchanges(),
         ]);
 
@@ -225,7 +238,7 @@ export const SignalController = new Elysia({
             return (
                 <BaseLayout title="Arbitrator - Signals" heading="Signals">
                     <SignalPage
-                        query={query}
+                        query={filters}
                         data={data}
                         exchanges={exchanges}
                     />
@@ -236,7 +249,7 @@ export const SignalController = new Elysia({
             <>
                 <PageHeading heading="Signals" oob />
                 <title>Signals</title>
-                <SignalPage query={query} data={data} exchanges={exchanges} />
+                <SignalPage query={filters} data={data} exchanges={exchanges} />
             </>
         );
     })

@@ -1,16 +1,21 @@
 import { and, eq, notExists } from "drizzle-orm";
-import { Elysia, t } from "elysia";
-import z from "zod";
+import { Elysia, status, t } from "elysia";
 
 import { messageSchema } from "../../common/http.schema";
-import { database } from "../../database/connection";
-import { publishMetadataChanged } from "../../events";
+import {
+    isPaginationLimitValid,
+    paginationLimitMessage,
+} from "../../common/pagination.schema";
+import { extendSchema } from "../../common/typebox";
+import { databasePlugin } from "../../plugins/database";
+import { eventsPlugin } from "../../plugins/events";
 import { Chain } from "../chain/chain";
 import {
     listChainSelectSchema,
     paginatedChainSelectSChema,
 } from "../chain/chain.schema";
 import { chain } from "../chain/chain.sql";
+import type { ListChainInput } from "../chain/chain.type";
 import { ChainLink } from "./chain-link";
 import {
     chainLinkInsertSchema,
@@ -22,12 +27,15 @@ import { chainLink } from "./chain-link.sql";
 
 const chainLinkIdParams = t.Object({ id: t.Numeric() });
 
-const chainLinkFilterSchema = z
-    .object({
-        marketId: z.coerce.number().optional(),
-        chainId: z.coerce.number().optional(),
-    })
-    .optional();
+const chainLinkFilterSchema = t.Object({
+    marketId: t.Optional(t.Integer()),
+    chainId: t.Optional(t.Integer()),
+});
+
+/** Chain pagination plus the market whose unlinked chains we want. */
+const availableChainQuerySchema = extendSchema<
+    ListChainInput & { marketId: number }
+>(listChainSelectSchema, { marketId: t.Integer() });
 
 const chainLinkNotFound = {
     message: "exchange-cryptocurrency-chain not found",
@@ -38,11 +46,13 @@ export const chainLinkRoutes = new Elysia({
     prefix: "/chain-link",
     tags: ["chain-link"],
 })
+    .use(databasePlugin)
+    .use(eventsPlugin)
     .get(
         "",
         {
             query: chainLinkFilterSchema,
-            response: { 200: z.array(chainLinkSelectSchema) },
+            response: { 200: t.Array(chainLinkSelectSchema) },
             detail: { summary: "List chain links" },
         },
         async ({ query }) => await ChainLink.getAll(query),
@@ -52,7 +62,7 @@ export const chainLinkRoutes = new Elysia({
         "/detailed",
         {
             query: chainLinkFilterSchema,
-            response: { 200: z.array(chainLinkWithChainSchema) },
+            response: { 200: t.Array(chainLinkWithChainSchema) },
             detail: { summary: "List chain links with their chain" },
         },
         async ({ query }) => await ChainLink.getAllWithChain(query),
@@ -61,19 +71,21 @@ export const chainLinkRoutes = new Elysia({
     .get(
         "/available-chains",
         {
-            query: listChainSelectSchema.extend({
-                marketId: z.coerce.number(),
-            }),
+            query: availableChainQuerySchema,
             response: { 200: paginatedChainSelectSChema },
             detail: { summary: "Chains not yet linked to a market" },
         },
-        async ({ query }) => {
+        async ({ db, query }) => {
             const { marketId, ...pagination } = query;
+
+            if (!isPaginationLimitValid(pagination.limit)) {
+                throw status(422, { message: paginationLimitMessage });
+            }
 
             return await Chain.listExcluding(
                 pagination,
                 notExists(
-                    database
+                    db
                         .select({ id: chainLink.id })
                         .from(chainLink)
                         .where(
@@ -114,7 +126,7 @@ export const chainLinkRoutes = new Elysia({
             },
             detail: { summary: "Add a chain link" },
         },
-        async ({ body, set }) => {
+        async ({ body, events, set }) => {
             if (await ChainLink.exists(body)) {
                 set.status = 409;
                 return {
@@ -132,7 +144,7 @@ export const chainLinkRoutes = new Elysia({
                 };
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "chain_link",
                 action: "created",
                 chainIds: [result.chainId],
@@ -154,7 +166,7 @@ export const chainLinkRoutes = new Elysia({
             },
             detail: { summary: "Update a chain link" },
         },
-        async ({ params, body, set }) => {
+        async ({ params, body, events, set }) => {
             const target = await ChainLink.getById(params.id);
             if (!target) {
                 set.status = 404;
@@ -170,7 +182,7 @@ export const chainLinkRoutes = new Elysia({
                 };
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "chain_link",
                 action: "updated",
                 chainIds: [result.chainId],
@@ -187,14 +199,14 @@ export const chainLinkRoutes = new Elysia({
             response: { 200: chainLinkSelectSchema, 404: messageSchema },
             detail: { summary: "Remove a chain link" },
         },
-        async ({ params, set }) => {
+        async ({ params, events, set }) => {
             const result = await ChainLink.remove(params.id);
             if (!result) {
                 set.status = 404;
                 return chainLinkNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "chain_link",
                 action: "deleted",
                 chainIds: [result.chainId],

@@ -19,15 +19,29 @@ There is no `typecheck` script; use the focused `tsc` above (run from repo root)
 
 ```
 src/app.ts        createApp() builds the Elysia app; exports `app` + `App` type
-src/index.ts      app.listen(3002)
+src/index.ts      exports the app, app.listen(3002) unless inAotBuild()
 src/orchestrator/ service.ts (state + debounce), reconcile.ts (PURE, tested),
                   registry.ts (worker adapters), pool.ts (threads, tested),
-                  bootstrap.ts (wiring), lister.ts (ListerGateway via @arbitrator/sdk)
-src/plugins/      orchestrator.ts (decorate + first reconcile onStart),
-                  events.ts (consume metadata.changed -> notifyMetadataChanged)
+                  bootstrap.ts (wiring), lister.ts (ListerGateway over the
+                  injected treaty client; the client itself lives in plugins/lister.ts)
+src/plugins/      lister.ts (decorate `lister` = @arbitrator/sdk treaty),
+                  orchestrator.ts (decorate + first reconcile onStart),
+                  events.ts (consume metadata.changed -> notifyMetadataChanged,
+                  onStop closes the consumer)
 src/workers/      protocol.ts (worker control), orderbooks/*.ts (one per exchange)
 src/types, src/utils, src/vendor   legacy shims (delete once all workers migrate)
 ```
+
+Route `params`/`body`/`response` schemas are TypeBox (`typebox@1`) imported from
+`@arbitrator/contracts` (or `{ Type as t }` from `typebox` locally). No zod, so
+`openapi()` needs no `mapJsonSchema`. Contract schemas are validated with
+`Value.Check` / `Value.Parse` from `typebox/value`.
+
+`src/index.ts` exports `app` (named + default) and only listens when
+`inAotBuild()` is false, so an AOT build can evaluate the route graph without a
+socket, a reconcile or a RabbitMQ consumer. Note: `.use(websocket())` currently
+makes the bun AOT plugin fail (`Bundle failed`), so `bun build.ts` does not
+complete until that is resolved upstream — plain `bun build --target=bun` works.
 
 ## Routes
 

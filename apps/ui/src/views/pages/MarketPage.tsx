@@ -1,5 +1,8 @@
 import { ExchangeSearchByOptions } from "@arbitrator/lister/constants";
 import type { ListExchangeInput } from "@arbitrator/lister/types";
+
+/** Elysia fills every pagination default before the handler runs. */
+type Resolved<T> = { [K in keyof T]-?: NonNullable<T[K]> };
 import { lister } from "@arbitrator/sdk";
 
 import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
@@ -17,7 +20,7 @@ const LIMIT_OPTIONS = [10, 20, 50, 100];
  * search input keeps its focus and caret. It submits itself into
  * `#market-list-results`.
  */
-const MarketFilter = (props: ListExchangeInput) => {
+const MarketFilter = (props: Resolved<ListExchangeInput>) => {
     const active = ExchangeSearchByOptions.find(
         (option) => option === props.searchBy,
     );
@@ -97,7 +100,7 @@ const MarketFilter = (props: ListExchangeInput) => {
  * keeps them associated with `#market-filter`, so search and pagination still
  * carry the sort.
  */
-export const MarketResults = async (props: ListExchangeInput) => {
+export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
     const { data, error } = await lister.exchange.get({ query: props });
 
     if (error || !data) {
@@ -312,7 +315,7 @@ export const MarketResults = async (props: ListExchangeInput) => {
 /**
  * The full list card: static filter bar plus swappable results.
  */
-export const MarketList = (props: ListExchangeInput) => (
+export const MarketList = (props: Resolved<ListExchangeInput>) => (
     <section id="market-list" class="w-full">
         <div class="card w-full bg-base-100 shadow-xl">
             <div class="card-body p-4 sm:p-8">
@@ -323,7 +326,7 @@ export const MarketList = (props: ListExchangeInput) => (
     </section>
 );
 
-export const MarketPage = async (props: ListExchangeInput) => (
+export const MarketPage = async (props: Resolved<ListExchangeInput>) => (
     <div class="flex flex-col gap-6">
         <AddExchangeModal />
         <ExchangeEditModal />

@@ -1,7 +1,11 @@
-import { Elysia, t } from "elysia";
+import { Elysia, status, t } from "elysia";
 
 import { messageSchema } from "../../common/http.schema";
-import { publishMetadataChanged } from "../../events";
+import {
+    isPaginationLimitValid,
+    paginationLimitMessage,
+} from "../../common/pagination.schema";
+import { eventsPlugin } from "../../plugins/events";
 import { Market } from "../market/market";
 import { exchangeWithCryptocurrenciesSchema } from "../market/market.schema";
 import { Exchange } from "./exchange";
@@ -22,6 +26,7 @@ export const exchangeRoutes = new Elysia({
     prefix: "/exchange",
     tags: ["exchange"],
 })
+    .use(eventsPlugin)
     .get(
         "",
         {
@@ -29,7 +34,13 @@ export const exchangeRoutes = new Elysia({
             response: { 200: paginatedExchangeSelectSchema },
             detail: { summary: "List exchanges" },
         },
-        async ({ query }) => await Exchange.list(query),
+        async ({ query }) => {
+            if (!isPaginationLimitValid(query.limit)) {
+                throw status(422, { message: paginationLimitMessage });
+            }
+
+            return await Exchange.list(query);
+        },
     )
     .post(
         "",
@@ -42,7 +53,7 @@ export const exchangeRoutes = new Elysia({
             },
             detail: { summary: "Add an exchange" },
         },
-        async ({ body, set }) => {
+        async ({ body, events, set }) => {
             if (await Exchange.cmcIdExists(body.cmcId)) {
                 set.status = 409;
                 return { message: "exchange with this cmcId already exists" };
@@ -54,7 +65,7 @@ export const exchangeRoutes = new Elysia({
                 return { message: "something wrong when adding exchange" };
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "exchange",
                 action: "created",
                 exchangeIds: [result.id],
@@ -128,7 +139,7 @@ export const exchangeRoutes = new Elysia({
             },
             detail: { summary: "Update an exchange" },
         },
-        async ({ params, body, set }) => {
+        async ({ params, body, events, set }) => {
             const target = await Exchange.getById(params.id);
             if (!target) {
                 set.status = 404;
@@ -149,7 +160,7 @@ export const exchangeRoutes = new Elysia({
                 return exchangeNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "exchange",
                 action: "updated",
                 exchangeIds: [data.id],
@@ -165,14 +176,14 @@ export const exchangeRoutes = new Elysia({
             response: { 200: exchangeSelectSchema, 404: messageSchema },
             detail: { summary: "Remove an exchange" },
         },
-        async ({ params, set }) => {
+        async ({ params, events, set }) => {
             const result = await Exchange.remove(params.id);
             if (!result) {
                 set.status = 404;
                 return exchangeNotFound;
             }
 
-            void publishMetadataChanged({
+            void events.publishMetadataChanged({
                 entity: "exchange",
                 action: "deleted",
                 exchangeIds: [result.id],

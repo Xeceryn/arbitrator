@@ -1,28 +1,33 @@
 import { lister } from "@arbitrator/sdk";
-import { Elysia, redirect, status } from "elysia";
-import z from "zod";
+import { Elysia, redirect, status, t } from "elysia";
 
 import { listChainSelectSchema } from "../../../lister/src/core/chain/chain.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
 import { htmx } from "../plugins/htmx";
-import { addErrorMessage, createPushURL, validationMessages } from "../utils";
+import {
+    addErrorMessage,
+    createPushURL,
+    formParse,
+    resolvedQuery,
+} from "../utils";
 import { ChainEditModalContent } from "../views/components/ChainEditModalContent";
 import { ChainTableRow } from "../views/components/ChainTableRow";
 import { ValidationErrorList } from "../views/components/FormErrors";
 import { PageHeading } from "../views/components/PageHeading";
 import { ChainPage, ChainResults } from "../views/pages/ChainPage";
 
-const chainBody = z.object({
-    name: z.string().min(1, "Enter the chain name."),
-    code: z.string().min(1, "Enter the chain code."),
+/** Add form rules; `formParse` turns failures into the inline error list. */
+const chainBody = t.Object({
+    name: t.String({ minLength: 1, error: "Enter the chain name." }),
+    code: t.String({ minLength: 1, error: "Enter the chain code." }),
 });
 
-const chainUpdateBody = chainBody.partial();
+const chainUpdateBody = t.Partial(chainBody);
 
-/** Loose shape for the route so validation failures can render inline. */
-const chainForm = z.object({
-    name: z.optional(z.string()),
-    code: z.optional(z.string()),
+/** Loose route body: every field is posted as a string (or not at all). */
+const chainForm = t.Object({
+    name: t.Optional(t.String()),
+    code: t.Optional(t.String()),
 });
 
 export const ChainController = new Elysia({
@@ -41,7 +46,7 @@ export const ChainController = new Elysia({
             if (!hx.isHTMX) {
                 return (
                     <BaseLayout title="Arbitrator - Chains" heading="Chains">
-                        <ChainPage {...query} />
+                        <ChainPage {...resolvedQuery(query)} />
                     </BaseLayout>
                 );
             }
@@ -49,7 +54,7 @@ export const ChainController = new Elysia({
                 <>
                     <PageHeading heading="Chains" oob />
                     <title>Chains</title>
-                    <ChainPage {...query} />
+                    <ChainPage {...resolvedQuery(query)} />
                 </>
             );
         },
@@ -65,16 +70,14 @@ export const ChainController = new Elysia({
             if (!hx.isHTMX) {
                 return redirect(createPushURL("/chain", query));
             }
-            return <ChainResults {...query} />;
+            return <ChainResults {...resolvedQuery(query)} />;
         },
     )
 
     .get(
         "/chain/:id/edit-modal",
         {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
+            params: t.Object({ id: t.Integer() }),
         },
         async ({ params, hx }) => {
             if (!hx.isHTMX) {
@@ -99,9 +102,7 @@ export const ChainController = new Elysia({
     .patch(
         "/chain/:id/edit",
         {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
+            params: t.Object({ id: t.Integer() }),
             body: chainUpdateBody,
         },
         async ({ params, body, hx }) => {
@@ -130,9 +131,7 @@ export const ChainController = new Elysia({
     .delete(
         "/chain/:id",
         {
-            params: z.object({
-                id: z.coerce.number(),
-            }),
+            params: t.Object({ id: t.Integer() }),
         },
         async ({ params, hx }) => {
             const { error } = await lister.chain({ id: params.id }).delete();
@@ -160,9 +159,9 @@ export const ChainController = new Elysia({
             body: chainForm,
         },
         async ({ body, hx }) => {
-            const parsed = chainBody.safeParse(body);
-            if (!parsed.success) {
-                const messages = validationMessages(parsed.error);
+            const parsed = formParse(chainBody, body);
+            if (!parsed.ok) {
+                const messages = parsed.messages;
                 hx.triggerEvent({
                     "chain-validation-error": {
                         fields: messages.map(({ field }) => field),
@@ -171,7 +170,7 @@ export const ChainController = new Elysia({
                 return status(422, <ValidationErrorList messages={messages} />);
             }
 
-            const { data, error } = await lister.chain.post(parsed.data);
+            const { data, error } = await lister.chain.post(parsed.value);
             if (error || !data) {
                 const messages = [addErrorMessage("chain", error)];
                 hx.triggerEvent({

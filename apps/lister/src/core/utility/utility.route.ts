@@ -1,7 +1,7 @@
 import { reset } from "drizzle-seed";
 import { Elysia, t } from "elysia";
 
-import { database } from "../../database/connection";
+import { databasePlugin } from "../../plugins/database";
 import { chainLink } from "../chain-link/chain-link.sql";
 import { chain } from "../chain/chain.sql";
 import { cryptocurrency } from "../cryptocurrency/cryptocurrency.sql";
@@ -13,6 +13,7 @@ export const utilityRoutes = new Elysia({
     prefix: "/utility",
     tags: ["utility"],
 })
+    .use(databasePlugin)
     .get(
         "/ping",
         {
@@ -27,8 +28,8 @@ export const utilityRoutes = new Elysia({
         {
             detail: { summary: "Clear the database", hide: true },
         },
-        async () => {
-            await reset(database, {
+        async ({ db }) => {
+            await reset(db, {
                 cryptocurrency: cryptocurrency,
                 exchange: exchange,
                 chain: chain,

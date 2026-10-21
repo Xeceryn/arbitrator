@@ -1,5 +1,8 @@
 import { ChainSearchByOptions } from "@arbitrator/lister/constants";
 import type { ListChainInput } from "@arbitrator/lister/types";
+
+/** Elysia fills every pagination default before the handler runs. */
+type Resolved<T> = { [K in keyof T]-?: NonNullable<T[K]> };
 import { lister } from "@arbitrator/sdk";
 
 import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
@@ -17,7 +20,7 @@ const LIMIT_OPTIONS = [10, 20, 50, 100];
  * search input keeps its focus and caret. It submits itself into
  * `#chain-list-results`.
  */
-const ChainFilter = (props: ListChainInput) => {
+const ChainFilter = (props: Resolved<ListChainInput>) => {
     const active = ChainSearchByOptions.find(
         (option) => option === props.searchBy,
     );
@@ -97,7 +100,7 @@ const ChainFilter = (props: ListChainInput) => {
  * keeps them associated with `#chain-filter`, so search and pagination still
  * carry the sort.
  */
-export const ChainResults = async (props: ListChainInput) => {
+export const ChainResults = async (props: Resolved<ListChainInput>) => {
     const { data, error } = await lister.chain.get({ query: props });
 
     if (error || !data) {
@@ -286,7 +289,7 @@ export const ChainResults = async (props: ListChainInput) => {
 /**
  * The full list card: static filter bar plus swappable results.
  */
-export const ChainList = (props: ListChainInput) => (
+export const ChainList = (props: Resolved<ListChainInput>) => (
     <section id="chain-list" class="w-full">
         <div class="card w-full bg-base-100 shadow-xl">
             <div class="card-body p-4 sm:p-8">
@@ -297,7 +300,7 @@ export const ChainList = (props: ListChainInput) => (
     </section>
 );
 
-export const ChainPage = async (props: ListChainInput) => (
+export const ChainPage = async (props: Resolved<ListChainInput>) => (
     <div class="flex flex-col gap-6">
         <AddChainModal />
         <ChainEditModal />

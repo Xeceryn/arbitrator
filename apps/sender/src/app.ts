@@ -5,23 +5,23 @@ import {
     senderStopResponseSchema,
     workerStatusSchema,
 } from "@arbitrator/contracts";
-import { openapiZodMap } from "@arbitrator/elysia-kit";
 import { openapi } from "@elysia/openapi";
 import { Elysia } from "elysia";
 import { websocket } from "elysia/websocket";
-import z from "zod";
+import { Type as t } from "typebox";
 
 import { createOrchestrator } from "./orchestrator/bootstrap";
 import type { Orchestrator } from "./orchestrator/service";
 import { eventsPlugin } from "./plugins/events";
+import { listerClient, listerPlugin } from "./plugins/lister";
 import { orchestratorPlugin } from "./plugins/orchestrator";
 
 type SenderSocket = { send(data: string | unknown): unknown };
 
-const slugParams = z.object({ slug: z.string().min(1) });
+const slugParams = t.Object({ slug: t.String({ minLength: 1 }) });
 
-const workersResponseSchema = z.object({
-    workers: z.array(workerStatusSchema),
+const workersResponseSchema = t.Object({
+    workers: t.Array(workerStatusSchema),
 });
 
 /** One sender WS subscriber per connected UI. Unsubscribed on close. */
@@ -53,11 +53,11 @@ export function createApp(orchestrator: Orchestrator) {
                             },
                         ],
                     },
-                    mapJsonSchema: openapiZodMap,
                 }),
             )
             // v2 severable WebSocket capability: `.ws()` needs this provider.
             .use(websocket())
+            .use(listerPlugin)
             .use(orchestratorPlugin(orchestrator))
             .use(eventsPlugin(orchestrator))
             .post(
@@ -179,6 +179,6 @@ export function createApp(orchestrator: Orchestrator) {
     );
 }
 
-export const orchestrator = createOrchestrator();
+export const orchestrator = createOrchestrator(listerClient);
 export const app = createApp(orchestrator);
 export type App = typeof app;

@@ -1,42 +1,42 @@
-import z from "zod";
+import { type Static, Type as t } from "typebox";
 
 import { symbolSubscriptionSchema, workerStateSchema } from "./domain";
 
 /** One live worker as reported by the sender orchestrator. */
-export const workerStatusSchema = z.object({
-    id: z.string(),
-    exchangeSlug: z.string(),
-    symbols: z.array(symbolSubscriptionSchema),
+export const workerStatusSchema = t.Object({
+    id: t.String(),
+    exchangeSlug: t.String(),
+    symbols: t.Array(symbolSubscriptionSchema),
     state: workerStateSchema,
 });
-export type WorkerStatus = z.infer<typeof workerStatusSchema>;
+export type WorkerStatus = Static<typeof workerStatusSchema>;
 
 /**
  * Snapshot served by `GET /exchanges` and pushed over `/exchanges/ws`.
  * All maps default to empty so the UI never has to tolerate missing fields.
  */
-export const orchestratorStatusSchema = z.object({
-    started: z.array(z.string()),
-    workers: z.array(workerStatusSchema),
+export const orchestratorStatusSchema = t.Object({
+    started: t.Array(t.String()),
+    workers: t.Array(workerStatusSchema),
     /** Recent unexpected worker deaths per exchange slug. */
-    failures: z.record(z.string(), z.number()),
+    failures: t.Record(t.String(), t.Number()),
     /** Desired subscription count per exchange (last reconcile). */
-    desired: z.record(z.string(), z.number()),
+    desired: t.Record(t.String(), t.Number()),
     /** Max subscriptions one worker may hold, per exchange. */
-    capacity: z.record(z.string(), z.number()),
-    supported: z.array(z.string()),
+    capacity: t.Record(t.String(), t.Number()),
+    supported: t.Array(t.String()),
 });
-export type OrchestratorStatus = z.infer<typeof orchestratorStatusSchema>;
+export type OrchestratorStatus = Static<typeof orchestratorStatusSchema>;
 
 /** Error body the sender returns for failed start/reconcile calls. */
-export const senderMessageSchema = z.object({ message: z.string() });
-export type SenderMessage = z.infer<typeof senderMessageSchema>;
+export const senderMessageSchema = t.Object({ message: t.String() });
+export type SenderMessage = Static<typeof senderMessageSchema>;
 
-export const senderStartResponseSchema = z.object({ started: z.string() });
-export type SenderStartResponse = z.infer<typeof senderStartResponseSchema>;
+export const senderStartResponseSchema = t.Object({ started: t.String() });
+export type SenderStartResponse = Static<typeof senderStartResponseSchema>;
 
-export const senderStopResponseSchema = z.object({ stopped: z.string() });
-export type SenderStopResponse = z.infer<typeof senderStopResponseSchema>;
+export const senderStopResponseSchema = t.Object({ stopped: t.String() });
+export type SenderStopResponse = Static<typeof senderStopResponseSchema>;
 
 /**
  * Sender -> UI push protocol. The socket sends one `snapshot` on connect, then
@@ -44,14 +44,14 @@ export type SenderStopResponse = z.infer<typeof senderStopResponseSchema>;
  * worker state report, unexpected death, respawn). The payload is always the
  * full status — small enough to broadcast verbatim, so the UI never refetches.
  */
-export const senderStatusEventSchema = z.discriminatedUnion("type", [
-    z.object({
-        type: z.literal("snapshot"),
+export const senderStatusEventSchema = t.Union([
+    t.Object({
+        type: t.Literal("snapshot"),
         status: orchestratorStatusSchema,
     }),
-    z.object({
-        type: z.literal("status"),
+    t.Object({
+        type: t.Literal("status"),
         status: orchestratorStatusSchema,
     }),
 ]);
-export type SenderStatusEvent = z.infer<typeof senderStatusEventSchema>;
+export type SenderStatusEvent = Static<typeof senderStatusEventSchema>;

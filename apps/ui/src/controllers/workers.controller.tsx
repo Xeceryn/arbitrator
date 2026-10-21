@@ -1,7 +1,6 @@
 import type { OrchestratorStatus } from "@arbitrator/contracts";
 import type { ExchangeSelect } from "@arbitrator/lister/types";
-import { Elysia, redirect } from "elysia";
-import z from "zod";
+import { Elysia, redirect, t } from "elysia";
 
 import { BaseLayout } from "../helpers/BaseLayout";
 import { type AppClients, clientsPlugin } from "../plugins/clients";
@@ -16,7 +15,7 @@ import {
     wrapWorkerRowPartial,
 } from "../views/pages/WorkersPage";
 
-const slugParam = z.object({ slug: z.string().min(1) });
+const slugParam = t.Object({ slug: t.String({ minLength: 1 }) });
 
 /**
  * Eden reports a failed call as `{ status, value }`. Elysia keeps the status
@@ -55,7 +54,16 @@ async function loadWorkersData({
     }
 
     const { data: list, error: listError } = await lister.exchange.get({
-        query: { limit: -1 },
+        // The lister schema declares these as defaults, which Elysia applies on
+        // the server; Eden types the whole query, so pass them explicitly.
+        query: {
+            page: 1,
+            limit: -1,
+            search: "",
+            searchBy: "name",
+            orderBy: "id",
+            order: "asc",
+        },
     });
     if (listError || !list) {
         return { ok: false, message: "Unable to load exchanges." };

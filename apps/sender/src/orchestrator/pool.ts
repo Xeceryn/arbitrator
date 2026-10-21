@@ -6,6 +6,7 @@ import {
     type WorkerStatus,
     workerStateSchema,
 } from "@arbitrator/contracts";
+import { Value } from "typebox/value";
 
 import type { ReconcileCommand, WorkerSnapshot } from "./reconcile";
 import { type WorkerAdapter, workerAdapters } from "./registry";
@@ -74,8 +75,7 @@ function readWorkerState(message: unknown): WorkerState | undefined {
               ? (record.content as Record<string, unknown>).state
               : undefined;
 
-    const parsed = workerStateSchema.safeParse(candidate);
-    return parsed.success ? parsed.data : undefined;
+    return Value.Check(workerStateSchema, candidate) ? candidate : undefined;
 }
 
 type Entry = { snapshot: WorkerSnapshot; handle: WorkerLike };

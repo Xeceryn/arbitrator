@@ -3,6 +3,7 @@ import {
     RoutingKeys,
     metadataChangedSchema,
 } from "@arbitrator/contracts";
+import { Value } from "typebox/value";
 
 import { publish } from "./publisher";
 
@@ -20,12 +21,11 @@ export async function publishMetadataChanged(
         ...input,
     };
 
-    const parsed = metadataChangedSchema.safeParse(candidate);
-    if (!parsed.success) {
+    if (!Value.Check(metadataChangedSchema, candidate)) {
         return false;
     }
 
-    return publish(RoutingKeys.metadataChanged, parsed.data, {
+    return publish(RoutingKeys.metadataChanged, candidate, {
         persistent: true,
     });
 }

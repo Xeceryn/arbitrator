@@ -1,4 +1,3 @@
-import { openapiZodMap } from "@arbitrator/elysia-kit";
 import { cors } from "@elysia/cors";
 import { openapi } from "@elysia/openapi";
 import { Elysia } from "elysia";
@@ -11,10 +10,16 @@ import { marketRoutes } from "./core/market/market.route";
 import { opportunityRoutes } from "./core/opportunity/opportunity.route";
 import { utilityRoutes } from "./core/utility/utility.route";
 import { lastPriceRoutes } from "./last-price/last-price.route";
+import { databasePlugin } from "./plugins/database";
+import { eventsPlugin } from "./plugins/events";
 
 /**
  * The lister HTTP surface. `App` is the Eden treaty type consumed by
  * `@arbitrator/sdk`; every route plugin is a self-contained Elysia instance.
+ *
+ * Schemas are Elysia-native TypeBox (drizzle-typebox through
+ * `@arbitrator/elysia-kit`'s `toElysiaSchema`), so OpenAPI reads them directly
+ * and no `mapJsonSchema` mapper is needed.
  */
 export const app = new Elysia()
     .use(cors({ origin: "*" }))
@@ -23,9 +28,10 @@ export const app = new Elysia()
             documentation: {
                 info: { title: "Arbitrator Lister", version: "0.0.0" },
             },
-            mapJsonSchema: openapiZodMap,
         }),
     )
+    .use(databasePlugin)
+    .use(eventsPlugin)
     .use(exchangeRoutes)
     .use(cryptocurrencyRoutes)
     .use(marketRoutes)

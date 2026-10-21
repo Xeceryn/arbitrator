@@ -1,41 +1,41 @@
-import z from "zod";
+import { type Static, Type as t } from "typebox";
 
 import { symbolSubscriptionSchema, workerStateSchema } from "./domain";
 
 /** Parent -> worker control messages (postMessage only; never orderbook data). */
-export const workerCommandSchema = z.discriminatedUnion("type", [
-    z.object({
-        type: z.literal("subscribe"),
-        symbols: z.array(symbolSubscriptionSchema),
+export const workerCommandSchema = t.Union([
+    t.Object({
+        type: t.Literal("subscribe"),
+        symbols: t.Array(symbolSubscriptionSchema),
     }),
-    z.object({
-        type: z.literal("unsubscribe"),
-        symbols: z.array(symbolSubscriptionSchema),
+    t.Object({
+        type: t.Literal("unsubscribe"),
+        symbols: t.Array(symbolSubscriptionSchema),
     }),
-    z.object({ type: z.literal("shutdown") }),
+    t.Object({ type: t.Literal("shutdown") }),
 ]);
-export type WorkerCommand = z.infer<typeof workerCommandSchema>;
+export type WorkerCommand = Static<typeof workerCommandSchema>;
 
 /** Worker -> parent messages (state/acks/errors; never orderbook data). */
-export const workerEventSchema = z.discriminatedUnion("type", [
-    z.object({
-        type: z.literal("state"),
-        threadId: z.string(),
-        exchange: z.string(),
+export const workerEventSchema = t.Union([
+    t.Object({
+        type: t.Literal("state"),
+        threadId: t.String(),
+        exchange: t.String(),
         state: workerStateSchema,
     }),
-    z.object({
-        type: z.literal("subscribed"),
-        cmcIds: z.array(z.number()),
+    t.Object({
+        type: t.Literal("subscribed"),
+        cmcIds: t.Array(t.Number()),
     }),
-    z.object({
-        type: z.literal("unsubscribed"),
-        cmcIds: z.array(z.number()),
+    t.Object({
+        type: t.Literal("unsubscribed"),
+        cmcIds: t.Array(t.Number()),
     }),
-    z.object({
-        type: z.literal("error"),
-        message: z.string(),
-        cmcIds: z.array(z.number()).optional(),
+    t.Object({
+        type: t.Literal("error"),
+        message: t.String(),
+        cmcIds: t.Optional(t.Array(t.Number())),
     }),
 ]);
-export type WorkerEvent = z.infer<typeof workerEventSchema>;
+export type WorkerEvent = Static<typeof workerEventSchema>;

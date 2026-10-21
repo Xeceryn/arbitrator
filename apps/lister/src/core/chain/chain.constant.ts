@@ -1,7 +1,4 @@
-import {
-    chainOrderByKeysSchema,
-    chainSearchByKeysSchema,
-} from "./chain.schema";
+import { chainOrderByKeys, chainSearchByKeys } from "./chain.schema";
 
-export const ChainSearchByOptions = chainSearchByKeysSchema.options;
-export const ChainOrderByOptions = chainOrderByKeysSchema.options;
+export const ChainSearchByOptions: string[] = [...chainSearchByKeys];
+export const ChainOrderByOptions: string[] = [...chainOrderByKeys];

@@ -1,10 +1,10 @@
 import { lister } from "@arbitrator/sdk";
-import { Elysia, redirect, status } from "elysia";
-import z from "zod";
+import { Elysia, redirect, status, t } from "elysia";
 
 import { listChainSelectSchema } from "../../../lister/src/core/chain/chain.schema";
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
 import { htmx } from "../plugins/htmx";
+import { formBoolean, toBoolean } from "../utils";
 import { AvailableChains } from "../views/components/AssignChainDropdown";
 import {
     ChainConfirmCard,
@@ -30,23 +30,15 @@ import {
     MarketChains,
 } from "../views/components/MarketChains";
 
-/**
- * Checkbox values arrive as strings. `z.coerce.boolean()` is wrong here
- * (`Boolean("false") === true`), so parse the two literals explicitly.
- */
-const booleanish = z
-    .union([z.literal("true"), z.literal("false"), z.boolean()])
-    .transform((value) => value === true || value === "true");
-
-const idParam = z.object({ id: z.coerce.number() });
-const marketParam = z.object({
-    id: z.coerce.number(),
-    marketId: z.coerce.number(),
+const idParam = t.Object({ id: t.Integer() });
+const marketParam = t.Object({
+    id: t.Integer(),
+    marketId: t.Integer(),
 });
-const chainLinkParam = z.object({
-    id: z.coerce.number(),
-    marketId: z.coerce.number(),
-    chainLinkId: z.coerce.number(),
+const chainLinkParam = t.Object({
+    id: t.Integer(),
+    marketId: t.Integer(),
+    chainLinkId: t.Integer(),
 });
 
 /** Eden reports the HTTP status; a duplicate assignment is a 409. */
@@ -228,7 +220,7 @@ export const AssignmentController = new Elysia({
         "/coins/:id/assignments/select",
         {
             params: idParam,
-            query: z.object({ exchangeId: z.coerce.number() }),
+            query: t.Object({ exchangeId: t.Integer() }),
         },
         async ({ params, query, hx }) => {
             if (!hx.isHTMX) {
@@ -267,13 +259,14 @@ export const AssignmentController = new Elysia({
         "/coins/:id/assignments",
         {
             params: idParam,
-            body: z.object({
-                exchangeId: z.coerce.number(),
-                exchangeSymbol: z.string().optional(),
-                tradeEnabled: booleanish.optional(),
+            body: t.Object({
+                exchangeId: t.Integer(),
+                exchangeSymbol: t.Optional(t.String()),
+                tradeEnabled: t.Optional(formBoolean),
             }),
         },
         async ({ params, body, hx }) => {
+            const tradeEnabled = toBoolean(body.tradeEnabled);
             let exchangeSymbol: string | undefined;
             if (body.exchangeSymbol !== undefined) {
                 const trimmed = body.exchangeSymbol.trim();
@@ -308,9 +301,7 @@ export const AssignmentController = new Elysia({
                 cryptocurrencyId: params.id,
                 exchangeId: body.exchangeId,
                 ...(exchangeSymbol !== undefined ? { exchangeSymbol } : {}),
-                ...(body.tradeEnabled !== undefined
-                    ? { tradeEnabled: body.tradeEnabled }
-                    : {}),
+                ...(tradeEnabled !== undefined ? { tradeEnabled } : {}),
             });
 
             if (error || !market) {
@@ -376,9 +367,9 @@ export const AssignmentController = new Elysia({
         "/coins/:id/assignments/:marketId",
         {
             params: marketParam,
-            body: z.object({
-                tradeEnabled: booleanish.optional(),
-                exchangeSymbol: z.string().optional(),
+            body: t.Object({
+                tradeEnabled: t.Optional(formBoolean),
+                exchangeSymbol: t.Optional(t.String()),
             }),
         },
         async ({ params, body, hx }) => {
@@ -470,7 +461,7 @@ export const AssignmentController = new Elysia({
             const { error } = await lister.market.patch({
                 exchangeId: market.exchangeId,
                 cryptocurrencyId: market.cryptocurrencyId,
-                tradeEnabled: body.tradeEnabled,
+                tradeEnabled: toBoolean(body.tradeEnabled),
             });
             if (error) {
                 hx.reswap("none");
@@ -568,7 +559,7 @@ export const AssignmentController = new Elysia({
         "/coins/:id/assignments/:marketId/chains/select",
         {
             params: marketParam,
-            query: z.object({ chainId: z.coerce.number() }),
+            query: t.Object({ chainId: t.Integer() }),
         },
         async ({ params, query, hx }) => {
             if (!hx.isHTMX) {
@@ -644,7 +635,7 @@ export const AssignmentController = new Elysia({
         "/coins/:id/assignments/:marketId/chains",
         {
             params: marketParam,
-            body: z.object({ chainId: z.coerce.number() }),
+            body: t.Object({ chainId: t.Integer() }),
         },
         async ({ params, body, hx }) => {
             const { data: link, error } = await lister["chain-link"].post({
@@ -716,17 +707,20 @@ export const AssignmentController = new Elysia({
         "/coins/:id/assignments/:marketId/chains/:chainLinkId",
         {
             params: chainLinkParam,
-            body: z.object({
-                depositEnabled: booleanish.optional(),
-                withdrawEnabled: booleanish.optional(),
+            body: t.Object({
+                depositEnabled: t.Optional(formBoolean),
+                withdrawEnabled: t.Optional(formBoolean),
             }),
         },
         async ({ params, body, hx }) => {
+            const depositEnabled = toBoolean(body.depositEnabled);
+            const withdrawEnabled = toBoolean(body.withdrawEnabled);
+
             const { error } = await lister["chain-link"]({
                 id: params.chainLinkId,
             }).patch({
-                depositEnabled: body.depositEnabled,
-                withdrawEnabled: body.withdrawEnabled,
+                depositEnabled,
+                withdrawEnabled,
             });
 
             if (error) {
@@ -739,12 +733,12 @@ export const AssignmentController = new Elysia({
                     // Snap the toggles back to the last saved values.
                     "assignment-toggle-error": {
                         depositEnabled:
-                            body.depositEnabled !== undefined
-                                ? !body.depositEnabled
+                            depositEnabled !== undefined
+                                ? !depositEnabled
                                 : undefined,
                         withdrawEnabled:
-                            body.withdrawEnabled !== undefined
-                                ? !body.withdrawEnabled
+                            withdrawEnabled !== undefined
+                                ? !withdrawEnabled
                                 : undefined,
                     },
                 });

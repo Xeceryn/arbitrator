@@ -1,5 +1,8 @@
 import { CryptocurrencySearchByOptions } from "@arbitrator/lister/constants";
 import type { ListCryptocurrencyInput } from "@arbitrator/lister/types";
+
+/** Elysia fills every pagination default before the handler runs. */
+type Resolved<T> = { [K in keyof T]-?: NonNullable<T[K]> };
 import { lister } from "@arbitrator/sdk";
 
 import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
@@ -18,7 +21,7 @@ const LIMIT_OPTIONS = [10, 20, 50, 100];
  * search input keeps its focus and caret. It submits itself into
  * `#coin-list-results`.
  */
-const CoinFilter = (props: ListCryptocurrencyInput) => {
+const CoinFilter = (props: Resolved<ListCryptocurrencyInput>) => {
     const active = CryptocurrencySearchByOptions.find(
         (option) => option === props.searchBy,
     );
@@ -103,7 +106,7 @@ const CoinFilter = (props: ListCryptocurrencyInput) => {
  * keeps them associated with `#coin-filter`, so search and pagination still
  * carry the sort.
  */
-export const CoinResults = async (props: ListCryptocurrencyInput) => {
+export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
     const { data, error } = await lister.cryptocurrency.get({ query: props });
 
     if (error || !data) {
@@ -303,7 +306,7 @@ export const CoinResults = async (props: ListCryptocurrencyInput) => {
 /**
  * The full list card: static filter bar plus swappable results.
  */
-export const CoinList = (props: ListCryptocurrencyInput) => (
+export const CoinList = (props: Resolved<ListCryptocurrencyInput>) => (
     <section id="coin-list" class="w-full">
         <div class="card w-full bg-base-100 shadow-xl">
             <div class="card-body p-4 sm:p-8">
@@ -318,7 +321,7 @@ export const CoinList = (props: ListCryptocurrencyInput) => (
  * The full page. Modals live here, outside the swap unit, so refreshing the
  * list never destroys an open dialog.
  */
-export const CoinPage = async (props: ListCryptocurrencyInput) => (
+export const CoinPage = async (props: Resolved<ListCryptocurrencyInput>) => (
     <div class="flex flex-col gap-6">
         <AddCoinModal />
         <CryptocurrencyEditModal />

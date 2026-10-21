@@ -30,8 +30,7 @@
         "lucide": "^1.50.0",
         "openapi-types": "catalog:elysia",
         "theme-change": "^3.0.4",
-        "typebox": "catalog:elysia",
-        "zod": "catalog:core"
+        "typebox": "catalog:elysia"
     },
     "devDependencies": {
         "@tailwindcss/aspect-ratio": "^0.4.2",

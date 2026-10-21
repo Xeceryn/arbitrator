@@ -25,6 +25,27 @@ export type PaginationQuery = {
     orderBy: string;
 };
 
+/**
+ * Every pagination query field is optional on the wire: Elysia fills the
+ * schema defaults in before the handler runs, so `paginate` can treat this as a
+ * `PaginationQuery` once `withPaginationDefaults` has run.
+ */
+export type PaginationInput = Partial<PaginationQuery>;
+
+export function withPaginationDefaults(
+    input: PaginationInput,
+    defaults?: Partial<PaginationQuery>,
+): PaginationQuery {
+    return {
+        page: input.page ?? defaults?.page ?? 1,
+        limit: input.limit ?? defaults?.limit ?? 10,
+        search: input.search ?? defaults?.search ?? "",
+        searchBy: input.searchBy ?? defaults?.searchBy ?? "id",
+        orderBy: input.orderBy ?? defaults?.orderBy ?? "id",
+        order: input.order ?? defaults?.order ?? "asc",
+    };
+}
+
 export type PaginatedResult<T> = {
     data: T[];
     meta: PaginationMetadata;
@@ -73,11 +94,12 @@ export function defaultSearchCondition(
 
 export async function paginate<TTable extends PgTable>(options: {
     table: TTable;
-    input: PaginationQuery;
+    input: PaginationInput;
     /** Extra condition ANDed with the default search condition. */
     condition?: SQL;
 }): Promise<PaginatedResult<InferSelectModel<TTable>>> {
-    const { table, input } = options;
+    const { table } = options;
+    const input = withPaginationDefaults(options.input);
     const searchCondition = defaultSearchCondition(
         table,
         input.searchBy,

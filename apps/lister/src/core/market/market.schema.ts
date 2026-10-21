@@ -2,111 +2,163 @@ import {
     createInsertSchema,
     createSelectSchema,
     createUpdateSchema,
-} from "drizzle-zod";
-import z from "zod";
+} from "drizzle-typebox";
+import { t } from "elysia";
+import type { Static } from "typebox";
 
+import { extendSchema, fromDrizzle, typedSchema } from "../../common/typebox";
 import { cryptocurrencySelectSchema } from "../cryptocurrency/cryptocurrency.schema";
+import type { CryptocurrencySelect } from "../cryptocurrency/cryptocurrency.type";
 import { exchangeSelectSchema } from "../exchange/exchange.schema";
+import type { ExchangeSelect } from "../exchange/exchange.type";
 import { market } from "./market.sql";
 
-export const marketInsertSchema = createInsertSchema(market).omit({
-    createdAt: true,
-    updatedAt: true,
-});
+/**
+ * Static shapes of the drizzle-generated schemas. Drizzle stays the source of
+ * truth: these are attached to the TypeBox values so `Static<typeof schema>`
+ * agrees with the columns the repository reads and writes.
+ */
+type MarketRow = typeof market.$inferSelect;
+type MarketInsertRow = Omit<
+    typeof market.$inferInsert,
+    "createdAt" | "updatedAt"
+>;
+type MarketUpdateRow = Partial<MarketInsertRow>;
+type MarketFilterExistsRow = Pick<MarketRow, "exchangeId" | "cryptocurrencyId">;
+type MarketWithRelationsRow = MarketRow & {
+    exchange: ExchangeSelect;
+    cryptocurrency: CryptocurrencySelect;
+};
 
-export const marketUpdateSchema = createUpdateSchema(market).omit({
-    createdAt: true,
-    updatedAt: true,
-});
+/** Input for `market.assign`: the pair plus the two editable fields. */
+export type MarketAssign = MarketFilterExistsRow & {
+    exchangeSymbol?: string;
+    tradeEnabled?: boolean;
+};
 
-export const marketSelectSchema = createSelectSchema(market);
+/** Editable fields of an assignment, keyed by the (exchange, coin) pair. */
+export type MarketUpdatePayload = MarketFilterExistsRow & {
+    tradeEnabled?: boolean;
+    exchangeSymbol?: string;
+};
 
-export const marketFilterExistsSchema = marketSelectSchema.pick({
-    exchangeId: true,
-    cryptocurrencyId: true,
-});
+/** A coin plus the market metadata for one exchange. */
+export type CryptocurrencyWithMarket = CryptocurrencySelect & {
+    marketId: number;
+    tradeEnabled: boolean;
+    exchangeSymbol: string;
+};
+
+const marketInsertColumns = fromDrizzle(createInsertSchema(market));
+const marketUpdateColumns = fromDrizzle(createUpdateSchema(market));
+
+export const marketInsertSchema = typedSchema<MarketInsertRow>(
+    t.Omit(marketInsertColumns, ["createdAt", "updatedAt"]),
+);
+
+export const marketUpdateSchema = typedSchema<MarketUpdateRow>(
+    t.Omit(marketUpdateColumns, ["createdAt", "updatedAt"]),
+);
+
+export const marketSelectSchema = fromDrizzle<MarketRow>(
+    createSelectSchema(market),
+);
+
+export const marketFilterExistsSchema = typedSchema<MarketFilterExistsRow>(
+    t.Pick(marketSelectSchema, ["exchangeId", "cryptocurrencyId"]),
+);
 
 /** A market row with its exchange and cryptocurrency embedded. */
-export const marketWithRelationsSchema = marketSelectSchema.extend({
-    exchange: exchangeSelectSchema,
-    cryptocurrency: cryptocurrencySelectSchema,
-});
+export const marketWithRelationsSchema = extendSchema<MarketWithRelationsRow>(
+    marketSelectSchema,
+    {
+        exchange: exchangeSelectSchema,
+        cryptocurrency: cryptocurrencySelectSchema,
+    },
+);
 
 /**
  * Input for `market.assign`. `exchangeSymbol` is optional and defaults to the
  * coin's symbol; `tradeEnabled` defaults to enabled.
  */
-export const marketAssignSchema = marketInsertSchema
-    .pick({ exchangeId: true, cryptocurrencyId: true })
-    .extend({
-        exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
-        tradeEnabled: marketInsertSchema.shape.tradeEnabled.default(true),
-    });
-
-/** Editable fields of an assignment, keyed by the (exchange, coin) pair. */
-export const marketUpdatePayloadSchema = marketSelectSchema
-    .pick({ exchangeId: true, cryptocurrencyId: true })
-    .extend({
-        tradeEnabled: marketInsertSchema.shape.tradeEnabled.optional(),
-        exchangeSymbol: marketInsertSchema.shape.exchangeSymbol.optional(),
-    });
-
-/** A coin plus the market metadata for one exchange. */
-export const cryptocurrencyWithMarketSchema = cryptocurrencySelectSchema.extend(
-    {
-        marketId: z.number(),
-        tradeEnabled: z.boolean(),
-        exchangeSymbol: z.string(),
-    },
+export const marketAssignSchema = typedSchema<MarketAssign>(
+    t.Intersect([
+        t.Pick(marketInsertSchema, ["exchangeId", "cryptocurrencyId"]),
+        t.Object({
+            exchangeSymbol: t.Optional(t.String({ maxLength: 255 })),
+            tradeEnabled: t.Optional(t.Boolean({ default: true })),
+        }),
+    ]),
 );
 
-export const exchangeWithCryptocurrenciesSchema = exchangeSelectSchema.extend({
-    cryptocurrencies: z.array(cryptocurrencyWithMarketSchema),
+/** Editable fields of an assignment, keyed by the (exchange, coin) pair. */
+export const marketUpdatePayloadSchema = typedSchema<MarketUpdatePayload>(
+    t.Intersect([
+        t.Pick(marketSelectSchema, ["exchangeId", "cryptocurrencyId"]),
+        t.Object({
+            tradeEnabled: t.Optional(t.Boolean()),
+            exchangeSymbol: t.Optional(t.String({ maxLength: 255 })),
+        }),
+    ]),
+);
+
+/** A coin plus the market metadata for one exchange. */
+export const cryptocurrencyWithMarketSchema =
+    extendSchema<CryptocurrencyWithMarket>(cryptocurrencySelectSchema, {
+        marketId: t.Integer(),
+        tradeEnabled: t.Boolean(),
+        exchangeSymbol: t.String(),
+    });
+
+export const exchangeWithCryptocurrenciesSchema = extendSchema<
+    ExchangeSelect & { cryptocurrencies: CryptocurrencyWithMarket[] }
+>(exchangeSelectSchema, {
+    cryptocurrencies: t.Array(cryptocurrencyWithMarketSchema),
 });
 
-export const listExchangeWithMetadataSchema = exchangeSelectSchema.extend({
-    cryptocurrencies: z.array(cryptocurrencySelectSchema),
+export const listExchangeWithMetadataSchema = extendSchema<
+    ExchangeSelect & { cryptocurrencies: CryptocurrencySelect[] }
+>(exchangeSelectSchema, {
+    cryptocurrencies: t.Array(cryptocurrencySelectSchema),
 });
 
-export type MarketInsert = z.infer<typeof marketInsertSchema>;
+export type MarketInsert = Static<typeof marketInsertSchema>;
 
-export type MarketUpdate = z.infer<typeof marketUpdateSchema>;
+export type MarketUpdate = Static<typeof marketUpdateSchema>;
 
-export type MarketSelect = z.infer<typeof marketSelectSchema>;
+export type MarketSelect = Static<typeof marketSelectSchema>;
 
-export type MarketFilterExists = z.infer<typeof marketFilterExistsSchema>;
+export type MarketFilterExists = Static<typeof marketFilterExistsSchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Transferable-coin read-model (sender orchestrator)                          */
 /* -------------------------------------------------------------------------- */
 
 /** A coin an exchange's worker must subscribe to. */
-export const transferableSubscriptionSchema = z.object({
-    exchangeId: z.number(),
-    cmcId: z.number(),
-    symbol: z.string(),
+export const transferableSubscriptionSchema = t.Object({
+    exchangeId: t.Integer(),
+    cmcId: t.Integer(),
+    symbol: t.String(),
 });
 
 /** Provenance for why a pair is included: which chain, one direction. */
-export const transferableRouteSchema = z.object({
-    aExchangeId: z.number(),
-    bExchangeId: z.number(),
-    cmcId: z.number(),
-    chainId: z.number(),
+export const transferableRouteSchema = t.Object({
+    aExchangeId: t.Integer(),
+    bExchangeId: t.Integer(),
+    cmcId: t.Integer(),
+    chainId: t.Integer(),
 });
 
-export const transferableExchangeSchema = exchangeSelectSchema.pick({
-    id: true,
-    slug: true,
-    baseCurrency: true,
+export const transferableExchangeSchema = typedSchema<
+    Pick<ExchangeSelect, "id" | "slug" | "baseCurrency">
+>(t.Pick(exchangeSelectSchema, ["id", "slug", "baseCurrency"]));
+
+export const listTransferableCoinsInputSchema = t.Object({
+    exchangeIds: t.Array(t.Integer(), { minItems: 2 }),
 });
 
-export const listTransferableCoinsInputSchema = z.object({
-    exchangeIds: z.array(z.number()).min(2),
-});
-
-export const transferableCoinsSchema = z.object({
-    exchanges: z.array(transferableExchangeSchema),
-    subscriptions: z.array(transferableSubscriptionSchema),
-    routes: z.array(transferableRouteSchema),
+export const transferableCoinsSchema = t.Object({
+    exchanges: t.Array(transferableExchangeSchema),
+    subscriptions: t.Array(transferableSubscriptionSchema),
+    routes: t.Array(transferableRouteSchema),
 });

@@ -1,4 +1,4 @@
-import type z from "zod";
+import type { Static } from "typebox";
 
 import type {
     chainInsertSchema,
@@ -10,8 +10,8 @@ import type {
 import { chain } from "./chain.sql";
 
 export type Chain = typeof chain.$inferSelect;
-export type ChainSelect = z.infer<typeof chainSelectSchema>;
-export type ChainInsert = z.infer<typeof chainInsertSchema>;
-export type ChainUpdate = z.infer<typeof chainUpdateSchema>;
-export type ListChainInput = z.infer<typeof listChainSelectSchema>;
-export type PaginatedChainList = z.infer<typeof paginatedChainSelectSChema>;
+export type ChainSelect = Static<typeof chainSelectSchema>;
+export type ChainInsert = Static<typeof chainInsertSchema>;
+export type ChainUpdate = Static<typeof chainUpdateSchema>;
+export type ListChainInput = Static<typeof listChainSelectSchema>;
+export type PaginatedChainList = Static<typeof paginatedChainSelectSChema>;

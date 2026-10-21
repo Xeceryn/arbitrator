@@ -1,7 +1,8 @@
 # packages/contracts
 
-Shared zod schemas and the RabbitMQ topology. This is the only place routing
-keys, queue names, and cross-service message shapes are defined.
+Shared **TypeBox** schemas (`typebox@1`, the validator Elysia v2 uses) and the
+RabbitMQ topology. This is the only place routing keys, queue names, and
+cross-service message shapes are defined.
 
 ## Rule
 
@@ -23,5 +24,25 @@ the consuming service.
 - `last-price.ts` — `lastPriceKey(symbol)` for the Redis last-price cache.
 - `sender.ts` — sender API response schemas used by the Elysia app.
 
-Dependencies: `zod` (`catalog:core`). The `@arbitrator/contracts` self-dependency
-in `package.json` looks accidental; leave it unless cleaning up deps.
+## Schemas are TypeBox, not zod
+
+The package is framework-free: it imports `{ Type as t, type Static }` from
+`typebox`, never from `elysia`. Elysia accepts these objects directly in route
+`params`/`body`/`response`, so no `mapJsonSchema` is involved.
+
+Validation at call sites (there is no `.parse` / `.safeParse` any more):
+
+```ts
+import { Value } from "typebox/value";
+
+if (!Value.Check(metadataChangedSchema, message)) return; // guard
+const event = Value.Parse(metadataChangedSchema, message); // throws ParseError
+```
+
+`Value.Check` enforces string `format` (e.g. `occurredAt` is `date-time`), so
+the old `z.string().datetime()` strictness is unchanged. Types come from
+`Static<typeof schema>`, not `z.infer`.
+
+Dependencies: `typebox` (`catalog:elysia`). The `@arbitrator/contracts`
+self-dependency in `package.json` looks accidental; leave it unless cleaning up
+deps.

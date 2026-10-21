@@ -1,9 +1,9 @@
-import z from "zod";
+import { type Static, Type as t } from "typebox";
 
-export const baseCurrencySchema = z.enum(["usdt", "idr"]);
-export type BaseCurrency = z.infer<typeof baseCurrencySchema>;
+export const baseCurrencySchema = t.Enum(["usdt", "idr"]);
+export type BaseCurrency = Static<typeof baseCurrencySchema>;
 
-export const workerStateSchema = z.enum([
+export const workerStateSchema = t.Enum([
     "connected",
     "closed",
     "reconnecting",
@@ -11,7 +11,7 @@ export const workerStateSchema = z.enum([
     "disconnected",
     "error",
 ]);
-export type WorkerState = z.infer<typeof workerStateSchema>;
+export type WorkerState = Static<typeof workerStateSchema>;
 
 /** Convenience mirror of `workerStateSchema` for value-position use. */
 export const WorkerState = {
@@ -24,8 +24,8 @@ export const WorkerState = {
 } as const satisfies Record<string, WorkerState>;
 
 /** A coin to (un)subscribe on one exchange's orderbook stream. */
-export const symbolSubscriptionSchema = z.object({
-    cmcId: z.number(),
-    symbol: z.string(),
+export const symbolSubscriptionSchema = t.Object({
+    cmcId: t.Number(),
+    symbol: t.String(),
 });
-export type SymbolSubscription = z.infer<typeof symbolSubscriptionSchema>;
+export type SymbolSubscription = Static<typeof symbolSubscriptionSchema>;

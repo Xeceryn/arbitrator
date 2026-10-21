@@ -64,6 +64,13 @@ done.
 - **Everything Elysia lives in the `elysia` catalog** (`elysia`, `@elysia/*`,
   plus the `typebox` / `exact-mirror` / `openapi-types` peers). Bump the version
   there, never in a leaf `package.json`.
+- **HTTP schemas are TypeBox, not zod.** `typebox` (v1, what `t` is built from)
+  is the catalog entry Elysia validates with; drizzle tables are turned into
+  schemas with `drizzle-typebox` + `toElysiaSchema()` (`@arbitrator/elysia-kit`).
+  `drizzle-typebox` still emits TypeBox 0.34 shapes, hence the converter — never
+  pass its output straight to a route.
+- zod stays only where it is not an HTTP schema (env validation), and is
+  reachable through `catalog:core`.
 - **If a package could be reused by another app or package, add it to a catalog
   and reference `catalog:<name>` instead of pinning a version in the leaf
   `package.json`.** (Debt example: `apps/sender` pins `binance`, `bitget-api`,
@@ -77,8 +84,16 @@ type`, and guard or `!` indexed access.
   `package.json` exports. `@arbitrator/lister/*` → `apps/lister/src/*`, so deep
   imports like `@arbitrator/lister/core/opportunity/opportunity` work even though
   they are absent from `apps/lister/package.json` exports.
-- Builds are `Bun.build` / `bun build --target=bun` into `dist`; Dockerfiles
-  consume `dist`.
+- Builds are `Bun.build` into `dist`; Dockerfiles consume `dist`.
+  `apps/{lister,sender,ui}/build.ts` run the build through
+  `elysia/plugin/aot/bun`, so routes are compiled ahead of time: no per-route
+  JIT on the first request. Anything with import-time side effects (listen,
+  schedulers, asset bundling, broker connections) must be guarded with
+  `inAotBuild()` from `elysia`, and the entry must export `app`.
+- Elysia resources are **plugins, not module imports**: `databasePlugin` and
+  `eventsPlugin` (lister), `orchestratorPlugin`/`eventsPlugin`/`listerPlugin`
+  (sender), `clientsPlugin` (ui) decorate the context. Handlers read `db`,
+  `events`, `lister` from context; domain/repository modules stay plain.
 - Never hardcode a RabbitMQ routing key or queue name — import from
   `@arbitrator/contracts`.
 - Data-plane rule (ADR 0002): worker `postMessage` carries **control only**;

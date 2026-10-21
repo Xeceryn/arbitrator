@@ -12,7 +12,7 @@
     "scripts": {
         "dev": "bun run --watch src/index.ts",
         "start": "bun run src/index.ts",
-        "build": "bun build --target=bun ./src/index.ts --outdir=./dist",
+        "build": "bun run build.ts",
         "typecheck": "bun --check",
         "db:migrate": "bunx --bun drizzle-kit migrate",
         "db:generate": "bunx --bun drizzle-kit generate",
@@ -26,16 +26,16 @@
         "@arbitrator/messaging": "workspace:*",
         "@elysia/cors": "catalog:elysia",
         "@elysia/openapi": "catalog:elysia",
+        "@sinclair/typebox": "catalog:elysia",
         "drizzle-kit": "catalog:tools",
         "drizzle-orm": "catalog:core",
         "drizzle-seed": "catalog:tools",
-        "drizzle-zod": "catalog:core",
+        "drizzle-typebox": "catalog:elysia",
         "effect": "^4.0.0",
         "elysia": "catalog:elysia",
         "exact-mirror": "catalog:elysia",
         "openapi-types": "catalog:elysia",
         "pg": "catalog:core",
-        "typebox": "catalog:elysia",
-        "zod": "catalog:core"
+        "typebox": "catalog:elysia"
     }
 }

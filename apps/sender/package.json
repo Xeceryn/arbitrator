@@ -7,11 +7,11 @@
     "scripts": {
         "dev": "bun run --watch src/index.ts",
         "start": "bun run src/index.ts",
-        "build": "bun build --target=bun ./src/index.ts --outdir=./dist"
+        "typecheck": "bun check",
+        "build": "bun run build.ts"
     },
     "dependencies": {
         "@arbitrator/contracts": "workspace:*",
-        "@arbitrator/elysia-kit": "workspace:*",
         "@arbitrator/logger": "workspace:*",
         "@arbitrator/messaging": "workspace:*",
         "@arbitrator/sdk": "workspace:*",
@@ -30,8 +30,7 @@
         "openapi-types": "catalog:elysia",
         "typebox": "catalog:elysia",
         "winston": "^3.19.0",
-        "ws": "^8.21.1",
-        "zod": "catalog:core"
+        "ws": "^8.21.1"
     },
     "devDependencies": {
         "@types/amqplib": "^0.10.8",

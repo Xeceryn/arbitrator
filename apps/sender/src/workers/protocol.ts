@@ -9,6 +9,7 @@ import {
     workerCommandSchema,
 } from "@arbitrator/contracts";
 import { ensurePublisher, sendToQueueNow } from "@arbitrator/messaging";
+import { Value } from "typebox/value";
 
 /** Payload every orderbook worker is spawned with. */
 export type WorkerBootstrap = {
@@ -33,9 +34,8 @@ export function onCommand(
 ): void {
     if (!parentPort) return;
     parentPort.on("message", (raw: unknown) => {
-        const parsed = workerCommandSchema.safeParse(raw);
-        if (!parsed.success) return;
-        void handler(parsed.data);
+        if (!Value.Check(workerCommandSchema, raw)) return;
+        void handler(raw);
     });
 }
 
