@@ -1,22 +1,24 @@
 import { aot } from "elysia/plugin/aot/bun";
 
 /**
- * Production bundle.
+ * Production bundle with Elysia **ahead-of-time** compilation.
  *
- * AOT (`aot()`) is **disabled** here: the plugin's build-time replay evaluates
- * the entry, which boots the orchestrator (worker pool + AMQP consumer) and the
- * nested replay build fails with `Bundle failed` on `elysia@2.0.0-rc.0`.
- * Retention: flip `AOT` to `true` once the orchestrator bootstrap can be kept
- * completely inert at build time (`inAotBuild()` guards already exist in
- * `src/index.ts`), and re-check `bun dist/index.js`.
+ * `aot()` evaluates `src/index.ts` at build time (the entry exports `app`) and
+ * emits precompiled route handlers, so the server does not JIT-compile routes on
+ * the first request: lower startup time and lower peak memory. Side effects
+ * (listen, scheduler, orchestrator bootstrap) are guarded with `inAotBuild()`.
+ *
+ * `strip: false` is required on `elysia@2.0.0-rc.0`: the default `strip: 'auto'`
+ * stubs internal modules (cookie signing in `cookie/crypto.mjs`) that
+ * `ws/route.mjs` still imports, so the bundle fails to build with
+ * `No matching export … hasSyncHmac`, and codec response schemas crash the
+ * bundle at startup with `The superclass is not a constructor`. Keep it.
  */
-const AOT = false;
-
 const result = await Bun.build({
     entrypoints: ["./src/index.ts"],
     outdir: "./dist",
     target: "bun",
-    plugins: AOT ? [aot("./src/index.ts", { target: "bun" })] : [],
+    plugins: [aot("./src/index.ts", { target: "bun", strip: false })],
 });
 
 if (!result.success) {

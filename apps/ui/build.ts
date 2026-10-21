@@ -3,13 +3,12 @@ import { aot } from "elysia/plugin/aot/bun";
 import { bundleClientSideResources } from "./src/bundler";
 
 /**
- * AOT is off for the same reason as lister/sender: `elysia@2.0.0-rc.0`'s
- * plugin crashes or produces a bundle that dies at startup for this graph
- * (global `derive` in the htmx plugin / codec schemas). The entry already
- * exports `app` and guards its side effects with `inAotBuild()`, so flipping
- * this flag is the only change needed once upstream is fixed.
+ * `strip: false` is required on `elysia@2.0.0-rc.0` (see lister/sender): the
+ * default `strip: 'auto'` stubs cookie signing that `ws/route.mjs` — pulled in
+ * by `websocket()` for the signal/worker streams — still imports, so the build
+ * fails with `No matching export … hasSyncHmac`.
  */
-const AOT = false;
+const AOT = true;
 
 // Generate the browser assets (Tailwind CSS, bundled scripts) into ./public so
 // the runtime image can serve them without a Tailwind toolchain.
@@ -22,7 +21,7 @@ const result = await Bun.build({
     entrypoints: ["./src/main.ts"],
     outdir: "./dist",
     target: "bun",
-    plugins: AOT ? [aot("./src/main.ts", { target: "bun" })] : [],
+    plugins: AOT ? [aot("./src/main.ts", { target: "bun", strip: false })] : [],
 });
 
 if (!result.success) {

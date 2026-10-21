@@ -304,40 +304,38 @@ compiled routes, and resources as plugins.
 - Types are `Static<typeof schema>` from `typebox` (v1), never `z.infer`.
 - zod remains only for env validation (`@arbitrator/env-loader`).
 
-### AOT — wired, currently disabled (upstream RC bugs)
+### AOT
 
-`apps/{lister,sender,ui}/build.ts` are built for AOT (`elysia/plugin/aot/bun`);
-the entries export `app` and guard side effects with `inAotBuild()`. AOT itself
-is behind an `AOT = false` flag because `elysia@2.0.0-rc.0` cannot compile these
-apps yet:
-
-- **codec response schemas** (`t.Encode` for the timestamp columns) produce a
-  bundle that dies at startup with `The superclass is not a constructor`
-  (module ordering; the same failure as elysiajs/elysia#2024, which fires for
-  `t.Union` of literals in a response schema). `t.UnionEnum` avoids the union
-  case; codecs have no AOT-safe equivalent yet.
-- **sender** fails inside the plugin's own replay build (`Bundle failed`) once
-  the orchestrator bootstrap is in the graph.
-- A minimal app on this machine: JIT 98 ms / 63 MB vs AOT 24 ms / 33 MB, so the
-  payoff is real — flip the flag per app once upstream lands the fixes.
-
-Plain bundles are used in the meantime; they already beat running from source
-(lister: startup 192 ms vs 310 ms, RSS 91 MB vs 115 MB, 72k vs 63k req/s on
-`/utility/ping`).
-
-The plugin evaluates the entry at build time and emits precompiled handlers into
-`dist/`:
+`apps/{lister,sender,ui}/build.ts` build through `elysia/plugin/aot/bun`. The
+plugin evaluates the entry at build time and emits precompiled handlers, so the
+server does no per-route JIT compilation:
 
 - the entry must **export** the app (`export { app }` / `export default app`);
-- everything with import-time side effects is wrapped in `inAotBuild()`:
+- everything with import-time side effects is guarded with `inAotBuild()`:
   `listen()`, `startLastPriceScheduler()`, the orchestrator bootstrap, the UI
   asset bundling;
+- `strip: false` is **required** on `elysia@2.0.0-rc.0`. The default
+  `strip: 'auto'` stubs cookie signing in `cookie/crypto.mjs`, which
+  `ws/route.mjs` (pulled in by `websocket()`) still imports, so the build fails
+  with `No matching export … hasSyncHmac`; with the stub active, codec response
+  schemas also crash the bundle at startup with `The superclass is not a
+constructor`. Revisit after the next release — `strip: true` is the faster
+  bundle.
+- Measured on this machine (`/tmp/bench.ts`, warm DB, 500-800 reqs):
+
+    | app    | startup             | RSS                | rps (`/utility/ping`)               |
+    | ------ | ------------------- | ------------------ | ----------------------------------- |
+    | lister | 308 ms → **201 ms** | 124 MB → **90 MB** | 71.5k → **96.2k**                   |
+    | sender | 174 ms → **88 ms**  | 72 MB → **54 MB**  | 47.8k → **76.4k**                   |
+    | ui     | 235 ms → **120 ms** | 100 MB → **56 MB** | 5.3k → 4.2k (HTML render, see note) |
+
+    DB-bound routes are unchanged (`/exchange`: 1.12 ms vs 1.14 ms p50) — AOT
+    removes framework overhead, not query time. The UI loses a little throughput
+    because its handlers render JSX; the win there is startup + memory.
+
 - no network happens at build time: env has dev defaults and the Postgres/AMQP
   clients are created lazily;
 - Dockerfiles build with `bun run build` and run `dist/index.js` unchanged.
-
-Measured on a two-route app on this machine: startup-to-first-200 98 ms → 24 ms,
-RSS 63 MB → 33 MB.
 
 ### Resources are plugins
 
