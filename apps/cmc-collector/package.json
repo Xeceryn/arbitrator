@@ -6,6 +6,7 @@
         "scrape": "bun run src/index.ts --scrape",
         "import": "bun run src/index.ts --import",
         "sync": "bun run src/index.ts --all",
+        "indodax": "bun run src/index.ts --indodax",
         "typecheck": "bun --check"
     },
     "dependencies": {

@@ -42,7 +42,8 @@ done.
   `/openapi`).
 - `apps/receiver` — RabbitMQ orderbook consumer (cluster per CPU).
 - `apps/ui` — server-rendered htmx app `:3000` (Elysia v2).
-- `apps/cmc-collector` — CMC scrape/import CLI.
+- `apps/cmc-collector` — CMC scrape/import CLI, plus an Indodax-only live scan
+  (`bun run indodax`) for listings, trade and chain maintenance state.
 - `apps/chain-metadata-collector` — per-exchange coin/chain crawl → lister chains
   and chain links.
 - `apps/old-lister-migrator` — one-off migration scripts.

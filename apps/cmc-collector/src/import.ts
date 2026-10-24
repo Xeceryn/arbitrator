@@ -59,19 +59,25 @@ export type ImportOptions = {
      * left alone.
      */
     unmappedChain?: boolean;
+    /**
+     * After pruning, delete cryptocurrencies that no longer have a market on
+     * any exchange. Only the Indodax scan enables this: a coin still listed
+     * elsewhere is kept.
+     */
+    pruneOrphanCoins?: boolean;
 };
 
 export type ImportSummary = {
     dryRun: boolean;
     exchanges: { created: number; updated: number };
-    cryptocurrencies: { created: number; updated: number };
+    cryptocurrencies: { created: number; updated: number; removed: number };
     markets: {
         created: number;
         updated: number;
         disabled: number;
         removed: number;
     };
-    chainLinks: { created: number };
+    chainLinks: { created: number; updated: number };
     warnings: string[];
 };
 
@@ -108,14 +114,19 @@ export async function importSnapshot(
     snapshot: Snapshot,
     options: ImportOptions = {},
 ): Promise<ImportSummary> {
-    const { prune = false, dryRun = false, unmappedChain = true } = options;
+    const {
+        prune = false,
+        dryRun = false,
+        unmappedChain = true,
+        pruneOrphanCoins = false,
+    } = options;
 
     const summary: ImportSummary = {
         dryRun,
         exchanges: { created: 0, updated: 0 },
-        cryptocurrencies: { created: 0, updated: 0 },
+        cryptocurrencies: { created: 0, updated: 0, removed: 0 },
         markets: { created: 0, updated: 0, disabled: 0, removed: 0 },
-        chainLinks: { created: 0 },
+        chainLinks: { created: 0, updated: 0 },
         warnings: [],
     };
 
@@ -197,7 +208,12 @@ export async function importSnapshot(
         existingCoins.map((coin) => [coin.cmcId, coin]),
     );
     const coinBySlug = new Map(existingCoins.map((coin) => [coin.slug, coin]));
-    const coinIdByCmcId = new Map<number, number>();
+    const coinById = new Map(existingCoins.map((coin) => [coin.id, coin]));
+    // Seeded from lister so markets resolve even when a snapshot omits the
+    // coin row (the Indodax scan relies on this).
+    const coinIdByCmcId = new Map<number, number>(
+        existingCoins.map((coin) => [coin.cmcId, coin.id]),
+    );
 
     for (const record of snapshot.cryptocurrencies) {
         const existing =
@@ -342,6 +358,8 @@ export async function importSnapshot(
     }
 
     // Markets present in lister but gone from the exchange's snapshot.
+    const removedMarkets: Array<{ id: number; cryptocurrencyId: number }> = [];
+
     for (const [key, row] of dbMarketByKey) {
         if (wanted.has(key)) continue;
 
@@ -358,6 +376,10 @@ export async function importSnapshot(
                     }),
                 );
             }
+            removedMarkets.push({
+                id: row.id,
+                cryptocurrencyId: row.cryptocurrencyId,
+            });
             summary.markets.removed += 1;
             continue;
         }
@@ -380,40 +402,159 @@ export async function importSnapshot(
         }
     }
 
-    // -------------------------------------------------------------- chain link
-    if (unmappedChain && wanted.size > 0) {
-        const unmappedChainId = await ensureUnmappedChain(dryRun);
-
-        if (unmappedChainId !== undefined) {
-            const existingLinks = must(
-                "list chain links",
-                await lister["chain-link"].get({ query: {} }),
+    // A coin removed from its last exchange has no markets left. Only the
+    // Indodax scan opts into this; coins still listed elsewhere are kept.
+    if (pruneOrphanCoins && removedMarkets.length > 0) {
+        const removedMarketIds = new Set(removedMarkets.map((row) => row.id));
+        const stillAssigned = new Set(
+            allMarkets
+                .filter((row) => !removedMarketIds.has(row.id))
+                .map((row) => row.cryptocurrencyId),
+        );
+        // Markets created earlier in this run are not in `allMarkets` yet.
+        for (const record of snapshot.markets) {
+            const cryptocurrencyId = coinIdByCmcId.get(
+                record.cryptocurrencyCmcId,
             );
-            const linkedMarketIds = new Set(
-                existingLinks.map((link) => link.marketId),
-            );
-
-            for (const key of wanted) {
-                const marketId = marketIdByKey.get(key);
-                if (marketId === undefined) continue;
-                if (linkedMarketIds.has(marketId)) continue;
-
-                console.log(
-                    `+ chain link ${UNMAPPED_CHAIN.code} -> market ${marketId}`,
-                );
-                if (!dryRun) {
-                    must(
-                        `add chain link for market ${marketId}`,
-                        await lister["chain-link"].post({
-                            marketId,
-                            chainId: unmappedChainId,
-                            withdrawEnabled: true,
-                            depositEnabled: true,
-                        }),
-                    );
-                }
-                summary.chainLinks.created += 1;
+            if (cryptocurrencyId !== undefined) {
+                stillAssigned.add(cryptocurrencyId);
             }
+        }
+        const candidates = new Set(
+            removedMarkets.map((row) => row.cryptocurrencyId),
+        );
+
+        for (const cryptocurrencyId of candidates) {
+            if (stillAssigned.has(cryptocurrencyId)) continue;
+
+            const coin = coinById.get(cryptocurrencyId);
+            const label = `${coin?.slug ?? cryptocurrencyId} (cmc:${coin?.cmcId ?? "?"})`;
+
+            if (dryRun) {
+                console.log(`- cryptocurrency ${label}`);
+                summary.cryptocurrencies.removed += 1;
+                continue;
+            }
+
+            const result = await lister
+                .cryptocurrency({ id: cryptocurrencyId })
+                .delete();
+
+            // An orphan can still be referenced by an opportunity row; lister
+            // rejects the delete with a foreign-key error, so keep the coin.
+            if (result.error || result.data === null) {
+                warn(
+                    summary,
+                    `kept cryptocurrency ${label}: ${formatEdenError(
+                        result.error ?? "lister returned no data",
+                    )}`,
+                );
+                continue;
+            }
+
+            console.log(`- cryptocurrency ${label}`);
+            summary.cryptocurrencies.removed += 1;
+        }
+    }
+
+    // -------------------------------------------------------------- chain link
+    if (wanted.size > 0) {
+        const existingLinks = must(
+            "list chain links",
+            await lister["chain-link"].get({ query: {} }),
+        );
+
+        // Indodax does not expose per-network state: `is_maintenance` is
+        // coin-wide, so every chain link of the market shares one state. The
+        // flags are applied both ways, which is what lets the scan turn
+        // withdrawals back on when maintenance clears.
+        const chainStateByMarketId = new Map<
+            number,
+            { withdrawEnabled: boolean; depositEnabled: boolean }
+        >();
+        for (const record of snapshot.markets) {
+            if (record.chainSuspended === undefined) continue;
+
+            const exchangeId = exchangeIdBySlug.get(record.exchangeSlug);
+            const cryptocurrencyId = coinIdByCmcId.get(
+                record.cryptocurrencyCmcId,
+            );
+            if (exchangeId === undefined || cryptocurrencyId === undefined) {
+                continue;
+            }
+
+            const marketId = marketIdByKey.get(
+                marketKey(exchangeId, cryptocurrencyId),
+            );
+            if (marketId === undefined) continue;
+
+            chainStateByMarketId.set(marketId, {
+                withdrawEnabled: !record.chainSuspended,
+                depositEnabled:
+                    !record.chainSuspended && (record.depositEnabled ?? true),
+            });
+        }
+
+        if (unmappedChain) {
+            const unmappedChainId = await ensureUnmappedChain(dryRun);
+
+            if (unmappedChainId !== undefined) {
+                const linkedMarketIds = new Set(
+                    existingLinks.map((link) => link.marketId),
+                );
+
+                for (const key of wanted) {
+                    const marketId = marketIdByKey.get(key);
+                    if (marketId === undefined) continue;
+                    if (linkedMarketIds.has(marketId)) continue;
+
+                    const state = chainStateByMarketId.get(marketId);
+                    const withdrawEnabled = state?.withdrawEnabled ?? true;
+                    const depositEnabled = state?.depositEnabled ?? true;
+                    console.log(
+                        `+ chain link ${UNMAPPED_CHAIN.code} -> market ${marketId} ` +
+                            `(dep:${depositEnabled} wd:${withdrawEnabled})`,
+                    );
+                    if (!dryRun) {
+                        must(
+                            `add chain link for market ${marketId}`,
+                            await lister["chain-link"].post({
+                                marketId,
+                                chainId: unmappedChainId,
+                                withdrawEnabled,
+                                depositEnabled,
+                            }),
+                        );
+                    }
+                    summary.chainLinks.created += 1;
+                }
+            }
+        }
+
+        for (const link of existingLinks) {
+            const state = chainStateByMarketId.get(link.marketId);
+            if (!state) continue;
+            if (
+                link.withdrawEnabled === state.withdrawEnabled &&
+                link.depositEnabled === state.depositEnabled
+            ) {
+                continue;
+            }
+
+            console.log(
+                `~ chain link ${link.id} -> market ${link.marketId} ` +
+                    `(dep:${state.depositEnabled} wd:${state.withdrawEnabled})`,
+            );
+            if (!dryRun) {
+                must(
+                    `update chain link ${link.id}`,
+                    await lister["chain-link"]({ id: link.id }).patch({
+                        withdrawEnabled: state.withdrawEnabled,
+                        depositEnabled: state.depositEnabled,
+                    }),
+                );
+            }
+            summary.chainLinks.updated += 1;
         }
     }
 

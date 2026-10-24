@@ -13,6 +13,7 @@ import {
     postSubscribed,
     postUnsubscribed,
 } from "../protocol";
+import { INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID } from "./indodax-symbols";
 
 const { exchange, threadId, symbols: initialSymbols } = bootstrap();
 
@@ -69,9 +70,21 @@ const nextRequestId = () => {
     return requestId;
 };
 
-const channelForSymbol = (symbol: string): string => {
+/**
+ * The channel Indodax uses for a market. lister stores Indodax's *display*
+ * ticker (`traded_currency_unit`), which is not always the websocket pair id
+ * (`thresholdidr` but `T`), so the CMC id is looked up first. Unknown ids fall
+ * back to `<ticker>idr`.
+ */
+const channelForSymbol = (cmcId: number, symbol: string): string => {
+    const pairId =
+        INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID[cmcId] ?? defaultPairId(symbol);
+    return `market:order-book-${pairId}`;
+};
+
+const defaultPairId = (symbol: string): string => {
     const base = symbol.toLowerCase();
-    return `market:order-book-${base.endsWith("idr") ? base : `${base}idr`}`;
+    return base.endsWith("idr") ? base : `${base}idr`;
 };
 
 const toLevel = (row: IndodaxLevelRaw): [number, number] => [
@@ -119,7 +132,7 @@ function unsubscribeChannel(channel: string): void {
 
 function subscribe(symbols: SymbolSubscription[]): void {
     for (const item of symbols) {
-        const channel = channelForSymbol(item.symbol);
+        const channel = channelForSymbol(item.cmcId, item.symbol);
         ChannelStore.set(channel, item.cmcId);
         LastSentAt.set(channel, Date.now());
         subscribeChannel(channel);
@@ -128,7 +141,7 @@ function subscribe(symbols: SymbolSubscription[]): void {
 
 function unsubscribe(symbols: SymbolSubscription[]): void {
     for (const item of symbols) {
-        const channel = channelForSymbol(item.symbol);
+        const channel = channelForSymbol(item.cmcId, item.symbol);
         if (!ChannelStore.delete(channel)) continue;
         LastSentAt.delete(channel);
         unsubscribeChannel(channel);

@@ -1,9 +1,13 @@
 /**
  * Scrape targets and shared constants for the CMC collector.
  *
- * Everything here targets CoinMarketCap's keyless public `data-api`, which is
- * what exposes the per-exchange market pairs (and therefore each exchange's own
+ * Most targets use CoinMarketCap's keyless public `data-api`, which is what
+ * exposes the per-exchange market pairs (and therefore each exchange's own
  * ticker for a coin). No Pro API key is required.
+ *
+ * Indodax is the exception: CMC's pair list does not carry the tickers Indodax
+ * uses on its orderbook websocket, so that venue is scraped from its own public
+ * `https://indodax.com/api/pairs` endpoint instead (see `src/indodax.ts`).
  *
  * The quote currency is the filter applied to an exchange's market pairs: for
  * Indonesian venues we keep pairs quoted in IDR, for the global venues we keep
@@ -19,6 +23,12 @@ export const EXCHANGE_MARKET_PAIRS_URL = `${DATA_API_BASE}/exchange/market-pairs
 /** Full coin id/name/symbol/slug map (keyless), one request for every coin. */
 export const COIN_MAP_URL = `${DATA_API_BASE}/map/all`;
 
+/** Indodax's own keyless pair listing (all IDR/USDT markets). */
+export const INDODAX_PAIRS_URL = "https://indodax.com/api/pairs";
+
+/** CMC id of the Indodax exchange itself (lister `exchange.cmcId`). */
+export const INDODAX_EXCHANGE_CMC_ID = 68;
+
 export const QuoteCurrency = {
     USDT: 825,
     IDR: 2794,
@@ -28,7 +38,11 @@ export type QuoteCurrency = (typeof QuoteCurrency)[keyof typeof QuoteCurrency];
 /** Base currency classification used by the lister `exchange` table. */
 export type ExchangeBaseCurrency = "usdt" | "idr";
 
-export type ExchangeTarget = {
+/** Where a target's market pairs come from. */
+export type ExchangeSource = "cmc" | "indodax";
+
+export type CmcExchangeTarget = {
+    source: "cmc";
     /** CMC exchange slug used to look the exchange up. */
     slug: string;
     /** CMC id of the quote currency to keep. */
@@ -37,59 +51,90 @@ export type ExchangeTarget = {
     baseCurrency: ExchangeBaseCurrency;
 };
 
+/**
+ * Indodax is scraped from its own public API because CMC's `baseSymbol` is not
+ * the ticker Indodax uses on its websocket (e.g. CMC says `THRESHOLD`, Indodax
+ * subscribes with `thresholdidr` while displaying `T`).
+ */
+export type IndodaxExchangeTarget = {
+    source: "indodax";
+    slug: "indodax";
+    name: string;
+    /** CMC id of the exchange row (lister identity for Indodax). */
+    exchangeCmcId: number;
+    baseCurrency: "idr";
+};
+
+export type ExchangeTarget = CmcExchangeTarget | IndodaxExchangeTarget;
+
+/** The single non-CMC target, reused by the dedicated `--indodax` scan. */
+export const INDODAX_TARGET: IndodaxExchangeTarget = {
+    source: "indodax",
+    slug: "indodax",
+    name: "Indodax",
+    exchangeCmcId: INDODAX_EXCHANGE_CMC_ID,
+    baseCurrency: "idr",
+};
+
 export const EXCHANGE_TARGETS: ExchangeTarget[] = [
+    INDODAX_TARGET,
     {
-        slug: "indodax",
-        quoteCurrencyId: QuoteCurrency.IDR,
-        baseCurrency: "idr",
-    },
-    {
+        source: "cmc",
         slug: "rekeningku-com",
         quoteCurrencyId: QuoteCurrency.IDR,
         baseCurrency: "idr",
     },
 
     {
+        source: "cmc",
         slug: "binance",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "kucoin",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "bybit",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "mexc",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "htx",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "gate-io",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "okx",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "bitget",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",
     },
     {
+        source: "cmc",
         slug: "bitmart",
         quoteCurrencyId: QuoteCurrency.USDT,
         baseCurrency: "usdt",

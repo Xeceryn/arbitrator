@@ -29,8 +29,9 @@ export type CryptocurrencySnapshot = {
 /**
  * A lister `market` assignment (exchange x cryptocurrency), before it is
  * imported. `exchangeSymbol` is the ticker the *exchange* lists the coin under
- * (e.g. Binance `1000SATS`), not CMC's canonical ticker, and is what the
- * orderbook workers subscribe with.
+ * (e.g. Binance `1000SATS`), not CMC's canonical ticker. For Indodax that is
+ * `traded_currency_unit` (`T` for Threshold), which is what the UI shows; the
+ * orderbook websocket subscribes with a different pair id.
  */
 export type MarketSnapshot = {
     exchangeCmcId: number;
@@ -39,12 +40,28 @@ export type MarketSnapshot = {
     exchangeSymbol: string;
     quoteCurrencyId: number;
     tradeEnabled: boolean;
+    /**
+     * Indodax only: the coin's network is in maintenance (`is_maintenance`), so
+     * every chain link for this market must be suspended. Absent elsewhere.
+     */
+    chainSuspended?: boolean;
+    /**
+     * Indodax only: the coin-level deposit flag (`disable_deposit` inverted).
+     * Applied together with `chainSuspended` to every chain link of the market.
+     */
+    depositEnabled?: boolean;
 };
+
+/** Where a snapshot's rows came from. Indodax is scraped from its own API. */
+export type SnapshotSource =
+    | "coinmarketcap-public"
+    | "indodax-public"
+    | "coinmarketcap-public+indodax-public";
 
 /** The full local snapshot written by `--scrape` and read by `--import`. */
 export type Snapshot = {
     scrapedAt: string;
-    source: "coinmarketcap-public";
+    source: SnapshotSource;
     exchanges: ExchangeSnapshot[];
     cryptocurrencies: CryptocurrencySnapshot[];
     markets: MarketSnapshot[];
@@ -52,7 +69,7 @@ export type Snapshot = {
 
 export type SnapshotManifest = {
     scrapedAt: string;
-    source: "coinmarketcap-public";
+    source: SnapshotSource;
     counts: {
         exchanges: number;
         cryptocurrencies: number;

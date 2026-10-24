@@ -8,6 +8,8 @@
         "src/workers/protocol.ts",
         "src/workers/orderbooks/binance.ts",
         "src/workers/orderbooks/gate-io.ts",
+        "src/workers/orderbooks/indodax.ts",
+        "src/workers/orderbooks/indodax-symbols.ts",
         "src/workers/orderbooks/kucoin.ts"
     ]
 }

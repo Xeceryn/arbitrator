@@ -74,9 +74,14 @@ keeps the server up.
   `createOrderbookPublisher`): `binance`, `gate-io`, `indodax`, `kucoin`, `mexc`.
   Legacy workers still read `Bun.argv` and `self.postMessage` and use the
   `src/types` / `src/utils` shims: `bitget`, `bitmart`, `huobi`, `pintu`.
+- Indodax displays `traded_currency_unit` (what lister stores as
+  `market.exchangeSymbol`) but subscribes with its pair `id`. The worker maps
+  CMC id -> pair id through `workers/orderbooks/indodax-symbols.ts` (generated
+  from `indodax.com/api/pairs`), falling back to `<ticker>idr`. Regenerate that
+  table when Indodax lists a coin whose unit differs from `traded_currency`.
 - To typecheck a worker, add its file to `tsconfig.app.json` `include`. That list
-  currently names only `binance`, `gate-io`, `kucoin` — `indodax` and `mexc` are
-  migrated but not included yet, so they are not covered by the focused `tsc`.
+  currently names only `binance`, `gate-io`, `indodax`, `kucoin` — `mexc` is
+  migrated but not included yet, so it is not covered by the focused `tsc`.
 - A worker that dies is respawned by the pool, not by a reconcile; worker socket
   retry is the worker's own concern.
 - Started exchanges need lister reachable (`LISTER_URL`, default
