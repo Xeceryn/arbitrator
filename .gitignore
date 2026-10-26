@@ -16,6 +16,9 @@ apps/chain-metadata-collector/data/
 coverage
 *.lcov
 
+# generated architecture diagrams (regenerate on demand)
+docs/architecture/module-graph.svg
+
 # logs
 logs
 _.log

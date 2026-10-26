@@ -54,7 +54,11 @@
         "format": "oxfmt",
         "lint": "oxlint",
         "lint:fix": "oxlint --fix",
-        "typecheck": "bun --check"
+        "typecheck": "bun --check",
+        "arch:preview": "bunx likec4 serve docs/architecture --listen 0.0.0.0",
+        "arch:validate": "bunx likec4 validate docs/architecture",
+        "arch:topology": "bun run scripts/gen-topology.ts",
+        "arch:modules": "bunx madge --ts-config tsconfig.base.json --extensions ts --exclude '(^|/)(node_modules|dist)/|\\.test\\.ts$' --image docs/architecture/module-graph.svg apps/sender/src apps/receiver/src apps/ui/src apps/lister/src"
     },
     "dependencies": {},
     "devDependencies": {

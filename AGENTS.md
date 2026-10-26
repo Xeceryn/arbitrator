@@ -117,4 +117,7 @@ type`, and guard or `!` indexed access.
 
 - `docs/transfer-orchestration.md` — feature design + task tracker.
 - `docs/adr/0001-desired-state-reconciliation.md`, `0002-worker-control-vs-data-plane.md`.
+- `docs/architecture/` — C4 model (`model.c4`), runtime sequences (`flows.md`),
+  and the generated RabbitMQ topology. `bun run arch:validate` before merging a
+  model change; `bun run arch:topology` after touching `messaging.ts`.
 - `apps/ui/UI_GUIDE.md`, `infra/nginx/README.md`.

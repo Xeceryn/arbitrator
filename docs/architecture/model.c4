@@ -1,0 +1,168 @@
+/**
+ * Arbitrator — architecture model (C4, written as LikeC4).
+ *
+ *   bunx likec4 serve docs/architecture     # hot-reloading preview on :5173
+ *   bunx likec4 validate docs/architecture  # CI guard: syntax + layout
+ *   bun run arch:topology                   # regenerate topology.d2/.md
+ *
+ * Scope: processes, containers and the two planes from ADR 0002 (worker
+ * `postMessage` carries control only; orderbooks travel over RabbitMQ).
+ * Time-ordered behaviour is in `flows.md`; the exact broker topology is in
+ * `topology.md`, generated from `packages/contracts/src/messaging.ts`.
+ *
+ * Keep this file at the level of things that can fail independently. If a
+ * component here cannot be restarted on its own, it is probably a component of
+ * something already in the model.
+ */
+
+specification {
+    element actor
+    element system
+    element container
+    element component
+    element database
+    element queue
+    element cache
+    element external
+
+    tag control {
+        color indigo
+    }
+    tag data {
+        color green
+    }
+
+    /**
+     * Control plane: commands, metadata and queries. Never an orderbook.
+     * Deliberately includes both HTTP and AMQP, because the distinction that
+     * matters (ADR 0002) is payload, not transport.
+     */
+    relationship control {
+        #control
+        technology 'postMessage / HTTP / AMQP'
+        color indigo
+        line dashed
+    }
+
+    /** Data plane: normalized orderbooks only. */
+    relationship data {
+        #data
+        technology 'AMQP'
+        color green
+    }
+}
+
+model {
+    operator = actor 'Operator' 'Starts and stops exchanges, watches worker health, reads opportunities'
+
+    // Adapters actually registered in orchestrator/registry.ts. Anything else
+    // in the SDK catalog (bitget, bitmart, okx) is unused debt.
+    exchangeApis = external 'Exchange APIs' 'Binance, Gate.io, Indodax, KuCoin, MEXC'
+    cmcApi = external 'CoinMarketCap API'
+    indodaxApi = external 'Indodax' 'REST tickers and websocket orderbooks'
+
+    arbitrator = system 'Arbitrator' 'Cross-exchange arbitrage: discover markets, stream orderbooks, compute opportunities' {
+        nginx = container 'nginx' 'TLS terminator; the only host-published port' 'nginx 1.27'
+
+        ui = container 'UI' 'Server-rendered htmx dashboard' 'Bun · Elysia v2 · htmx · :3000'
+
+        lister = container 'Lister' 'Source of truth for domain metadata' 'Bun · Elysia v2 · Drizzle · :3001' {
+            listerApi = component 'REST + OpenAPI' 'TypeBox-validated routes; the SDK (Eden Treaty) is generated from them'
+            listerCore = component 'Domain cores' 'exchange, cryptocurrency, chain, chain_link, market, opportunity'
+            listerEvents = component 'metadata.changed publisher' 'Coarse, fire-and-forget, after a committed mutation'
+            lastPrice = component 'Last-price scheduler' 'Cron writes last prices and the USDT/IDR rate to Redis'
+        }
+
+        sender = container 'Sender' 'Orchestrator plus worker pool; reconciles subscriptions from desired state' 'Bun · Elysia v2 · :3002' {
+            senderApi = component 'REST + WebSocket status' 'POST start/stop, GET /exchanges, WS /exchanges/ws'
+            orchestrator = component 'Orchestrator' 'Level-triggered: recompute desired state, diff, emit commands'
+            reconcile = component 'reconcile()' 'Pure function of (desired, current, configs) — ADR 0001'
+            pool = component 'Worker pool' 'node:worker_threads; spawn, terminate, respawn on failure'
+            workers = component 'Orderbook workers' 'Per-exchange websocket adapters; normalize to one canonical orderbook shape'
+        }
+
+        receiver = container 'Receiver' 'Compares orderbooks across exchanges into opportunities' 'Bun · one process per CPU' {
+            receiverLoop = component 'Per-exchange consumers' 'Durable queue per exchange, prefetch 64, competing consumers'
+            opportunityCalc = component 'Opportunity calculator' 'Converts via USDT/IDR and writes opportunities'
+        }
+
+        cmcCollector = container 'CMC collector' 'Imports coins, markets and chain links; also a live Indodax-only scan' 'Bun CLI'
+        chainCollector = container 'Chain metadata collector' 'Per-exchange coin and chain crawl into lister chains and chain links' 'Bun CLI'
+
+        postgres = database 'PostgreSQL' 'exchange, cryptocurrency, chain, market, chain_link, opportunity'
+        rabbitmq = queue 'RabbitMQ' 'Topic exchange for metadata, one durable queue per exchange for orderbooks'
+        redis = cache 'Redis' 'Last prices, USDT/IDR rate'
+    }
+
+    // --- ingress ----------------------------------------------------------
+    operator -> arbitrator.nginx 'uses the dashboard'
+    arbitrator.nginx -> arbitrator.ui 'reverse proxy'
+
+    // --- control plane ----------------------------------------------------
+    arbitrator.ui -> arbitrator.lister 'reads and edits metadata (Eden Treaty)'
+    arbitrator.ui -> arbitrator.sender 'starts/stops exchanges, streams worker status'
+
+    arbitrator.lister -> arbitrator.postgres 'drizzle queries'
+    arbitrator.lister -[control]-> arbitrator.rabbitmq 'publishes metadata.changed'
+    arbitrator.lister -> arbitrator.redis 'writes last prices'
+
+    arbitrator.sender -[control]-> arbitrator.rabbitmq 'consumes metadata.changed'
+    arbitrator.sender -> arbitrator.lister 're-queries full desired state'
+
+    arbitrator.sender.senderApi -[control]-> arbitrator.sender.orchestrator 'start / stop / manual reconcile'
+    arbitrator.sender.orchestrator -[control]-> arbitrator.sender.reconcile 'computes reconcile commands'
+    arbitrator.sender.orchestrator -[control]-> arbitrator.sender.pool 'applies spawn / subscribe / terminate'
+    arbitrator.sender.pool -[control]-> arbitrator.sender.workers 'spawn thread, postMessage commands'
+    arbitrator.sender.workers -[control]-> arbitrator.sender.pool 'state / subscribed / error events'
+
+    // --- data plane -------------------------------------------------------
+    arbitrator.sender.workers -> exchangeApis 'orderbook websockets'
+    arbitrator.sender.workers -[data]-> arbitrator.rabbitmq 'sendToQueue orderbook.<exchange>'
+    arbitrator.rabbitmq -[data]-> arbitrator.receiver.receiverLoop 'delivers orderbooks'
+    arbitrator.receiver.receiverLoop -> arbitrator.receiver.opportunityCalc 'normalized orderbook'
+    arbitrator.receiver.receiverLoop -> arbitrator.redis 'reads USDT/IDR rate'
+    arbitrator.receiver -> arbitrator.lister.listerCore 'imports Opportunity in-process (no HTTP)'
+
+    // --- ingestion --------------------------------------------------------
+    arbitrator.cmcCollector -> arbitrator.lister 'imports coins, markets, chain links'
+    arbitrator.cmcCollector -> cmcApi 'scrapes'
+    arbitrator.cmcCollector -> indodaxApi 'live Indodax scan'
+    arbitrator.chainCollector -> arbitrator.lister 'writes chains and chain links'
+    arbitrator.chainCollector -> exchangeApis 'crawls coins and chains'
+}
+
+views {
+    view index {
+        title 'Arbitrator — system context'
+        include operator
+        include arbitrator
+        include exchangeApis
+        include cmcApi
+        include indodaxApi
+    }
+
+    view containers of arbitrator {
+        title 'Arbitrator — containers'
+        include *
+        include operator
+        include exchangeApis
+        include cmcApi
+        include indodaxApi
+    }
+
+    view sender of arbitrator.sender {
+        title 'Sender — components and the two planes'
+        include *
+        include arbitrator.lister
+        include arbitrator.rabbitmq
+        include exchangeApis
+    }
+
+    view receiver of arbitrator.receiver {
+        title 'Receiver — components'
+        include *
+        include arbitrator.rabbitmq
+        include arbitrator.redis
+        include arbitrator.lister
+    }
+}
