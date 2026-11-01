@@ -9,6 +9,8 @@ WORKDIR /app
 # The UI imports the `@arbitrator/*` workspace packages directly from source, so
 # the build context is the whole monorepo.
 COPY package.json bun.lock tsconfig.base.json tsconfig.json ./
+# `patchedDependencies` in package.json points here; bun install needs it.
+COPY patches ./patches
 COPY apps ./apps
 COPY packages ./packages
 
@@ -29,6 +31,9 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/apps/ui/dist ./dist
 COPY --from=builder /app/apps/ui/public ./public
+
+# The production logger writes to $PWD/logs; the runtime user must own it.
+RUN mkdir -p logs && chown bun:bun logs
 
 USER bun
 EXPOSE 3000

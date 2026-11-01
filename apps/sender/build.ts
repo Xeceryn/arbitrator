@@ -25,8 +25,32 @@ if (!result.success) {
     process.exit(1);
 }
 
+/**
+ * Worker threads are spawned by URL from the orchestrator, so each exchange
+ * worker needs its own file in the runtime image (which copies only `dist`).
+ * `root: "./src"` preserves the layout: `dist/workers/orderbooks/<name>.js`,
+ * matching `resolveWorkerFile()` in `src/orchestrator/registry.ts`.
+ */
+const workers = await Bun.build({
+    entrypoints: [
+        "./src/workers/orderbooks/binance.ts",
+        "./src/workers/orderbooks/gate-io.ts",
+        "./src/workers/orderbooks/indodax.ts",
+        "./src/workers/orderbooks/kucoin.ts",
+        "./src/workers/orderbooks/mexc.ts",
+    ],
+    root: "./src",
+    outdir: "./dist",
+    target: "bun",
+});
+
+if (!workers.success) {
+    for (const log of workers.logs) console.error(log);
+    process.exit(1);
+}
+
 console.log(
-    result.outputs
+    [...result.outputs, ...workers.outputs]
         .map((output) => `${output.path} | ${output.type}`)
         .join("\n"),
 );

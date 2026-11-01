@@ -11,6 +11,8 @@ FROM oven/bun:1.4.3 AS builder
 WORKDIR /app
 
 COPY package.json bun.lock tsconfig.base.json tsconfig.json ./
+# `patchedDependencies` in package.json points here; bun install needs it.
+COPY patches ./patches
 COPY apps ./apps
 COPY packages ./packages
 
@@ -29,6 +31,9 @@ ENV NODE_ENV=production
 ENV RECEIVER_WORKER=dist/index.js
 
 COPY --from=builder /app/apps/receiver/dist ./dist
+
+# The production logger writes to $PWD/logs; the runtime user must own it.
+RUN mkdir -p logs && chown bun:bun logs
 
 USER bun
 

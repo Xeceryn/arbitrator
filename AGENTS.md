@@ -29,7 +29,10 @@ there.** This root file covers only cross-cutting facts.
 - Tests: `bun test apps/sender/src/orchestrator` (orchestrator pool + reconcile)
   and `bun test` in `apps/chain-metadata-collector` (pure chain normalization).
 - Local infra: `docker compose up -d postgresql rabbitmq redis`.
-- Prod-ish stack: `docker compose -f deploy.compose.yaml up --build`.
+- Prod-ish stack: `docker compose -f deploy.compose.yaml up --build`
+  (nginx is the only published service, `https://<LOCAL_DOMAIN>`).
+- Run a CLI against the deploy stack: `docker compose -f deploy.compose.yaml run --rm -T --no-deps --workdir /app/apps/cmc-collector tools bun run indodax`
+  (build the profile-gated image once with `docker compose -f deploy.compose.yaml build tools`).
 
 Run lint → typecheck (in the changed app/package) → test before declaring work
 done.

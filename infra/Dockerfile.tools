@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+
+# One-off CLI / scripting image for the deploy stack. It is not a service: run
+# it on demand with `docker compose run` so scripts see the same Postgres,
+# Redis, RabbitMQ and lister as the deployed containers.
+#
+#   docker compose -f deploy.compose.yaml build tools
+#   docker compose -f deploy.compose.yaml run --rm \
+#       --workdir /app/apps/cmc-collector tools bun run indodax
+#
+# The source (not `dist`) is shipped because the CLI scripts are executed by
+# Bun directly. Override the working directory to pick another app.
+
+FROM oven/bun:1.4.3
+WORKDIR /app
+
+# `patchedDependencies` in package.json points here; bun install needs it.
+COPY package.json bun.lock tsconfig.base.json tsconfig.json ./
+COPY patches ./patches
+COPY apps ./apps
+COPY packages ./packages
+COPY scripts ./scripts
+
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
+
+# Overridden by the command passed to `docker compose run`.
+CMD ["bun", "--version"]

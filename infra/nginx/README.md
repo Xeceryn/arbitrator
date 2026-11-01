@@ -35,6 +35,38 @@ Then run the UI as usual (`bun run dev` in `apps/ui`) and open
 Finally, trust the CA on each client that should see it as secure — see
 [client-trust.md](./client-trust.md).
 
+## Deploy stack (`deploy.compose.yaml`)
+
+The production-ish stack reuses this same nginx and template, but proxies the
+**containerised** UI over the Compose network instead of the host dev server:
+
+```
+client ──https──▶ nginx :443 ──▶ ui:3000 ──▶ lister / sender
+```
+
+`deploy.compose.yaml` sets `UI_UPSTREAM: ui:3000` and publishes only nginx
+(80/443), so the UI is not reachable on the host directly. Everything else —
+the single hostname, path-based routing and the cert files — is identical to
+local development.
+
+```bash
+# 1. Certificates (once per hostname; same script as above)
+LOCAL_DOMAIN=$(hostname).local ./scripts/local-certs.sh
+
+# 2. Start the whole stack
+docker compose -f deploy.compose.yaml up --build
+```
+
+`LOCAL_DOMAIN`, `NGINX_HTTP_PORT` and `NGINX_HTTPS_PORT` are shared by both
+stacks (they come from the root `.env`). Only `UI_UPSTREAM` differs, and
+`deploy.compose.yaml` sets it itself — do not override it there.
+
+After re-issuing a certificate, reload nginx so it picks up the new files:
+
+```bash
+docker compose -f deploy.compose.yaml restart nginx
+```
+
 ## Adding another service
 
 Because routing is path-based, add an `upstream` and a `location` block to
@@ -135,7 +167,7 @@ All overridable via environment (see `.envrc`):
 | Variable           | Default                     | Purpose                                     |
 | ------------------ | --------------------------- | ------------------------------------------- |
 | `LOCAL_DOMAIN`     | `$(hostname).local`         | The single vhost (`server_name`) + cert SAN |
-| `UI_UPSTREAM`      | `host.docker.internal:3000` | Where the UI dev server listens             |
+| `UI_UPSTREAM`      | `host.docker.internal:3000` | Where the UI listens (`ui:3000` in deploy)  |
 | `NGINX_HTTP_PORT`  | `80`                        | Published HTTP port (redirects)             |
 | `NGINX_HTTPS_PORT` | `443`                       | Published HTTPS port                        |
 
