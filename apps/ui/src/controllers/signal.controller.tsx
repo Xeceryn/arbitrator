@@ -162,7 +162,13 @@ async function refreshRoom(orderBy: OrderBy) {
             tasks.push(fullBoard(signals));
         } else {
             for (const [id, html] of cards) {
-                if (room.cards.get(id) !== html) {
+                if (!room.cards.has(id)) {
+                    // A new leg has no card to morph yet. Insert it into the
+                    // existing grid; the client reapplies hide/sort after swap.
+                    tasks.push(
+                        `<hx-partial hx-target="#signal-list" hx-swap="beforeend">${html}</hx-partial>`,
+                    );
+                } else if (room.cards.get(id) !== html) {
                     tasks.push(
                         `<hx-partial hx-target="#${id}" hx-swap="outerMorph">${html}</hx-partial>`,
                     );
