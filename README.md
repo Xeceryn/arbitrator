@@ -2,4 +2,4 @@
 
 a monorepo of arbitrage app services.
 
-## NOTE
+we go public
