@@ -73,8 +73,9 @@ const nextRequestId = () => {
 /**
  * The channel Indodax uses for a market. lister stores Indodax's *display*
  * ticker (`traded_currency_unit`), which is not always the websocket pair id
- * (`thresholdidr` but `T`), so the CMC id is looked up first. Unknown ids fall
- * back to `<ticker>idr`.
+ * (`thresholdidr` but `T`; renamed markets stream the old ticker, `lendidr` for
+ * `aaveidr`), so the CMC id is looked up first. Unknown ids fall back to
+ * `<ticker>idr`.
  */
 const channelForSymbol = (cmcId: number, symbol: string): string => {
     const pairId =

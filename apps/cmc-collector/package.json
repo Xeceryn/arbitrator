@@ -7,6 +7,8 @@
         "import": "bun run src/index.ts --import",
         "sync": "bun run src/index.ts --all",
         "indodax": "bun run src/index.ts --indodax",
+        "indodax:symbols": "bun run src/index.ts --indodax-symbols",
+        "test": "bun test",
         "typecheck": "bun --check"
     },
     "dependencies": {

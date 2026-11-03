@@ -5,7 +5,7 @@ import type { ImportSummary } from "./import";
 import { scrape } from "./scrape";
 import { defaultDataDir, readSnapshot, writeSnapshot } from "./storage";
 
-type Mode = "scrape" | "import" | "all" | "indodax";
+type Mode = "scrape" | "import" | "all" | "indodax" | "indodax-symbols";
 
 type CliOptions = {
     mode: Mode;
@@ -13,6 +13,7 @@ type CliOptions = {
     dryRun: boolean;
     unmappedChain: boolean;
     dataDir: string;
+    outPath: string | undefined;
     help: boolean;
 };
 
@@ -21,11 +22,13 @@ function parseArgs(argv: string[]): CliOptions {
     const wantsAll = argv.includes("--all");
     const wantsIndodax =
         argv.includes("--indodax") || argv.includes("--indodax-scan");
+    const wantsSymbols = argv.includes("--indodax-symbols");
     const wantsScrape = argv.includes("--scrape") || wantsAll;
     const wantsImport = argv.includes("--import") || wantsAll;
 
     let mode: Mode = "scrape";
-    if (wantsIndodax) mode = "indodax";
+    if (wantsSymbols) mode = "indodax-symbols";
+    else if (wantsIndodax) mode = "indodax";
     else if (wantsImport && wantsScrape) mode = "all";
     else if (wantsImport) mode = "import";
 
@@ -38,22 +41,34 @@ function parseArgs(argv: string[]): CliOptions {
         if (value && !value.startsWith("-")) dataDir = value;
     }
 
+    const outIndex = argv.findIndex((arg) => arg === "--out");
+    const outValue = outIndex === -1 ? undefined : argv[outIndex + 1];
+    const outPath =
+        outValue && !outValue.startsWith("-") ? outValue : undefined;
+
     const known = new Set([
         "--scrape",
         "--import",
         "--all",
         "--indodax",
         "--indodax-scan",
+        "--indodax-symbols",
         "--prune",
         "--dry-run",
         "--no-unmapped-chain",
         "--data-dir",
         "--dataDir",
+        "--out",
         "--help",
         "-h",
     ]);
     for (const arg of argv) {
-        if (arg.startsWith("-") && !known.has(arg) && arg !== dataDir) {
+        if (
+            arg.startsWith("-") &&
+            !known.has(arg) &&
+            arg !== dataDir &&
+            arg !== outPath
+        ) {
             console.warn(`warning: unknown argument "${arg}"`);
         }
     }
@@ -64,6 +79,7 @@ function parseArgs(argv: string[]): CliOptions {
         dryRun: argv.includes("--dry-run"),
         unmappedChain: !argv.includes("--no-unmapped-chain"),
         dataDir,
+        outPath,
         help: wantsHelp,
     };
 }
@@ -83,11 +99,19 @@ Modes (default: --scrape):
                      from is_market_suspended/is_maintenance, delete markets no
                      longer listed, and delete coins left with no market.
                      Always prunes; no CMC pair scrape.
+  --indodax-symbols  Regenerate the sender worker's Indodax websocket pair
+                     table (apps/sender/src/workers/orderbooks/
+                     indodax-symbols.ts) from https://indodax.com/api/pairs.
+                     Uses the same IDR-only filter, CMC id aliases and
+                     old_ticker_id preference as the importer.
 
 Import options:
   --prune            Delete delisted markets instead of disabling trading.
                      (Deleting cascades the market's chain links.)
-  --dry-run          Print the diff without writing (also works with --indodax).
+  --dry-run          Print the diff without writing (also works with --indodax,
+                     where it prints the generated pair table instead).
+  --out <path>       With --indodax-symbols: write somewhere other than the
+                     sender worker file.
   --no-unmapped-chain
                      Do not link new markets to the placeholder UNMPD chain.
 
@@ -161,6 +185,34 @@ async function runIndodaxScan(options: {
     printSummary(summary, "indodax scan");
 }
 
+async function runIndodaxSymbols(options: {
+    dryRun: boolean;
+    outPath: string | undefined;
+}): Promise<void> {
+    const {
+        buildIndodaxSubscriptionTable,
+        regenerateIndodaxSymbols,
+        renderIndodaxSymbolsModule,
+    } = await import("./indodax-symbols");
+    const { fetchIndodaxPairs } = await import("./indodax");
+
+    console.log("fetching indodax pairs...");
+    const pairs = await fetchIndodaxPairs();
+
+    if (options.dryRun) {
+        const table = buildIndodaxSubscriptionTable(pairs);
+        process.stdout.write(renderIndodaxSymbolsModule(table));
+        return;
+    }
+
+    const { filePath, count } = await regenerateIndodaxSymbols({
+        filePath: options.outPath,
+        pairs,
+    });
+
+    console.log(`wrote ${count} indodax pair ids to ${filePath}`);
+}
+
 function printSummary(summary: ImportSummary, label: string): void {
     const prefix = summary.dryRun ? "[dry-run] " : "";
     console.log(`${prefix}${label} complete.`);
@@ -208,6 +260,13 @@ async function main(): Promise<void> {
         await runIndodaxScan({
             dryRun: options.dryRun,
             unmappedChain: options.unmappedChain,
+        });
+    }
+
+    if (options.mode === "indodax-symbols") {
+        await runIndodaxSymbols({
+            dryRun: options.dryRun,
+            outPath: options.outPath,
         });
     }
 }

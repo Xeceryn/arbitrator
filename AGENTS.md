@@ -27,7 +27,8 @@ there.** This root file covers only cross-cutting facts.
 - Sender-only check (excludes legacy workers):
   `bunx tsc -p apps/sender/tsconfig.app.json --noEmit`.
 - Tests: `bun test apps/sender/src/orchestrator` (orchestrator pool + reconcile)
-  and `bun test` in `apps/chain-metadata-collector` (pure chain normalization).
+  and `bun test` in `apps/chain-metadata-collector` (pure chain normalization)
+  and `apps/cmc-collector` (Indodax pair normalization + symbol generation).
 - Local infra: `docker compose up -d postgresql rabbitmq redis`.
 - Prod-ish stack: `docker compose -f deploy.compose.yaml up --build`
   (nginx is the only published service, `https://<LOCAL_DOMAIN>`).
@@ -46,7 +47,9 @@ done.
 - `apps/receiver` — RabbitMQ orderbook consumer (cluster per CPU).
 - `apps/ui` — server-rendered htmx app `:3000` (Elysia v2).
 - `apps/cmc-collector` — CMC scrape/import CLI, plus an Indodax-only live scan
-  (`bun run indodax`) for listings, trade and chain maintenance state.
+  (`bun run indodax`) for listings, trade and chain maintenance state, and the
+  generator for the sender's Indodax websocket pair table
+  (`bun run indodax:symbols`).
 - `apps/chain-metadata-collector` — per-exchange coin/chain crawl → lister chains
   and chain links.
 - `apps/old-lister-migrator` — one-off migration scripts.

@@ -11,7 +11,9 @@ bun run scrape   # --scrape: write a snapshot to the data dir
 bun run import   # --import: apply the stored snapshot to lister
 bun run sync     # --all: scrape then import
 bun run indodax  # --indodax: live Indodax-only reconcile (no CMC pair scrape)
+bun run indodax:symbols  # regenerate the sender's Indodax websocket pair table
 bun run typecheck
+bun test
 
 # raw flags:
 bun run src/index.ts --help
@@ -37,8 +39,14 @@ Indodax is scraped from `https://indodax.com/api/pairs`, not CMC, because CMC's
 - `market.exchangeSymbol` stores Indodax's `traded_currency_unit` (`T` for
   Threshold, `POL` for Polygon) — the ticker the UI shows.
 - The orderbook websocket subscribes with the pair `id` instead
-  (`thresholdidr`). That mapping lives in the sender worker
+  (`thresholdidr`), except for renamed markets, where it keeps streaming the
+  pre-rename ticket (`old_ticker_id`: AAVE is `aaveidr` but only `lendidr`
+  publishes). That mapping lives in the sender worker
   (`apps/sender/src/workers/orderbooks/indodax-symbols.ts`), keyed by CMC id.
+  It is generated, not hand-written: `bun run indodax:symbols` (or
+  `--indodax-symbols`, `--dry-run` to print, `--out <path>` to redirect)
+  rebuilds it from the live pair list through the same normalization the
+  importer uses (`src/indodax-symbols.ts`).
 - `is_market_suspended` becomes `tradeEnabled: false` (and back to `true` when
   the suspension clears).
 - `is_maintenance` becomes `chainSuspended` on the snapshot market. Every chain
@@ -65,5 +73,5 @@ only deletes markets that are absent from the live pair list, so coins still
 listed (and their real chain links) are preserved.
 
 Files: `index.ts` (CLI/arg parsing), `scrape.ts`, `import.ts`, `storage.ts`,
-`cmc.ts`, `indodax.ts`, `metadata.ts`, `market-pairs.ts`, `config.ts`,
-`types.ts`.
+`cmc.ts`, `indodax.ts`, `indodax-symbols.ts`, `metadata.ts`, `market-pairs.ts`,
+`config.ts`, `types.ts`.

@@ -75,10 +75,12 @@ keeps the server up.
   Legacy workers still read `Bun.argv` and `self.postMessage` and use the
   `src/types` / `src/utils` shims: `bitget`, `bitmart`, `huobi`, `pintu`.
 - Indodax displays `traded_currency_unit` (what lister stores as
-  `market.exchangeSymbol`) but subscribes with its pair `id`. The worker maps
-  CMC id -> pair id through `workers/orderbooks/indodax-symbols.ts` (generated
-  from `indodax.com/api/pairs`), falling back to `<ticker>idr`. Regenerate that
-  table when Indodax lists a coin whose unit differs from `traded_currency`.
+  `market.exchangeSymbol`) but subscribes with its pair `id` (or with
+  `old_ticker_id` for renamed markets — AAVE trades as `lendidr`). The worker
+  maps CMC id -> pair id through `workers/orderbooks/indodax-symbols.ts`
+  (generated from `indodax.com/api/pairs`), falling back to `<ticker>idr`.
+  Regenerate it with `bun run indodax:symbols` in `apps/cmc-collector`; do not
+  hand-edit the table.
 - To typecheck a worker, add its file to `tsconfig.app.json` `include`. That list
   currently names only `binance`, `gate-io`, `indodax`, `kucoin` — `mexc` is
   migrated but not included yet, so it is not covered by the focused `tsc`.

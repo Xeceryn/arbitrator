@@ -7,11 +7,14 @@
  * `thresholdidr`). lister only hands the worker a cmcId plus the display
  * ticker, so this table bridges the gap.
  *
- * Generated from https://indodax.com/api/pairs on 2026-10-21 (IDR pairs only).
- * Regenerate when Indodax lists a coin; an unknown id falls back to
- * `<ticker>idr`, which is right whenever the unit matches `traded_currency`.
- * The collector's `INDODAX_CMC_ID_ALIASES` (3890 MATIC -> 28321 POL) is
- * already applied.
+ * Renamed markets keep their original channel: `old_ticker_id` wins whenever
+ * the pair list exposes one (AAVE is `aaveidr` but only `lendidr` publishes).
+ *
+ * Generated from https://indodax.com/api/pairs on 2026-11-03 (IDR pairs only).
+ * Do not edit by hand: run `bun run indodax:symbols` in apps/cmc-collector
+ * (or `--indodax-symbols`). An unknown id falls back to `<ticker>idr`, which
+ * is right whenever the unit matches `traded_currency`. The collector's
+ * `INDODAX_CMC_ID_ALIASES` (3890 MATIC -> 28321 POL) is already applied.
  */
 export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     Record<number, string>
@@ -21,7 +24,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     52: "xrpidr",
     74: "dogeidr",
     109: "dgbidr",
-    512: "xlmidr",
+    512: "stridr",
     825: "usdtidr",
     1027: "ethidr",
     1104: "repidr",
@@ -39,7 +42,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     1757: "funidr",
     1759: "sntidr",
     1816: "cvcidr",
-    1831: "bchidr",
+    1831: "bchabcidr",
     1839: "bnbidr",
     1896: "zrxidr",
     1958: "trxidr",
@@ -61,7 +64,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     2576: "tenidr",
     2577: "rvnidr",
     2586: "snxidr",
-    2634: "xdcidr",
+    2634: "xdceidr",
     2682: "hotidr",
     2694: "nexoidr",
     2777: "iotxidr",
@@ -74,7 +77,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     3218: "nrgidr",
     3408: "usdcidr",
     3418: "metaidr",
-    3602: "bsvidr",
+    3602: "bchsvidr",
     3635: "croidr",
     3640: "lptidr",
     3717: "wbtcidr",
@@ -141,7 +144,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     7208: "polsidr",
     7224: "dodoidr",
     7226: "injidr",
-    7278: "aaveidr",
+    7278: "lendidr",
     7288: "xvsidr",
     7326: "dexeidr",
     7429: "lqtyidr",
@@ -154,7 +157,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     7950: "flridr",
     8000: "ldoidr",
     8037: "vanryidr",
-    8104: "1inchidr",
+    8104: "oneinchidr",
     8119: "sfpidr",
     8290: "superverseidr",
     8425: "jasmyidr",
@@ -213,7 +216,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     19590: "dfgidr",
     19765: "birbidr",
     19843: "apexidr",
-    20314: "lunaidr",
+    20314: "lunav2idr",
     20435: "velodromeidr",
     20672: "colidr",
     20947: "suiidr",
@@ -404,7 +407,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     37545: "bnkridr",
     37593: "proveidr",
     37614: "pmidr",
-    37615: "glidridr",
+    37615: "glididr",
     37637: "somiidr",
     37989: "edenaidr",
     38117: "sapienidr",
@@ -433,7 +436,7 @@ export const INDODAX_SUBSCRIBE_PAIR_ID_BY_CMC_ID: Readonly<
     38868: "sentidr",
     38908: "alloidr",
     39064: "nightidr",
-    39085: "showidr",
+    39085: "showtoken2idr",
     39108: "wealthidr",
     39125: "lighteridr",
     39332: "zamaidr",
