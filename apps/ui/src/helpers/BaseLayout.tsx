@@ -105,6 +105,13 @@ export const BaseLayout = async ({
                         as="script"
                     />
                     <script src="/public/dist/signal-board.js"></script>
+
+                    <link
+                        rel="preload"
+                        href="/public/dist/signal-audio.js"
+                        as="script"
+                    />
+                    <script src="/public/dist/signal-audio.js"></script>
                 </head>
                 <body
                     hx-indicator:inherited=".progress"

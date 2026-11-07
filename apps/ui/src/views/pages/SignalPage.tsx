@@ -3,6 +3,7 @@ import type {
     OpportunitySignal,
 } from "@arbitrator/lister/types";
 
+import { VolumeIcon, VolumeOffIcon } from "../components/icons";
 import { SignalCard } from "../components/SignalCard";
 
 export type SignalOrderBy = "profitPercentage" | "profitVolume";
@@ -21,6 +22,35 @@ const ORDER_BY_OPTIONS: Array<{ value: SignalOrderBy; label: string }> = [
     { value: "profitPercentage", label: "Profit %" },
     { value: "profitVolume", label: "Profit volume" },
 ];
+
+/**
+ * Alarm clips, one per integer profit percentage (5 covers 5% and above).
+ * `signal-audio.ts` plays the matching one for the board's first card.
+ */
+const ALARM_TRACKS = [
+    { track: 1, file: "audio.mp3" },
+    { track: 2, file: "2times-alarm.mp3" },
+    { track: 3, file: "3times-alarm.mp3" },
+    { track: 4, file: "4times-alarm.mp3" },
+    { track: 5, file: "5times-alarm.mp3" },
+];
+
+/**
+ * Hidden alarm clips. They live outside `#signal-board`, so a WebSocket swap
+ * never destroys an alarm that is playing.
+ */
+export const SignalAlarm = () => (
+    <>
+        {ALARM_TRACKS.map(({ track, file }) => (
+            <audio
+                data-signal-alarm={String(track)}
+                src={`/public/audio/${file}`}
+                preload="auto"
+                hidden
+            />
+        ))}
+    </>
+);
 
 /**
  * Filter chrome. `hide` is purely client-side, so changing it never touches
@@ -94,6 +124,39 @@ export const SignalControls = ({
                 )}
             </ul>
         </details>
+
+        <div class="ml-auto flex items-center gap-2">
+            <button
+                id="signal-audio-mute"
+                type="button"
+                class="btn btn-ghost btn-sm btn-square"
+                aria-label="Mute signal alarm"
+                aria-pressed="false"
+                title="Mute signal alarm"
+            >
+                <VolumeIcon class="signal-audio-sound size-4" />
+                <VolumeOffIcon class="signal-audio-muted hidden size-4" />
+            </button>
+            <label class="flex items-center gap-2">
+                <span class="sr-only">Signal alarm volume</span>
+                <input
+                    id="signal-audio-volume"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value="50"
+                    class="range range-xs w-24"
+                />
+            </label>
+            <output
+                id="signal-audio-volume-value"
+                for="signal-audio-volume"
+                class="w-9 text-xs font-bold tabular-nums opacity-70"
+            >
+                50%
+            </output>
+        </div>
     </form>
 );
 
@@ -165,6 +228,7 @@ export const SignalPage = ({
 
     return (
         <div class="flex flex-col gap-6">
+            <SignalAlarm />
             <section id="signals" class="w-full">
                 <div class="card w-full bg-base-100 shadow-xl">
                     <div class="card-body gap-4 p-4 sm:p-8">

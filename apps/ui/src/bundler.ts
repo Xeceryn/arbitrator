@@ -13,6 +13,9 @@ async function bundle_external_scripts() {
         entrypoints: files.map((file) => `${dirs}/${file}`),
         outdir: "public/dist",
         target: "browser",
+        // One IIFE per entry: these load as classic <script> tags, so top-level
+        // names would otherwise share the global scope and collide.
+        format: "iife",
         minify: true,
     });
     console.log(
@@ -53,6 +56,9 @@ async function bundleScripts() {
         entrypoints: files.map((file) => `${dirs}/${file}`),
         outdir: "public/dist",
         target: "browser",
+        // One IIFE per entry: these load as classic <script> tags, so top-level
+        // names would otherwise share the global scope and collide.
+        format: "iife",
         minify: true,
     });
     console.log(

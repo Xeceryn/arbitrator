@@ -13,7 +13,14 @@
  * the mousedown and mouseup of a copy click makes the browser retarget the
  * click, so `clipboard.js` never sees it and the page can jump. With `order`,
  * the nodes stay put and only their paint order changes.
+ *
+ * Once the state is on the DOM it emits `BOARD_APPLIED_EVENT` with the now
+ * first card, which is what `signal-audio.ts` plays an alarm for. Only the
+ * swap path emits: a fresh page, or a local sort/hide change, is not an
+ * incoming board update and must not sound the alarm.
  */
+
+import { BOARD_APPLIED_EVENT, type BoardAppliedDetail } from "./board-state";
 
 type OrderBy = "profitPercentage" | "profitVolume";
 
@@ -41,7 +48,7 @@ function readState(): {
     return { orderBy, hide };
 }
 
-function applyState() {
+function applyState(emit = false) {
     const list = document.querySelector<HTMLElement>("[data-signal-list]");
     if (!list) return;
 
@@ -71,17 +78,39 @@ function applyState() {
 
     const count = document.querySelector("#signal-hide-count");
     if (count) count.textContent = hide.size > 0 ? ` (${hide.size})` : "";
+
+    if (!emit) return;
+
+    // `nodes` is already sorted, so the first one still displayed on the board
+    // is the card the user sees first. Hidden exchanges must not win the rank.
+    const top = nodes.find((node) => node.style.display !== "none");
+    document.dispatchEvent(
+        new CustomEvent<BoardAppliedDetail>(BOARD_APPLIED_EVENT, {
+            detail: {
+                top: top
+                    ? {
+                          id: top.id,
+                          profitPercentage: Number(
+                              top.dataset.profitPercentage ?? 0,
+                          ),
+                      }
+                    : null,
+            },
+        }),
+    );
 }
 
 function init() {
     const form = document.querySelector("#signal-controls");
     if (!form) return;
 
-    form.addEventListener("change", applyState);
+    form.addEventListener("change", () => applyState());
     applyState();
 }
 
-document.addEventListener("htmx:after:swap", () => applyState());
+// A swap is either an incoming board push or an htmx page render; only the
+// former should sound the alarm, and only a push carries new percentages.
+document.addEventListener("htmx:after:swap", () => applyState(true));
 
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

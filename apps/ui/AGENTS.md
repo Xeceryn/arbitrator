@@ -35,6 +35,25 @@ assets/styles/styles.css Tailwind source
 assets/{lib,scripts}/*   browser entrypoints bundled to public/dist
 ```
 
+## Signal alarm
+
+`/signals` beeps when its first card clears 1% profit: the integer part of the
+percentage picks the clip (`1.x` → 1 beep … `5%` and above → 5), from
+`public/audio/*.mp3` (copied from the old `signal-card-ui` app).
+
+- The `<audio>` tags are rendered by `SignalAlarm` in
+  `src/views/pages/SignalPage.tsx`, outside `#signal-board`, so a WebSocket
+  swap never kills a playing alarm.
+- `assets/scripts/signal-board.ts` owns hide/sort and, on every incoming push,
+  emits `signal-board:applied` (`assets/scripts/board-state.ts`) with the card
+  that is now first. `assets/scripts/signal-audio.ts` plays the matching clip
+  for each push; a clip that is still sounding is left to finish instead of
+  being restarted, and a higher track interrupts it.
+- Volume/mute live in `SignalControls` and persist in `localStorage`
+  (`arbitrator:signal-volume`, `arbitrator:signal-muted`).
+- Browsers block unmuted playback until the page has been interacted with, so
+  the first alarm may be dropped; it is not an error.
+
 ## Non-obvious rules
 
 - **`public/` is generated build output. Never hand-edit

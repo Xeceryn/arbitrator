@@ -63,14 +63,21 @@ export const SignalCard = ({ signal }: Props) => {
     } = signal;
 
     return (
+        /*
+          `data-theme="light"` re-scopes daisyUI's light palette onto this
+          subtree, so the card stays a white surface with dark text whatever
+          the page theme is. On the default dark theme that makes the board
+          read as a distinct surface instead of blending into `base-100`.
+        */
         <article
             id={`signal-card-${cmcId}-${buyExchange.id}-${sellExchange.id}`}
             data-signal-node="true"
+            data-theme="light"
             data-buy-slug={buyExchange.slug}
             data-sell-slug={sellExchange.slug}
             data-profit-percentage={profitPercentage}
             data-profit-volume={profitVolume}
-            class={`card border border-base-300 bg-base-100 text-base-content shadow-sm ${signalColorClass(
+            class={`card border border-base-300 bg-base-100 text-base-content shadow-lg ${signalColorClass(
                 buyExchange.baseCurrency,
                 sellExchange.baseCurrency,
             )}`}
@@ -146,36 +153,27 @@ export const SignalCard = ({ signal }: Props) => {
 					*/}
                 </div>
 
+                {/*
+                  Logos only, no exchange names: the label was truncated to a
+                  few characters in the 6/8-column layout anyway. The name now
+                  lives in `alt` and the `title` tooltip. They load eagerly:
+                  lazy loading left the `alt` text showing in a 48px box while
+                  the handful of exchange logos were still in flight.
+                */}
                 <div class="flex items-center justify-center gap-2">
-                    <div class="flex w-14 flex-col items-center gap-0.5">
-                        <img
-                            src={buyExchange.logo}
-                            alt={buyExchange.name}
-                            loading="lazy"
-                            class="size-6 rounded-box bg-base-200 object-contain p-0.5"
-                        />
-                        <span
-                            class="truncate text-xs font-bold opacity-90"
-                            safe
-                        >
-                            {buyExchange.name}
-                        </span>
-                    </div>
-                    <ArrowRightIcon class="signal-color size-4 shrink-0" />
-                    <div class="flex w-14 flex-col items-center gap-0.5">
-                        <img
-                            src={sellExchange.logo}
-                            alt={sellExchange.name}
-                            loading="lazy"
-                            class="size-6 rounded-box bg-base-200 object-contain p-0.5"
-                        />
-                        <span
-                            class="truncate text-xs font-bold opacity-90"
-                            safe
-                        >
-                            {sellExchange.name}
-                        </span>
-                    </div>
+                    <img
+                        src={buyExchange.logo}
+                        alt={buyExchange.name}
+                        title={buyExchange.name}
+                        class="size-12 object-contain 2xl:size-10"
+                    />
+                    <ArrowRightIcon class="signal-color size-5 shrink-0 2xl:size-4" />
+                    <img
+                        src={sellExchange.logo}
+                        alt={sellExchange.name}
+                        title={sellExchange.name}
+                        class="size-12 object-contain 2xl:size-10"
+                    />
                 </div>
 
                 <dl class="grid grid-cols-[auto_1fr] items-baseline gap-x-2 text-sm font-bold">
