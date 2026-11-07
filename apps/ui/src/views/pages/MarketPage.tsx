@@ -5,7 +5,7 @@ import type { ListExchangeInput } from "@arbitrator/lister/types";
 type Resolved<T> = { [K in keyof T]-?: NonNullable<T[K]> };
 import { lister } from "@arbitrator/sdk";
 
-import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
+import { apiErrorMessage, fieldLabel } from "../../utils";
 import { AddExchangeModal } from "../components/AddExchangeModal";
 import { ExchangeEditModal } from "../components/ExchangeEditModal";
 import { SearchIcon, PlusIcon } from "../components/icons";
@@ -58,7 +58,7 @@ const MarketFilter = (props: Resolved<ListExchangeInput>) => {
                     <select name="searchBy">
                         {ExchangeSearchByOptions.map((option) => (
                             <option value={option} selected={active === option}>
-                                {capitalizeFirstLetter(option)}
+                                {fieldLabel(option)}
                             </option>
                         ))}
                     </select>

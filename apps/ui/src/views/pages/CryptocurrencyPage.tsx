@@ -5,7 +5,7 @@ import type { ListCryptocurrencyInput } from "@arbitrator/lister/types";
 type Resolved<T> = { [K in keyof T]-?: NonNullable<T[K]> };
 import { lister } from "@arbitrator/sdk";
 
-import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
+import { apiErrorMessage, fieldLabel } from "../../utils";
 import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
 import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
@@ -63,7 +63,7 @@ const CoinFilter = (props: Resolved<ListCryptocurrencyInput>) => {
                     <select name="searchBy">
                         {CryptocurrencySearchByOptions.map((option) => (
                             <option value={option} selected={active === option}>
-                                {capitalizeFirstLetter(option)}
+                                {fieldLabel(option)}
                             </option>
                         ))}
                     </select>

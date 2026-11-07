@@ -5,7 +5,7 @@ import type { ListChainInput } from "@arbitrator/lister/types";
 type Resolved<T> = { [K in keyof T]-?: NonNullable<T[K]> };
 import { lister } from "@arbitrator/sdk";
 
-import { apiErrorMessage, capitalizeFirstLetter } from "../../utils";
+import { apiErrorMessage, fieldLabel } from "../../utils";
 import { AddChainModal } from "../components/AddChainModal";
 import { ChainEditModal } from "../components/ChainEditModal";
 import { ChainTableRow } from "../components/ChainTableRow";
@@ -58,7 +58,7 @@ const ChainFilter = (props: Resolved<ListChainInput>) => {
                     <select name="searchBy">
                         {ChainSearchByOptions.map((option) => (
                             <option value={option} selected={active === option}>
-                                {capitalizeFirstLetter(option)}
+                                {fieldLabel(option)}
                             </option>
                         ))}
                     </select>

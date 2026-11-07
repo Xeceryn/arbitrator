@@ -40,6 +40,25 @@ export function capitalizeFirstLetter(str: string) {
         .join(" ");
 }
 
+/**
+ * Human labels for the `searchBy`/`orderBy` keys the API accepts. Keys are
+ * camelCase column names, which `capitalizeFirstLetter` renders as `CmcId` or
+ * `RegisteredOnCmc`; the filter bars should name the field the way the table
+ * does.
+ */
+const FIELD_LABELS: Record<string, string> = {
+    id: "ID",
+    cmcId: "CMC ID",
+    baseCurrency: "Base currency",
+    registeredOnCmc: "Registered on CMC",
+    createdAt: "Created at",
+    updatedAt: "Updated at",
+};
+
+export function fieldLabel(key: string): string {
+    return FIELD_LABELS[key] ?? capitalizeFirstLetter(key);
+}
+
 export function createPushURL<
     T extends Record<string, string | number | undefined>,
 >(url: string, kv: T): string {
