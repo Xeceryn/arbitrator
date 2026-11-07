@@ -4,6 +4,7 @@ import {
     eq,
     getTableColumns,
     ilike,
+    sql,
     type AnyColumn,
     type InferSelectModel,
     type SQL,
@@ -68,7 +69,16 @@ function columnOf(table: Table, key: string): AnyColumn {
 
 /**
  * Default search strategy, derived from the column's runtime type:
- * numbers match exactly, booleans parse the term, everything else uses ILIKE.
+ *
+ * - text (`varchar`/`text`) is matched directly with ILIKE;
+ * - booleans are parsed (`true`/`1`), because there is nothing to match
+ *   partially;
+ * - everything else is matched on its text form. That is what makes numeric
+ *   columns (`id`, `cmcId`, …) searchable at all: Postgres has no ILIKE
+ *   operator for `integer`, so a plain ILIKE fails the query, while `eq` with
+ *   `Number(search)` means `NaN` for a non-numeric term. Casting keeps partial
+ *   ids working (`102` finds `1027`) and a stray term simply matches nothing.
+ *
  * Pass `condition` to `paginate` when a module needs custom search behaviour.
  */
 export function defaultSearchCondition(
@@ -81,15 +91,20 @@ export function defaultSearchCondition(
     }
 
     const column = columnOf(table, searchBy);
+    // Drizzle reports numbers as e.g. `"number int32"` and enums as
+    // `"string enum"`, so only the leading token is the type family.
+    const [family] = String(column.dataType).split(" ");
+    const pattern = `%${search.toLowerCase()}%`;
 
-    switch (column.dataType) {
-        case "number":
-            return eq(column, Number(search));
-        case "boolean":
-            return eq(column, ["true", "1"].includes(search.toLowerCase()));
-        default:
-            return ilike(column, `%${search.toLowerCase()}%`);
+    if (family === "boolean") {
+        return eq(column, ["true", "1"].includes(search.toLowerCase()));
     }
+
+    if (family === "string" && !String(column.dataType).includes("enum")) {
+        return ilike(column, pattern);
+    }
+
+    return ilike(sql`cast(${column} as text)`, pattern);
 }
 
 export async function paginate<TTable extends PgTable>(options: {

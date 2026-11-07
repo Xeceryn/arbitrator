@@ -51,6 +51,13 @@ handler)` — options _before_ the handler. The v1 handler-first order still
 - Drizzle schema glob is `src/**/*.sql.ts` (see `drizzle.config.ts`). Do not put
   table definitions elsewhere or migrations will miss them.
 - `DATABASE_URL` falls back to `postgres://postgres:postgres@localhost:5432/arbitrator`.
+- All list endpoints search through `defaultSearchCondition`
+  (`src/common/pagination.ts`): drizzle's `dataType` is **not** `"number"` for
+  integer columns (it is `"number int32"`) and enums are `"string enum"`, so
+  match on the type family and cast non-text columns to `text` before `ILIKE`.
+  A bare `ilike` on `integer`/enum is a Postgres type error (HTTP 500), and
+  `eq(column, Number(search))` sends `NaN` for any non-numeric term. Covered by
+  `pagination.test.ts`.
 - `market.listTransferableCoins` is the sender's read-model: directed,
   `tradeEnabled` required on both markets, deduped unordered pairs. Keep it
   composable (a future signal feature will add filters) — don't bake signal logic in.
