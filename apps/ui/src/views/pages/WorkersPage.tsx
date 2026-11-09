@@ -118,7 +118,10 @@ const WorkersTable = ({
                         <td colspan="6" class="py-16 text-center">
                             <p class="font-medium">No exchanges yet</p>
                             <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
-                                Add exchanges under Exchange Management first.
+                                <a href="/markets" class="link">
+                                    Add an exchange
+                                </a>{" "}
+                                to get started.
                             </p>
                         </td>
                     </tr>
@@ -196,13 +199,6 @@ export const WorkersPage = ({ data }: { data: WorkersData }) => {
                     <div class="card-body gap-4 p-4 sm:p-8">
                         <header class="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <h2 class="text-lg font-semibold">
-                                    Orderbook workers
-                                </h2>
-                                <p class="max-w-prose text-sm opacity-60">
-                                    Per-exchange worker status, live from the
-                                    orchestrator.
-                                </p>
                                 <p
                                     id="workers-live-status"
                                     role="status"

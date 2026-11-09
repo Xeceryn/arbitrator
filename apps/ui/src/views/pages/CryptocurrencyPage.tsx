@@ -9,7 +9,6 @@ import { apiErrorMessage, fieldLabel } from "../../utils";
 import { AddCoinModal } from "../components/AddCoinModal";
 import { CoinTableRow } from "../components/CoinTableRow";
 import { CryptocurrencyEditModal } from "../components/CryptocurrencyEditModal";
-import { CryptocurrencyRouteModal } from "../components/CryptocurrencyRouteModal";
 import { PlusIcon, SearchIcon } from "../components/icons";
 import { PageButton } from "../components/PageButton";
 import { SortableHeader } from "../components/SortableHeader";
@@ -35,19 +34,19 @@ const CoinFilter = (props: Resolved<ListCryptocurrencyInput>) => {
             hx-swap="outerMorph"
             /* submit handles the pagination buttons; `input` covers both the text
          field and the <select>s. */
-            hx-trigger="submit, input delay:300ms"
+            hx-trigger="submit, input delay:300ms, coin-deleted from:body"
             /* abort the in-flight request when a newer one starts */
             hx-sync="this:replace"
             hx-indicator="#coin-list-indicator"
-            class="flex flex-wrap items-center"
+            class="relative flex flex-wrap items-center gap-3"
         >
             <span
                 id="coin-list-indicator"
-                class="htmx-indicator loading loading-spinner loading-sm"
+                class="htmx-indicator loading loading-spinner loading-xs absolute -right-2 -top-2"
             ></span>
 
-            <div class="join">
-                <label class="input input-bordered join-item">
+            <div class="join min-w-0 w-full sm:w-auto sm:flex-1">
+                <label class="input join-item min-w-0 flex-1">
                     <span class="sr-only">Search coins</span>
                     <SearchIcon />
                     <input
@@ -58,7 +57,7 @@ const CoinFilter = (props: Resolved<ListCryptocurrencyInput>) => {
                         autocomplete="off"
                     />
                 </label>
-                <label class="select select-bordered join-item">
+                <label class="select join-item w-24 shrink-0 sm:w-36">
                     <span class="sr-only">Search by</span>
                     <select name="searchBy">
                         {CryptocurrencySearchByOptions.map((option) => (
@@ -70,7 +69,7 @@ const CoinFilter = (props: Resolved<ListCryptocurrencyInput>) => {
                 </label>
             </div>
 
-            <label class="select select-bordered w-40">
+            <label class="select w-24 shrink-0">
                 <span class="sr-only">Rows per page</span>
                 <select name="limit">
                     {LIMIT_OPTIONS.map((option) => (
@@ -148,12 +147,12 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                                 target="#coin-list-results"
                                 indicator="#coin-list-indicator"
                                 field="name"
-                                name="Name / Slug"
+                                name="Name"
                                 orderBy={props.orderBy}
                                 order={props.order}
-                                class="w-1/2 whitespace-normal"
+                                class="whitespace-normal"
                             >
-                                Name / Slug
+                                Name
                             </SortableHeader>
                             <SortableHeader
                                 form="coin-filter"
@@ -164,7 +163,7 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                                 name="Symbol"
                                 orderBy={props.orderBy}
                                 order={props.order}
-                                class="w-20"
+                                class="hidden w-20 sm:table-cell"
                             >
                                 Symbol
                             </SortableHeader>
@@ -192,7 +191,7 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                                 order={props.order}
                                 class="hidden lg:table-cell"
                             >
-                                Created At
+                                Created
                             </SortableHeader>
                             <SortableHeader
                                 form="coin-filter"
@@ -205,11 +204,9 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                                 order={props.order}
                                 class="hidden lg:table-cell"
                             >
-                                Updated At
+                                Updated
                             </SortableHeader>
-                            <th class="w-20 text-right">
-                                <span class="sr-only">Actions</span>
-                            </th>
+                            <th class="w-32 text-right sm:w-56">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="coin-table-body">
@@ -218,18 +215,33 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                         ) : (
                             <tr id="coin-table-empty">
                                 <td colspan="6" class="py-16 text-center">
-                                    <p class="font-medium">No coins yet</p>
-                                    <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
-                                        Add a coin to make it available to your
-                                        signals.
+                                    <p class="font-medium">
+                                        {props.search
+                                            ? "No matching coins"
+                                            : "No coins yet"}
                                     </p>
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary mt-4"
-                                        onclick="add_coin_modal.showModal()"
-                                    >
-                                        <PlusIcon /> Add coin
-                                    </button>
+                                    {props.search ? (
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm mt-4"
+                                            hx-get="/coins/list"
+                                            hx-include="#coin-filter"
+                                            hx-vals='{"search":""}'
+                                            hx-target="#coin-list-results"
+                                            hx-swap="outerMorph"
+                                            hx-on:click="document.querySelector('#coin-filter [name=search]').value=''"
+                                        >
+                                            Clear search
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary mt-4"
+                                            onclick="add_coin_modal.showModal()"
+                                        >
+                                            <PlusIcon /> Add coin
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         )}
@@ -258,6 +270,7 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                         <PageButton
                             form="coin-filter"
                             page={1}
+                            edge
                             disabled={data.meta.page === 1}
                         >
                             First
@@ -272,7 +285,7 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                         <button
                             type="button"
                             disabled
-                            class="join-item btn btn-outline"
+                            class="join-item btn btn-sm sm:btn-md"
                         >
                             Page{" "}
                             <span class="tabular-nums" safe>
@@ -289,6 +302,7 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
                         <PageButton
                             form="coin-filter"
                             page={data.meta.pages}
+                            edge
                             disabled={
                                 data.meta.page === data.meta.pages ||
                                 data.meta.items === 0
@@ -308,8 +322,8 @@ export const CoinResults = async (props: Resolved<ListCryptocurrencyInput>) => {
  */
 export const CoinList = (props: Resolved<ListCryptocurrencyInput>) => (
     <section id="coin-list" class="w-full">
-        <div class="card w-full bg-base-100 shadow-xl">
-            <div class="card-body p-4 sm:p-8">
+        <div class="card w-full bg-base-100 shadow-sm">
+            <div class="card-body gap-5 p-3 sm:p-6">
                 <CoinFilter {...props} />
                 <CoinResults {...props} />
             </div>
@@ -325,7 +339,6 @@ export const CoinPage = async (props: Resolved<ListCryptocurrencyInput>) => (
     <div class="flex flex-col gap-6">
         <AddCoinModal />
         <CryptocurrencyEditModal />
-        <CryptocurrencyRouteModal />
         <CoinList {...props} />
     </div>
 );

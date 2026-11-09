@@ -1,14 +1,15 @@
 import type { ExchangeSelect } from "@arbitrator/lister/types";
 
 import { timeAgo } from "../../utils";
-import { PencilIcon, TrashIcon } from "./icons";
+import { PencilIcon } from "./icons";
+import { DeleteRowAction, RowActions } from "./RowActions";
 
 export const MarketTableRow = (props: ExchangeSelect) => {
     return (
         <tr id={`market-table-row-${props.id}`}>
-            <td>
+            <td class="max-w-0 sm:max-w-none">
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="avatar">
+                    <div class="avatar shrink-0">
                         <div class="mask mask-circle size-8 sm:size-10">
                             {/* decorative: the exchange name sits next to it */}
                             <img src={props.logo} alt="" loading="lazy" />
@@ -18,7 +19,7 @@ export const MarketTableRow = (props: ExchangeSelect) => {
                         <div class="truncate font-medium" safe>
                             {props.name}
                         </div>
-                        <div class="truncate text-sm opacity-60" safe>
+                        <div class="truncate text-sm text-base-content/70" safe>
                             {props.slug}
                         </div>
                     </div>
@@ -51,25 +52,29 @@ export const MarketTableRow = (props: ExchangeSelect) => {
                 <div class="flex justify-end gap-1">
                     <button
                         type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm"
+                        class="btn btn-ghost btn-sm min-h-9"
                         aria-label={`Edit ${props.name}`}
                         title={`Edit ${props.name}`}
-                        onclick="exchange_edit_modal.showModal()"
+                        data-open-dialog="exchange_edit_modal"
                         hx-get={`/markets/${props.id}/edit-modal`}
                         hx-target="#exchange_edit_modal_content"
                         hx-swap="innerHTML"
                     >
                         <PencilIcon />
+                        Edit
                     </button>
-                    <button
-                        type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm btn-error"
-                        aria-label={`Delete ${props.name}`}
-                        title={`Delete ${props.name}`}
-                        /* TODO: wire the delete request and add a confirmation step. */
+                    <RowActions
+                        id={`exchange-actions-${props.id}`}
+                        name={props.name}
                     >
-                        <TrashIcon />
-                    </button>
+                        <DeleteRowAction
+                            entity="exchange"
+                            name={props.name}
+                            url={`/markets/${props.id}`}
+                            target={`#market-table-row-${props.id}`}
+                            impact={`This deletes ${props.name} and all coin and chain assignments on this exchange. Coins and chains are kept.`}
+                        />
+                    </RowActions>
                 </div>
             </td>
         </tr>

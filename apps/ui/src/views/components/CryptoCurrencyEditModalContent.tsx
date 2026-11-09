@@ -1,81 +1,41 @@
 import type { CryptocurrencyUpdate } from "@arbitrator/lister/types";
 
+import { EditForm, TextField } from "./EditForm";
+
 export const CryptocurrencyEditModalContent = (
-    props: CryptocurrencyUpdate & { coinId: number },
-) => {
-    const coinId = props.coinId ?? 0;
-    return (
-        // A real <form>: htmx collects name/value of every control automatically.
-        // No hx-include list that can drift out of sync with the fields.
-        <form
-            hx-patch={`/coins/${coinId}/edit`}
-            hx-target={`#coin-table-row-${coinId}`}
-            hx-swap="outerHTML"
-            // htmx 4 swaps 4xx by default. Keep validation failures from nuking the row.
-            {...{ "hx-status:422": "swap:none" }}
-            // Server sends `HX-Trigger: coin-updated` on success.
-            hx-on:coin-updated="cryptocurrency_edit_modal.close()"
-        >
-            <h2 id="edit-coin-title" class="text-lg font-semibold">
-                Edit cryptocurrency
-            </h2>
-
-            <div class="mt-4 flex flex-col gap-3">
-                <label class="input input-bordered">
-                    <span class="label">Name</span>
-                    <input
-                        name="name"
-                        autocomplete="off"
-                        type="text"
-                        placeholder="Bitcoin"
-                        value={props.name}
-                    />
-                </label>
-
-                <label class="input input-bordered">
-                    <span class="label">Slug</span>
-                    <input
-                        name="slug"
-                        type="text"
-                        placeholder="bitcoin"
-                        value={props.slug}
-                    />
-                </label>
-
-                <label class="input input-bordered">
-                    <span class="label">Symbol</span>
-                    <input
-                        name="symbol"
-                        type="text"
-                        placeholder="BTC"
-                        value={props.symbol}
-                    />
-                </label>
-
-                <label class="input input-bordered">
-                    <span class="label">CMC ID</span>
-                    <input
-                        name="cmcId"
-                        type="number"
-                        inputmode="numeric"
-                        placeholder="1"
-                        value={props.cmcId?.toString() ?? ""}
-                    />
-                </label>
-            </div>
-
-            <div class="modal-action">
-                <button
-                    type="button"
-                    class="btn btn-ghost"
-                    onclick="cryptocurrency_edit_modal.close()"
-                >
-                    Cancel
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    Save changes
-                </button>
-            </div>
-        </form>
-    );
-};
+    props: CryptocurrencyUpdate & { coinId: number; workspace?: boolean },
+) => (
+    <EditForm
+        entity="coin"
+        name={props.name}
+        url={`/coins/${props.coinId}/edit${props.workspace ? "?view=workspace" : ""}`}
+        target={
+            props.workspace
+                ? "#coin-workspace-identity"
+                : `#coin-table-row-${props.coinId}`
+        }
+        dialog="cryptocurrency_edit_modal"
+        event="coin"
+    >
+        <TextField entity="coin" name="name" label="Name" value={props.name} />
+        <TextField
+            entity="coin"
+            name="symbol"
+            label="Symbol"
+            value={props.symbol}
+        />
+        <TextField
+            entity="coin"
+            name="slug"
+            label="CoinMarketCap slug"
+            value={props.slug}
+        />
+        <TextField
+            entity="coin"
+            name="cmcId"
+            label="CMC ID"
+            type="number"
+            value={props.cmcId}
+        />
+    </EditForm>
+);

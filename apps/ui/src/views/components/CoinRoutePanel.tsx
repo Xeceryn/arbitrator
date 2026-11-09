@@ -142,6 +142,14 @@ export const CoinRoutePanel = ({ data }: PanelProps) => {
 
     return (
         <div class="flex flex-col gap-3">
+            {routes.some(
+                (route) => route.chain.code.toUpperCase() === "UNMPD",
+            ) ? (
+                <div class="alert alert-warning text-sm" role="status">
+                    Some matches use Unmapped Chain. Verify the network before
+                    transferring.
+                </div>
+            ) : null}
             <p class="text-sm opacity-60">
                 Rows withdraw, columns deposit.{" "}
                 <span class="tabular-nums" safe>

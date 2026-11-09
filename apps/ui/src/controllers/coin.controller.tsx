@@ -1,11 +1,8 @@
-import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status, t } from "elysia";
 
-import {
-    cryptocurrencyUpdateSchema,
-    listCryptocurrencySelectSchema,
-} from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
+import { listCryptocurrencySelectSchema } from "../../../lister/src/core/cryptocurrency/cryptocurrency.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
+import { clientsPlugin } from "../plugins/clients";
 import { htmx } from "../plugins/htmx";
 import {
     addErrorMessage,
@@ -18,6 +15,10 @@ import {
     CoinRoutePanel,
 } from "../views/components/CoinRoutePanel";
 import { CoinTableRow } from "../views/components/CoinTableRow";
+import {
+    CoinWorkspace,
+    CoinWorkspaceIdentity,
+} from "../views/components/CoinWorkspace";
 import { CryptocurrencyEditModalContent } from "../views/components/CryptoCurrencyEditModalContent";
 import { ValidationErrorList } from "../views/components/FormErrors";
 import { PageHeading } from "../views/components/PageHeading";
@@ -42,7 +43,7 @@ const addCoinForm = t.Object({
     name: t.Optional(t.String()),
     symbol: t.Optional(t.String()),
     slug: t.Optional(t.String()),
-    cmcId: t.Optional(t.String()),
+    cmcId: t.Optional(t.Union([t.String(), t.Number()])),
     logo: t.Optional(t.String()),
 });
 
@@ -50,6 +51,7 @@ export const CryptocurrencyController = new Elysia({
     name: "cryptocurrency",
     tags: ["coins"],
 })
+    .use(clientsPlugin)
     .use(htmx())
     .get(
         "/coins",
@@ -60,18 +62,15 @@ export const CryptocurrencyController = new Elysia({
             hx.pushURL(createPushURL("/coins", query));
             if (!hx.isHTMX) {
                 return (
-                    <BaseLayout
-                        title="Arbitrator - Cryptocurrencies"
-                        heading="Cryptocurrencies"
-                    >
+                    <BaseLayout title="Arbitrator - Coins" heading="Coins">
                         <CoinPage {...resolvedQuery(query)} />
                     </BaseLayout>
                 );
             }
             return (
                 <>
-                    <PageHeading heading="Cryptocurrencies" oob />
-                    <title>Cryptocurrencies</title>
+                    <PageHeading heading="Coins" oob />
+                    <title>Coins</title>
                     <CoinPage {...resolvedQuery(query)} />
                 </>
             );
@@ -100,7 +99,7 @@ export const CryptocurrencyController = new Elysia({
         {
             params: t.Object({ id: t.Integer() }),
         },
-        async ({ params }) => {
+        async ({ params, lister }) => {
             const { data, error } = await lister
                 .cryptocurrency({ id: params.id })
                 .get();
@@ -117,34 +116,74 @@ export const CryptocurrencyController = new Elysia({
         "/coins/:id/edit",
         {
             params: t.Object({ id: t.Integer() }),
-            body: cryptocurrencyUpdateSchema,
+            body: t.Omit(addCoinForm, ["logo"]),
+            query: t.Object({ view: t.Optional(t.Literal("workspace")) }),
         },
-        async ({ params, body, hx }) => {
-            console.log("/coins/:id/edit", params, body);
-
-            hx.triggerEvent({
-                "make-toast": {
-                    level: "info",
-                    message: "Coin Updated",
-                },
-                "coin-updated": {},
-            });
+        async ({ params, body, query, hx, lister }) => {
+            const parsed = formParse(
+                t.Partial(t.Omit(addCoinBody, ["logo"])),
+                body,
+            );
+            if (!parsed.ok) {
+                hx.triggerEvent({
+                    "coin-validation-error": {
+                        fields: parsed.messages.map(({ field }) => field),
+                    },
+                });
+                return status(
+                    422,
+                    <ValidationErrorList messages={parsed.messages} />,
+                );
+            }
 
             const { data, error } = await lister
                 .cryptocurrency({ id: params.id })
-                .patch(body);
+                .patch(parsed.value);
             if (error || !data) {
+                if (error && error.status < 500) {
+                    const messages =
+                        error.status === 404
+                            ? [
+                                  {
+                                      field: "",
+                                      message:
+                                          "This coin no longer exists. Close the editor and refresh the list.",
+                                  },
+                              ]
+                            : [addErrorMessage("coin", error, "save")];
+                    hx.triggerEvent({
+                        "coin-validation-error": {
+                            fields: messages.map(({ field }) => field),
+                        },
+                    });
+                    return status(
+                        422,
+                        <ValidationErrorList messages={messages} />,
+                    );
+                }
                 hx.reswap("none");
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: "failed to update coin",
+                        message:
+                            "Unable to save the coin. Your changes are still here. Try again.",
                     },
                 });
-                return status("No Content");
+                return status(502, "");
             }
 
-            return <CoinTableRow {...data} />;
+            hx.triggerEvent({
+                "make-toast": {
+                    level: "success",
+                    message: `${data.name} updated`,
+                },
+                "coin-updated": { id: data.id },
+            });
+            return query.view === "workspace" ? (
+                <CoinWorkspaceIdentity coin={data} />
+            ) : (
+                <CoinTableRow {...data} />
+            );
         },
     )
 
@@ -153,15 +192,17 @@ export const CryptocurrencyController = new Elysia({
         {
             params: t.Object({ id: t.Integer() }),
         },
-        async ({ params, hx }) => {
-            if (!hx.isHTMX) {
-                return redirect("/coins");
-            }
-
+        async ({ params, hx, lister }) => {
             const { data: coin, error: coinError } = await lister
                 .cryptocurrency({ id: params.id })
                 .get();
             if (coinError || !coin) {
+                if (!hx.isHTMX)
+                    return redirect(
+                        coinError?.status === 404
+                            ? "/not-found"
+                            : "/internal-server-error",
+                    );
                 hx.triggerEvent({
                     "make-toast": { level: "error", message: "coin not found" },
                 });
@@ -172,6 +213,7 @@ export const CryptocurrencyController = new Elysia({
                 .cryptocurrency({ id: params.id })
                 .routes.get();
             if (routesError || !routeData) {
+                if (!hx.isHTMX) return redirect("/internal-server-error");
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
@@ -181,11 +223,20 @@ export const CryptocurrencyController = new Elysia({
                 return status("No Content");
             }
 
-            return (
+            return hx.isHTMX ? (
                 <>
                     <CoinRoutePanel data={routeData} />
                     <CoinRouteHeader coin={coin} oob />
                 </>
+            ) : (
+                <BaseLayout
+                    title={`Arbitrator - ${coin.name} routes`}
+                    heading="Coins"
+                >
+                    <CoinWorkspace coin={coin} active="routes">
+                        <CoinRoutePanel data={routeData} />
+                    </CoinWorkspace>
+                </BaseLayout>
             );
         },
     )
@@ -194,8 +245,9 @@ export const CryptocurrencyController = new Elysia({
         "/coins/:id/edit-modal",
         {
             params: t.Object({ id: t.Integer() }),
+            query: t.Object({ view: t.Optional(t.Literal("workspace")) }),
         },
-        async ({ params, hx }) => {
+        async ({ params, query, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
@@ -210,11 +262,46 @@ export const CryptocurrencyController = new Elysia({
                         message: "coin not found",
                     },
                 });
+                return status("No Content");
             }
 
             return (
-                <CryptocurrencyEditModalContent coinId={params.id} {...data} />
+                <CryptocurrencyEditModalContent
+                    coinId={params.id}
+                    workspace={query.view === "workspace"}
+                    {...data}
+                />
             );
+        },
+    )
+
+    .delete(
+        "/coins/:id",
+        { params: t.Object({ id: t.Integer() }) },
+        async ({ params, hx, lister }) => {
+            const { data, error } = await lister
+                .cryptocurrency({ id: params.id })
+                .delete();
+            if (error || !data) {
+                hx.reswap("none");
+                hx.triggerEvent({
+                    "make-toast": {
+                        level: "error",
+                        message:
+                            "Unable to delete the coin. Refresh the list and try again.",
+                    },
+                });
+                return status("No Content");
+            }
+            hx.triggerEvent({
+                "make-toast": {
+                    level: "success",
+                    message: `${data.name} deleted`,
+                    target: "body",
+                },
+                "coin-deleted": { target: "body", id: data.id },
+            });
+            return "";
         },
     )
 
@@ -223,7 +310,7 @@ export const CryptocurrencyController = new Elysia({
         {
             body: addCoinForm,
         },
-        async ({ body, hx }) => {
+        async ({ body, hx, lister }) => {
             const parsed = formParse(addCoinBody, body);
             if (!parsed.ok) {
                 const messages = parsed.messages;

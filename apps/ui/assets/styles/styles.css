@@ -44,6 +44,32 @@
     background-image: none;
 }
 
+/* Table actions live in the top layer rather than inside the scroll box. */
+.row-actions {
+    position-area: bottom span-left;
+    position-try-fallbacks: flip-block, flip-inline;
+    margin: 0.25rem 0;
+}
+
+::selection {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+}
+
+input {
+    caret-color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal,
+    .modal-box,
+    .toggle,
+    .loading {
+        animation: none;
+        transition: none;
+    }
+}
+
 /*
   Signal board colours, keyed by the (buy base currency → sell base currency)
   pair. These are intentionally theme-independent: the pair colour is the

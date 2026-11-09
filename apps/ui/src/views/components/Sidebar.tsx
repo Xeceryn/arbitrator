@@ -20,12 +20,15 @@ const navItemClass = "is-drawer-close:tooltip is-drawer-close:tooltip-right";
 const SideBarItem = ({
     title,
     path,
+    active,
     children,
-}: PropsWithChildren<{ title: string; path: string }>) => (
+}: PropsWithChildren<{ title: string; path: string; active?: string }>) => (
     <li>
         <a
             href={`/${path}`}
-            class={navItemClass}
+            class={`${navItemClass} ${active === title ? "menu-active" : ""}`}
+            aria-label={title}
+            aria-current={active === title ? "page" : undefined}
             data-tip={title}
             onclick="document.getElementById('coin_assignment_dialog')?.close()"
         >
@@ -42,11 +45,16 @@ const SideBarItem = ({
  * expands to labels (`is-drawer-open`). The drawer wrapper lives in
  * `BaseLayout`.
  */
-export const Sidebar = () => (
+export const Sidebar = ({ active }: { active?: string }) => (
     <div class="flex min-h-full flex-col items-start bg-base-100 is-drawer-close:w-14 is-drawer-open:w-64">
         <ul class="menu w-full grow">
             <li>
-                <a href="/" class={navItemClass} data-tip="Arbitrator">
+                <a
+                    href="/"
+                    class={navItemClass}
+                    data-tip="Arbitrator"
+                    aria-label="Arbitrator home"
+                >
                     <img
                         class="mask mask-squircle size-5"
                         src="/public/favicon.ico"
@@ -57,19 +65,19 @@ export const Sidebar = () => (
                     </span>
                 </a>
             </li>
-            <SideBarItem title="Cryptocurrency Management" path="coins">
+            <SideBarItem title="Coins" path="coins" active={active}>
                 <CoinsIcon />
             </SideBarItem>
-            <SideBarItem title="Exchange Management" path="markets">
+            <SideBarItem title="Exchanges" path="markets" active={active}>
                 <ExchangeIcon />
             </SideBarItem>
-            <SideBarItem title="Worker Orchestration" path="workers">
+            <SideBarItem title="Workers" path="workers" active={active}>
                 <ServerIcon />
             </SideBarItem>
-            <SideBarItem title="Signals" path="signals">
+            <SideBarItem title="Signals" path="signals" active={active}>
                 <SignalIcon />
             </SideBarItem>
-            <SideBarItem title="Chain Management" path="chain">
+            <SideBarItem title="Chains" path="chain" active={active}>
                 <ChainIcon />
             </SideBarItem>
         </ul>

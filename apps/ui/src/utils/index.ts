@@ -155,7 +155,15 @@ export function formParse<T extends TSchema>(
 ):
     | { ok: true; value: Static<T> }
     | { ok: false; messages: ValidationMessage[] } {
-    const value = Value.Convert(schema, Value.Clone(body));
+    const value = Value.Convert(
+        schema,
+        Object.fromEntries(
+            Object.entries(body).map(([key, value]) => [
+                key,
+                typeof value === "string" ? value.trim() : value,
+            ]),
+        ),
+    );
     const errors = Value.Errors(schema, value);
     if (errors.length === 0) return { ok: true, value: value as Static<T> };
 
@@ -244,6 +252,7 @@ export function apiErrorMessage(error: ApiError): string | undefined {
 export function addErrorMessage(
     entity: string,
     error: ApiError,
+    action: "add" | "save" = "add",
 ): ValidationMessage {
     const raw = apiErrorMessage(error) ?? "";
     if (/cmc\s*id/i.test(raw)) {
@@ -269,7 +278,7 @@ export function addErrorMessage(
     }
     return {
         field: "",
-        message: `Could not add the ${entity}. Check the details are unique, then try again.`,
+        message: `Could not ${action} the ${entity}. Check the details are unique, then try again.`,
     };
 }
 

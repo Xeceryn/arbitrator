@@ -1,8 +1,8 @@
-import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status, t } from "elysia";
 
 import { listChainSelectSchema } from "../../../lister/src/core/chain/chain.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
+import { clientsPlugin } from "../plugins/clients";
 import { htmx } from "../plugins/htmx";
 import {
     addErrorMessage,
@@ -34,6 +34,7 @@ export const ChainController = new Elysia({
     name: "chain",
     tags: ["chains"],
 })
+    .use(clientsPlugin)
     .use(htmx())
 
     .get(
@@ -79,7 +80,7 @@ export const ChainController = new Elysia({
         {
             params: t.Object({ id: t.Integer() }),
         },
-        async ({ params, hx }) => {
+        async ({ params, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/chain");
             }
@@ -103,25 +104,62 @@ export const ChainController = new Elysia({
         "/chain/:id/edit",
         {
             params: t.Object({ id: t.Integer() }),
-            body: chainUpdateBody,
+            body: chainForm,
         },
-        async ({ params, body, hx }) => {
+        async ({ params, body, hx, lister }) => {
+            const parsed = formParse(chainUpdateBody, body);
+            if (!parsed.ok) {
+                hx.triggerEvent({
+                    "chain-validation-error": {
+                        fields: parsed.messages.map(({ field }) => field),
+                    },
+                });
+                return status(
+                    422,
+                    <ValidationErrorList messages={parsed.messages} />,
+                );
+            }
             const { data, error } = await lister
                 .chain({ id: params.id })
-                .patch(body);
+                .patch(parsed.value);
             if (error || !data) {
+                if (error && error.status < 500) {
+                    const messages =
+                        error.status === 404
+                            ? [
+                                  {
+                                      field: "",
+                                      message:
+                                          "This chain no longer exists. Close the editor and refresh the list.",
+                                  },
+                              ]
+                            : [addErrorMessage("chain", error, "save")];
+                    hx.triggerEvent({
+                        "chain-validation-error": {
+                            fields: messages.map(({ field }) => field),
+                        },
+                    });
+                    return status(
+                        422,
+                        <ValidationErrorList messages={messages} />,
+                    );
+                }
                 hx.reswap("none");
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: "failed to update chain",
+                        message:
+                            "Unable to save the chain. Your changes are still here. Try again.",
                     },
                 });
-                return status("No Content");
+                return status(502, "");
             }
 
             hx.triggerEvent({
-                "make-toast": { level: "success", message: "Chain updated" },
+                "make-toast": {
+                    level: "success",
+                    message: `${data.name} updated`,
+                },
                 "chain-updated": {},
             });
             return <ChainTableRow {...data} />;
@@ -133,23 +171,31 @@ export const ChainController = new Elysia({
         {
             params: t.Object({ id: t.Integer() }),
         },
-        async ({ params, hx }) => {
-            const { error } = await lister.chain({ id: params.id }).delete();
-            if (error) {
+        async ({ params, hx, lister }) => {
+            const { data, error } = await lister
+                .chain({ id: params.id })
+                .delete();
+            if (error || !data) {
                 hx.reswap("none");
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: "failed to delete chain",
+                        message:
+                            "Unable to delete the chain. Refresh the list and try again.",
                     },
                 });
                 return status("No Content");
             }
 
             hx.triggerEvent({
-                "make-toast": { level: "success", message: "Chain deleted" },
+                "make-toast": {
+                    level: "success",
+                    message: `${data.name} deleted`,
+                    target: "body",
+                },
+                "chain-deleted": { target: "body", id: data.id },
             });
-            return status("OK");
+            return "";
         },
     )
 
@@ -158,7 +204,7 @@ export const ChainController = new Elysia({
         {
             body: chainForm,
         },
-        async ({ body, hx }) => {
+        async ({ body, hx, lister }) => {
             const parsed = formParse(chainBody, body);
             if (!parsed.ok) {
                 const messages = parsed.messages;

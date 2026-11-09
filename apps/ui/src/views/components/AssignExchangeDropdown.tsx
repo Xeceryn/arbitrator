@@ -3,6 +3,8 @@ import type {
     PaginatedExchangeList,
 } from "@arbitrator/lister/types";
 
+import { ArrowRightIcon } from "./icons";
+
 /** Complete, current-state candidate URL. Every page control owns its URL. */
 function candidatePageUrl(
     coinId: number,
@@ -25,26 +27,31 @@ export const AvailableExchangeRow = ({
     <li id={`available-exchange-${exchange.id}`}>
         <button
             type="button"
-            class="flex items-center justify-between gap-2"
+            class="flex min-h-16 items-center justify-between gap-3 rounded-field bg-base-200 px-3 py-3 hover:bg-base-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             aria-label={`Select ${exchange.name}`}
             hx-get={`/coins/${coinId}/assignments/select?exchangeId=${exchange.id}`}
             hx-target="#assignment-staging"
             hx-swap="innerHTML"
-            hx-indicator="#coin-assignment-indicator"
+            hx-indicator="#assignment-staging-indicator"
         >
-            <span class="flex min-w-0 items-center gap-2">
-                <span class="avatar">
-                    <span class="mask mask-circle size-6">
-                        <img src={exchange.logo} alt="" loading="lazy" />
+            <span class="flex min-w-0 items-center gap-3">
+                <img
+                    src={exchange.logo}
+                    alt=""
+                    class="size-8 shrink-0 rounded-full object-contain"
+                    loading="lazy"
+                />
+                <span class="min-w-0 text-left">
+                    <span class="block break-words font-medium">
+                        {exchange.name}
+                    </span>
+                    <span class="block break-all text-xs text-base-content/80">
+                        {exchange.slug}
                     </span>
                 </span>
-                <span class="truncate">{exchange.name}</span>
             </span>
-            <span class="flex items-center gap-2">
-                <span class="badge badge-ghost badge-sm font-mono">
-                    {exchange.slug}
-                </span>
-                <span class="text-xs font-medium text-primary">Select</span>
+            <span class="flex shrink-0 items-center gap-2 text-sm font-medium">
+                Select <ArrowRightIcon />
             </span>
         </button>
     </li>
@@ -74,12 +81,13 @@ export const AvailableExchanges = ({ coinId, data }: AvailableProps) => {
                             </p>
                             <button
                                 type="button"
-                                class="btn btn-ghost btn-xs mt-2"
+                                class="btn btn-sm min-h-11 mt-3"
                                 hx-get={`/coins/${coinId}/available-exchanges`}
                                 hx-target="#available-exchanges"
                                 hx-swap="innerHTML"
                                 hx-sync="#available-exchanges:replace"
                                 hx-indicator="#exchange-search-indicator"
+                                hx-on:click="const i=document.getElementById('exchange-search');i.value='';i.focus()"
                             >
                                 Clear search
                             </button>
@@ -91,7 +99,7 @@ export const AvailableExchanges = ({ coinId, data }: AvailableProps) => {
                     )}
                 </div>
             ) : (
-                <ul class="menu w-full rounded-field border border-base-300 bg-base-100 p-1 shadow-sm">
+                <ul class="menu w-full gap-2 p-0">
                     {data.data.map((exchange) => (
                         <AvailableExchangeRow
                             coinId={coinId}
@@ -102,10 +110,10 @@ export const AvailableExchanges = ({ coinId, data }: AvailableProps) => {
             )}
 
             {data.meta.pages > 1 ? (
-                <div class="mt-2 flex items-center justify-between gap-2">
+                <div class="mt-4 flex items-center justify-between gap-2">
                     <button
                         type="button"
-                        class="btn btn-xs"
+                        class="btn btn-sm min-h-11"
                         disabled={!data.meta.hasPreviousPage}
                         aria-label="Previous page of exchanges"
                         hx-get={candidatePageUrl(
@@ -120,12 +128,12 @@ export const AvailableExchanges = ({ coinId, data }: AvailableProps) => {
                     >
                         Previous
                     </button>
-                    <span class="text-xs opacity-60">
+                    <span class="text-xs text-base-content/80">
                         Page {data.meta.page} of {data.meta.pages}
                     </span>
                     <button
                         type="button"
-                        class="btn btn-xs"
+                        class="btn btn-sm min-h-11"
                         disabled={!data.meta.hasNextPage}
                         aria-label="Next page of exchanges"
                         hx-get={candidatePageUrl(

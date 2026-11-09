@@ -1,64 +1,54 @@
 import type {
     CryptocurrencySelect,
     ExchangeSelect,
+    PaginatedExchangeList,
 } from "@arbitrator/lister/types";
 
+import { AvailableExchanges } from "./AssignExchangeDropdown";
 import { SearchIcon } from "./icons";
 
 /**
  * Step 1 of the staged assignment flow: choose an exchange.
  *
- * Swapped into `#assignment-staging` by the "Add exchange" control. The
- * candidate region starts empty and only fills after a deliberate search,
- * submit or pagination click — there is no `hx-trigger="load"` anywhere.
+ * Swapped into the assignment dialog by the "Assign exchange" control. The
+ * candidates arrive in the same response, so opening the picker never looks empty.
  */
-export const ExchangePicker = ({ coinId }: { coinId: number }) => (
+export const ExchangePicker = ({
+    coinId,
+    data,
+}: {
+    coinId: number;
+    data: PaginatedExchangeList;
+}) => (
     <div id="assignment-exchange-picker">
-        <div class="mb-3 flex items-center justify-between gap-2">
-            <h3 class="text-sm font-semibold">Choose an exchange</h3>
-            <button
-                type="button"
-                class="btn btn-ghost btn-xs"
-                hx-on:click="this.closest('#assignment-staging').replaceChildren(); document.getElementById('add-exchange-button')?.setAttribute('aria-expanded','false')"
-            >
-                Cancel
-            </button>
-        </div>
+        <h3 class="mb-3 text-base font-semibold">Choose an exchange</h3>
 
         <form
             class="flex flex-col"
             hx-get={`/coins/${coinId}/available-exchanges`}
             hx-target="#available-exchanges"
             hx-swap="innerHTML"
-            hx-trigger="submit"
+            hx-trigger="submit, input delay:300ms, search"
             hx-sync="#available-exchanges:replace"
             hx-indicator="#exchange-search-indicator"
         >
-            <label class="input input-bordered w-full">
+            <label class="input min-h-11 w-full bg-base-100">
                 <span class="sr-only">Search exchanges</span>
                 <SearchIcon />
                 <input
                     id="exchange-search"
                     type="search"
                     name="search"
-                    placeholder="Search exchange"
+                    class="min-w-0 placeholder:text-base-content/70 placeholder:opacity-100 focus:border-transparent focus:ring-0 focus:outline-none"
+                    placeholder="Search exchanges"
                     autocomplete="off"
-                    hx-get={`/coins/${coinId}/available-exchanges`}
-                    hx-target="#available-exchanges"
-                    hx-swap="innerHTML"
-                    hx-trigger="input changed delay:300ms, search"
-                    hx-include="closest form"
-                    hx-sync="#available-exchanges:replace"
-                    hx-indicator="#exchange-search-indicator"
+                    data-autofocus
                 />
+                <span
+                    id="exchange-search-indicator"
+                    class="htmx-indicator loading loading-spinner loading-xs"
+                ></span>
             </label>
-            <span
-                id="exchange-search-indicator"
-                class="htmx-indicator loading loading-spinner loading-xs"
-            ></span>
-            <button type="submit" class="btn btn-primary btn-sm mt-2 w-fit">
-                Search
-            </button>
         </form>
 
         {/* Stable region: rendered before its content, announced politely. */}
@@ -66,8 +56,19 @@ export const ExchangePicker = ({ coinId }: { coinId: number }) => (
             id="available-exchanges"
             role="status"
             aria-live="polite"
-            class="mt-2 flex flex-col"
-        ></div>
+            class="mt-4 flex flex-col"
+        >
+            <AvailableExchanges coinId={coinId} data={data} />
+        </div>
+        <div class="mt-5 flex justify-end border-t border-base-300 pt-4">
+            <button
+                type="button"
+                class="btn min-h-11"
+                hx-on:click="this.closest('dialog').close()"
+            >
+                Cancel
+            </button>
+        </div>
     </div>
 );
 
@@ -82,6 +83,7 @@ export const ExchangeSymbolInput = ({
     invalid = false,
     describedBy,
     ariaLabel = "Exchange symbol",
+    focusOnLoad = false,
 }: {
     id?: string;
     value: string;
@@ -93,6 +95,7 @@ export const ExchangeSymbolInput = ({
      * association and no duplicated name.
      */
     ariaLabel?: string | null;
+    focusOnLoad?: boolean;
 }) => (
     <input
         id={id}
@@ -101,10 +104,11 @@ export const ExchangeSymbolInput = ({
         value={value}
         maxlength="255"
         autocomplete="off"
-        class={`input input-bordered w-full font-mono ${invalid ? "input-error" : ""}`}
+        class={`input min-h-11 w-full bg-base-100 font-mono ${invalid ? "input-error" : ""}`}
         aria-label={ariaLabel ?? undefined}
         aria-invalid={invalid ? "true" : undefined}
-        aria-describedby={invalid ? describedBy : undefined}
+        aria-describedby={describedBy}
+        data-autofocus={focusOnLoad ? "true" : undefined}
     />
 );
 
@@ -122,10 +126,7 @@ type ConfirmProps = {
 /**
  * Step 2: an explicit confirmation before anything is written.
  *
- * The root listens for `assignment-exchange-added` and re-requests step 1 into
- * `#assignment-staging`. That is the whole reset mechanism: after a successful
- * assign the region returns to step 1 purely from server-provided markup, with
- * no client routing state to keep in sync.
+ * Close only after a successful write; validation leaves this form intact.
  */
 export const AssignmentConfirmCard = ({
     coin,
@@ -134,29 +135,42 @@ export const AssignmentConfirmCard = ({
 }: ConfirmProps) => (
     <div
         id="assignment-confirm"
-        hx-trigger="assignment-exchange-added from:body"
-        hx-get={`/coins/${coin.id}/assignment/new`}
-        hx-target="#assignment-staging"
-        hx-swap="innerHTML"
-        hx-indicator="#coin-assignment-indicator"
+        hx-on:assignment-exchange-added="this.closest('dialog').close()"
     >
-        <h3 class="text-sm font-semibold">Confirm assignment</h3>
-        <p class="mt-1 text-sm opacity-70">
-            Assign <span class="font-medium">{coin.name}</span> to{" "}
-            <span class="font-medium">{exchange.name}</span> as{" "}
-            <span class="font-mono">{defaultSymbol}</span>.
-        </p>
+        <div class="flex items-center justify-between gap-3 border-b border-base-300 pb-4">
+            <div class="flex min-w-0 items-center gap-3">
+                <img
+                    src={exchange.logo}
+                    alt=""
+                    class="size-9 shrink-0 rounded-full object-contain"
+                />
+                <h3 class="break-words text-base font-semibold">
+                    {exchange.name}
+                </h3>
+            </div>
+            <button
+                type="button"
+                class="btn btn-sm min-h-11 shrink-0"
+                hx-get={`/coins/${coin.id}/assignment/new`}
+                hx-target="#assignment-staging"
+                hx-swap="innerHTML"
+                hx-indicator="#assignment-staging-indicator"
+            >
+                Change exchange
+            </button>
+        </div>
 
         {/* Persistent error region: it is rendered first and only its content
         changes, so a 422 retarget always has a target. */}
         <div id="assignment-error" role="alert" class="mt-2"></div>
 
         <form
-            class="mt-3 flex flex-col gap-3"
+            class="mt-4 flex flex-col gap-5"
             hx-post={`/coins/${coin.id}/assignments`}
             hx-target="#coin-assignment-list"
             hx-swap="beforeend"
-            hx-indicator="#coin-assignment-indicator"
+            hx-indicator="#assignment-staging-indicator"
+            data-hx-disable="find button[type=submit]"
             hx-vals="js:{ tradeEnabled: this.querySelector('[name=tradeEnabled]').checked }"
             {...{ "hx-status:422": "target:#assignment-error swap:innerHTML" }}
             {...{ "hx-status:5xx": "swap:none" }}
@@ -167,40 +181,38 @@ export const AssignmentConfirmCard = ({
                 value={String(exchange.id)}
             />
 
-            <div class="form-control w-full">
-                <label class="label-text" for="exchange-symbol-input">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-medium" for="exchange-symbol-input">
                     Exchange symbol
                 </label>
-                <ExchangeSymbolInput value={defaultSymbol} ariaLabel={null} />
-                <span class="mt-1 text-xs opacity-60">
-                    Optional. Leave the suggested value to use the coin symbol.
-                </span>
+                <ExchangeSymbolInput
+                    value={defaultSymbol}
+                    ariaLabel={null}
+                    focusOnLoad
+                />
             </div>
 
-            <label class="label w-fit cursor-pointer gap-2">
-                <span class="label-text">Trade enabled</span>
+            <label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-field bg-base-200 p-3 text-sm font-medium">
+                <span>Enable trading</span>
                 <input
                     type="checkbox"
                     name="tradeEnabled"
                     value="true"
                     checked
-                    class="toggle toggle-sm"
+                    class="toggle"
                 />
             </label>
 
-            <div class="flex flex-wrap gap-2">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    Assign exchange
-                </button>
+            <div class="flex flex-wrap justify-end gap-2 border-t border-base-300 pt-4">
                 <button
                     type="button"
-                    class="btn btn-ghost btn-sm"
-                    hx-get={`/coins/${coin.id}/assignment/new`}
-                    hx-target="#assignment-staging"
-                    hx-swap="innerHTML"
-                    hx-indicator="#coin-assignment-indicator"
+                    class="btn min-h-11"
+                    hx-on:click="this.closest('dialog').close()"
                 >
-                    Choose another exchange
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary min-h-11">
+                    Add exchange
                 </button>
             </div>
         </form>

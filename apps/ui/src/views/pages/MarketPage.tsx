@@ -31,18 +31,18 @@ const MarketFilter = (props: Resolved<ListExchangeInput>) => {
             hx-get="/markets/list"
             hx-target="#market-list-results"
             hx-swap="outerMorph"
-            hx-trigger="submit, input delay:300ms"
+            hx-trigger="submit, input delay:300ms, exchange-deleted from:body"
             hx-sync="this:replace"
             hx-indicator="#market-list-indicator"
-            class="flex flex-wrap items-center gap-2"
+            class="relative flex flex-wrap items-center gap-3"
         >
             <span
                 id="market-list-indicator"
-                class="htmx-indicator loading loading-spinner loading-sm"
+                class="htmx-indicator loading loading-spinner loading-xs absolute -right-2 -top-2"
             ></span>
 
-            <div class="join">
-                <label class="input input-bordered join-item">
+            <div class="join min-w-0 w-full sm:w-auto sm:flex-1">
+                <label class="input join-item min-w-0 flex-1">
                     <span class="sr-only">Search exchanges</span>
                     <SearchIcon />
                     <input
@@ -53,7 +53,7 @@ const MarketFilter = (props: Resolved<ListExchangeInput>) => {
                         autocomplete="off"
                     />
                 </label>
-                <label class="select select-bordered join-item">
+                <label class="select join-item w-24 shrink-0 sm:w-36">
                     <span class="sr-only">Search by</span>
                     <select name="searchBy">
                         {ExchangeSearchByOptions.map((option) => (
@@ -65,7 +65,7 @@ const MarketFilter = (props: Resolved<ListExchangeInput>) => {
                 </label>
             </div>
 
-            <label class="select select-bordered w-40">
+            <label class="select w-24 shrink-0">
                 <span class="sr-only">Rows per page</span>
                 <select name="limit">
                     {LIMIT_OPTIONS.map((option) => (
@@ -142,12 +142,12 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
                                 target="#market-list-results"
                                 indicator="#market-list-indicator"
                                 field="name"
-                                name="Name / Slug"
+                                name="Name"
                                 orderBy={props.orderBy}
                                 order={props.order}
                                 class="w-1/2 whitespace-normal"
                             >
-                                Name / Slug
+                                Name
                             </SortableHeader>
                             <SortableHeader
                                 form="market-filter"
@@ -199,7 +199,7 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
                                 order={props.order}
                                 class="hidden lg:table-cell"
                             >
-                                Created At
+                                Created
                             </SortableHeader>
                             <SortableHeader
                                 form="market-filter"
@@ -212,11 +212,9 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
                                 order={props.order}
                                 class="hidden lg:table-cell"
                             >
-                                Updated At
+                                Updated
                             </SortableHeader>
-                            <th class="w-20 text-right">
-                                <span class="sr-only">Actions</span>
-                            </th>
+                            <th class="w-20 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="market-table-body">
@@ -227,18 +225,33 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
                         ) : (
                             <tr id="market-table-empty">
                                 <td colspan="7" class="py-16 text-center">
-                                    <p class="font-medium">No exchanges yet</p>
-                                    <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
-                                        Add an exchange to start building
-                                        markets.
+                                    <p class="font-medium">
+                                        {props.search
+                                            ? "No matching exchanges"
+                                            : "No exchanges yet"}
                                     </p>
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary mt-4"
-                                        onclick="add_exchange_modal.showModal()"
-                                    >
-                                        <PlusIcon /> Add exchange
-                                    </button>
+                                    {props.search ? (
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm mt-4"
+                                            hx-get="/markets/list"
+                                            hx-include="#market-filter"
+                                            hx-vals='{"search":""}'
+                                            hx-target="#market-list-results"
+                                            hx-swap="outerMorph"
+                                            hx-on:click="document.querySelector('#market-filter [name=search]').value=''"
+                                        >
+                                            Clear search
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary mt-4"
+                                            onclick="add_exchange_modal.showModal()"
+                                        >
+                                            <PlusIcon /> Add exchange
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         )}
@@ -267,6 +280,7 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
                         <PageButton
                             form="market-filter"
                             page={1}
+                            edge
                             disabled={data.meta.page === 1}
                         >
                             First
@@ -281,7 +295,7 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
                         <button
                             type="button"
                             disabled
-                            class="join-item btn btn-outline"
+                            class="join-item btn btn-sm sm:btn-md"
                         >
                             Page{" "}
                             <span class="tabular-nums" safe>
@@ -298,6 +312,7 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
                         <PageButton
                             form="market-filter"
                             page={data.meta.pages}
+                            edge
                             disabled={
                                 data.meta.page === data.meta.pages ||
                                 data.meta.items === 0
@@ -317,8 +332,8 @@ export const MarketResults = async (props: Resolved<ListExchangeInput>) => {
  */
 export const MarketList = (props: Resolved<ListExchangeInput>) => (
     <section id="market-list" class="w-full">
-        <div class="card w-full bg-base-100 shadow-xl">
-            <div class="card-body p-4 sm:p-8">
+        <div class="card w-full bg-base-100 shadow-sm">
+            <div class="card-body gap-5 p-3 sm:p-6">
                 <MarketFilter {...props} />
                 <MarketResults {...props} />
             </div>

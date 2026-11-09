@@ -1,8 +1,8 @@
-import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status, t } from "elysia";
 
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
 import { BaseLayout } from "../helpers/BaseLayout";
+import { clientsPlugin } from "../plugins/clients";
 import { htmx } from "../plugins/htmx";
 import {
     addErrorMessage,
@@ -10,7 +10,6 @@ import {
     formBoolean,
     formParse,
     resolvedQuery,
-    toBoolean,
 } from "../utils";
 import { ExchangeEditModalContent } from "../views/components/ExchangeEditModalContent";
 import { ValidationErrorList } from "../views/components/FormErrors";
@@ -36,32 +35,21 @@ const exchangeBody = t.Object({
     }),
 });
 
-/** Route body of the edit form: the same fields, coerced instead of enforced. */
-const exchangeUpdateBody = t.Partial(
-    t.Object({
-        cmcId: t.Integer({ minimum: 1 }),
-        name: t.String({ minLength: 1 }),
-        slug: t.String({ minLength: 1 }),
-        logo: t.String({ minLength: 1 }),
-        baseCurrency: t.Union([t.Literal("usdt"), t.Literal("idr")]),
-        registeredOnCmc: formBoolean,
-    }),
-);
-
 /** Loose route body: every field is posted as a string (or not at all). */
 const exchangeForm = t.Object({
-    cmcId: t.Optional(t.String()),
+    cmcId: t.Optional(t.Union([t.String(), t.Number()])),
     name: t.Optional(t.String()),
     slug: t.Optional(t.String()),
     logo: t.Optional(t.String()),
     baseCurrency: t.Optional(t.String()),
-    registeredOnCmc: t.Optional(t.String()),
+    registeredOnCmc: t.Optional(formBoolean),
 });
 
 export const ExchangeController = new Elysia({
     name: "exchange",
     tags: ["markets"],
 })
+    .use(clientsPlugin)
     .use(htmx())
 
     .get(
@@ -110,7 +98,7 @@ export const ExchangeController = new Elysia({
         {
             params: t.Object({ id: t.Integer() }),
         },
-        async ({ params, hx }) => {
+        async ({ params, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/markets");
             }
@@ -138,31 +126,95 @@ export const ExchangeController = new Elysia({
         "/markets/:id/edit",
         {
             params: t.Object({ id: t.Integer() }),
-            body: exchangeUpdateBody,
+            body: exchangeForm,
         },
-        async ({ params, body, hx }) => {
+        async ({ params, body, hx, lister }) => {
+            const parsed = formParse(t.Partial(exchangeBody), body);
+            if (!parsed.ok) {
+                hx.triggerEvent({
+                    "exchange-validation-error": {
+                        fields: parsed.messages.map(({ field }) => field),
+                    },
+                });
+                return status(
+                    422,
+                    <ValidationErrorList messages={parsed.messages} />,
+                );
+            }
             const { data, error } = await lister
                 .exchange({ id: params.id })
-                .patch({
-                    ...body,
-                    registeredOnCmc: toBoolean(body.registeredOnCmc),
+                .patch(parsed.value);
+            if (error || !data) {
+                if (error && error.status < 500) {
+                    const messages =
+                        error.status === 404
+                            ? [
+                                  {
+                                      field: "",
+                                      message:
+                                          "This exchange no longer exists. Close the editor and refresh the list.",
+                                  },
+                              ]
+                            : [addErrorMessage("exchange", error, "save")];
+                    hx.triggerEvent({
+                        "exchange-validation-error": {
+                            fields: messages.map(({ field }) => field),
+                        },
+                    });
+                    return status(
+                        422,
+                        <ValidationErrorList messages={messages} />,
+                    );
+                }
+                hx.reswap("none");
+                hx.triggerEvent({
+                    "make-toast": {
+                        level: "error",
+                        message:
+                            "Unable to save the exchange. Your changes are still here. Try again.",
+                    },
                 });
+                return status(502, "");
+            }
+
+            hx.triggerEvent({
+                "make-toast": {
+                    level: "success",
+                    message: `${data.name} updated`,
+                },
+                "exchange-updated": {},
+            });
+            return <MarketTableRow {...data} />;
+        },
+    )
+
+    .delete(
+        "/markets/:id",
+        { params: t.Object({ id: t.Integer() }) },
+        async ({ params, hx, lister }) => {
+            const { data, error } = await lister
+                .exchange({ id: params.id })
+                .delete();
             if (error || !data) {
                 hx.reswap("none");
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
-                        message: "failed to update exchange",
+                        message:
+                            "Unable to delete the exchange. Refresh the list and try again.",
                     },
                 });
                 return status("No Content");
             }
-
             hx.triggerEvent({
-                "make-toast": { level: "success", message: "Exchange updated" },
-                "exchange-updated": {},
+                "make-toast": {
+                    level: "success",
+                    message: `${data.name} deleted`,
+                    target: "body",
+                },
+                "exchange-deleted": { target: "body", id: data.id },
             });
-            return <MarketTableRow {...data} />;
+            return "";
         },
     )
 
@@ -171,7 +223,7 @@ export const ExchangeController = new Elysia({
         {
             body: exchangeForm,
         },
-        async ({ body, hx }) => {
+        async ({ body, hx, lister }) => {
             const parsed = formParse(exchangeBody, body);
             if (!parsed.ok) {
                 const messages = parsed.messages;

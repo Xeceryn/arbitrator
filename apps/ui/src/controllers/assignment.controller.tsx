@@ -1,8 +1,9 @@
-import { lister } from "@arbitrator/sdk";
 import { Elysia, redirect, status, t } from "elysia";
 
 import { listChainSelectSchema } from "../../../lister/src/core/chain/chain.schema";
 import { listExchangeSelectSchema } from "../../../lister/src/core/exchange/exchange.schema";
+import { BaseLayout } from "../helpers/BaseLayout";
+import { clientsPlugin, type AppClients } from "../plugins/clients";
 import { htmx } from "../plugins/htmx";
 import { formBoolean, toBoolean } from "../utils";
 import { AvailableChains } from "../views/components/AssignChainDropdown";
@@ -20,9 +21,9 @@ import {
 } from "../views/components/AssignmentStaging";
 import {
     CoinAssignmentEmpty,
-    CoinAssignmentHeader,
     CoinAssignmentPanel,
 } from "../views/components/CoinAssignmentPanel";
+import { CoinWorkspace } from "../views/components/CoinWorkspace";
 import { ExchangeAssignmentCard } from "../views/components/ExchangeAssignmentCard";
 import {
     ChainLinkRow,
@@ -51,7 +52,10 @@ function isConflict(error: { status: number } | null | undefined): boolean {
  * list mutation so the target always exists and only its `hidden` state
  * changes. Never emits a partial that deletes an element that could be absent.
  */
-async function renderAssignmentEmptyPartial(coinId: number) {
+async function renderAssignmentEmptyPartial(
+    lister: AppClients["lister"],
+    coinId: number,
+) {
     const { data: markets, error } = await lister.market.detailed.get({
         query: { cryptocurrencyId: coinId },
     });
@@ -71,7 +75,10 @@ async function renderAssignmentEmptyPartial(coinId: number) {
 }
 
 /** Same idea as the exchange empty state, scoped to one market's chain list. */
-async function renderChainEmptyPartial(marketId: number) {
+async function renderChainEmptyPartial(
+    lister: AppClients["lister"],
+    marketId: number,
+) {
     const { data: links, error } = await lister["chain-link"].detailed.get({
         query: { marketId },
     });
@@ -94,7 +101,11 @@ async function renderChainEmptyPartial(marketId: number) {
 }
 
 /** Initial (and only full) render of the expanded chain panel for a market. */
-async function renderMarketChains(coinId: number, marketId: number) {
+async function renderMarketChains(
+    lister: AppClients["lister"],
+    coinId: number,
+    marketId: number,
+) {
     const { data: links, error } = await lister["chain-link"].detailed.get({
         query: { marketId },
     });
@@ -114,6 +125,7 @@ export const AssignmentController = new Elysia({
     name: "assignment",
     tags: ["assignment"],
 })
+    .use(clientsPlugin)
     .use(htmx())
 
     // Full side-panel content for a coin's assignments. Initial load only;
@@ -121,15 +133,17 @@ export const AssignmentController = new Elysia({
     .get(
         "/coins/:id/assignment",
         { params: idParam },
-        async ({ params, hx }) => {
-            if (!hx.isHTMX) {
-                return redirect("/coins");
-            }
-
+        async ({ params, hx, lister }) => {
             const { data: coin, error: coinError } = await lister
                 .cryptocurrency({ id: params.id })
                 .get();
             if (coinError || !coin) {
+                if (!hx.isHTMX)
+                    return redirect(
+                        coinError?.status === 404
+                            ? "/not-found"
+                            : "/internal-server-error",
+                    );
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
@@ -144,6 +158,7 @@ export const AssignmentController = new Elysia({
                     query: { cryptocurrencyId: params.id },
                 });
             if (marketsError || !markets) {
+                if (!hx.isHTMX) return redirect("/internal-server-error");
                 hx.triggerEvent({
                     "make-toast": {
                         level: "error",
@@ -154,17 +169,14 @@ export const AssignmentController = new Elysia({
             }
 
             return (
-                <>
-                    <CoinAssignmentPanel coin={coin} markets={markets} />
-                    {/* Preferred over an out-of-band swap: the header sits
-                    outside the panel target. */}
-                    <hx-partial
-                        hx-target="#coin_assignment_header"
-                        hx-swap="outerMorph"
-                    >
-                        <CoinAssignmentHeader coin={coin} />
-                    </hx-partial>
-                </>
+                <BaseLayout
+                    title={`Arbitrator - ${coin.name} assignments`}
+                    heading="Coins"
+                >
+                    <CoinWorkspace coin={coin} active="assignments">
+                        <CoinAssignmentPanel coin={coin} markets={markets} />
+                    </CoinWorkspace>
+                </BaseLayout>
             );
         },
     )
@@ -173,11 +185,28 @@ export const AssignmentController = new Elysia({
     .get(
         "/coins/:id/assignment/new",
         { params: idParam },
-        async ({ params, hx }) => {
+        async ({ params, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
-            return <ExchangePicker coinId={params.id} />;
+            const { data, error } = await lister.market[
+                "available-exchanges"
+            ].get({
+                query: {
+                    cryptocurrencyId: params.id,
+                    limit: 5,
+                    orderBy: "name",
+                    order: "asc",
+                },
+            });
+            if (error || !data)
+                return (
+                    <div class="alert alert-error" role="alert">
+                        Unable to load exchanges. Close this picker and try
+                        again.
+                    </div>
+                );
+            return <ExchangePicker coinId={params.id} data={data} />;
         },
     )
 
@@ -185,7 +214,7 @@ export const AssignmentController = new Elysia({
     .get(
         "/coins/:id/available-exchanges",
         { params: idParam, query: listExchangeSelectSchema },
-        async ({ params, query, hx }) => {
+        async ({ params, query, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
@@ -222,7 +251,7 @@ export const AssignmentController = new Elysia({
             params: idParam,
             query: t.Object({ exchangeId: t.Integer() }),
         },
-        async ({ params, query, hx }) => {
+        async ({ params, query, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
@@ -265,7 +294,7 @@ export const AssignmentController = new Elysia({
                 tradeEnabled: t.Optional(formBoolean),
             }),
         },
-        async ({ params, body, hx }) => {
+        async ({ params, body, hx, lister }) => {
             const tradeEnabled = toBoolean(body.tradeEnabled);
             let exchangeSymbol: string | undefined;
             if (body.exchangeSymbol !== undefined) {
@@ -355,7 +384,7 @@ export const AssignmentController = new Elysia({
                         coinId={params.id}
                         market={created}
                     />
-                    {await renderAssignmentEmptyPartial(params.id)}
+                    {await renderAssignmentEmptyPartial(lister, params.id)}
                 </>
             );
         },
@@ -372,11 +401,11 @@ export const AssignmentController = new Elysia({
                 exchangeSymbol: t.Optional(t.String()),
             }),
         },
-        async ({ params, body, hx }) => {
+        async ({ params, body, hx, lister }) => {
             const { data: market, error: findError } = await lister
                 .market({ id: params.marketId })
                 .get();
-            if (findError || !market) {
+            if (findError || !market || market.cryptocurrencyId !== params.id) {
                 hx.reswap("none");
                 hx.triggerEvent({
                     "make-toast": {
@@ -449,6 +478,7 @@ export const AssignmentController = new Elysia({
 
                 hx.triggerEvent({
                     "make-toast": { level: "success", message: "Symbol saved" },
+                    "assignment-symbol-saved": { marketId: params.marketId },
                 });
                 return (
                     <ExchangeAssignmentCard
@@ -487,11 +517,11 @@ export const AssignmentController = new Elysia({
     .delete(
         "/coins/:id/assignments/:marketId",
         { params: marketParam },
-        async ({ params, hx }) => {
+        async ({ params, hx, lister }) => {
             const { data: market, error: findError } = await lister
                 .market({ id: params.marketId })
                 .get();
-            if (findError || !market) {
+            if (findError || !market || market.cryptocurrencyId !== params.id) {
                 hx.reswap("none");
                 hx.triggerEvent({
                     "make-toast": {
@@ -520,11 +550,17 @@ export const AssignmentController = new Elysia({
             hx.triggerEvent({
                 "make-toast": {
                     level: "success",
-                    message: "Exchange unassigned",
+                    message: "Exchange assignment removed",
+                    target: "body",
                 },
-                "assignment-exchange-removed": { marketId: params.marketId },
+                "assignment-exchange-removed": {
+                    target: "body",
+                    marketId: params.marketId,
+                },
             });
-            return (await renderAssignmentEmptyPartial(params.id)) ?? "";
+            return (
+                (await renderAssignmentEmptyPartial(lister, params.id)) ?? ""
+            );
         },
     )
 
@@ -532,11 +568,11 @@ export const AssignmentController = new Elysia({
     .get(
         "/coins/:id/assignments/:marketId/chains",
         { params: marketParam },
-        async ({ params, hx }) => {
+        async ({ params, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
-            return await renderMarketChains(params.id, params.marketId);
+            return await renderMarketChains(lister, params.id, params.marketId);
         },
     )
 
@@ -544,12 +580,32 @@ export const AssignmentController = new Elysia({
     .get(
         "/coins/:id/assignments/:marketId/chains/new",
         { params: marketParam },
-        async ({ params, hx }) => {
+        async ({ params, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
+            const { data, error } = await lister["chain-link"][
+                "available-chains"
+            ].get({
+                query: {
+                    marketId: params.marketId,
+                    limit: 5,
+                    orderBy: "name",
+                    order: "asc",
+                },
+            });
+            if (error || !data)
+                return (
+                    <div class="alert alert-error" role="alert">
+                        Unable to load chains. Close this picker and try again.
+                    </div>
+                );
             return (
-                <ChainPicker coinId={params.id} marketId={params.marketId} />
+                <ChainPicker
+                    coinId={params.id}
+                    marketId={params.marketId}
+                    data={data}
+                />
             );
         },
     )
@@ -561,7 +617,7 @@ export const AssignmentController = new Elysia({
             params: marketParam,
             query: t.Object({ chainId: t.Integer() }),
         },
-        async ({ params, query, hx }) => {
+        async ({ params, query, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
@@ -594,7 +650,7 @@ export const AssignmentController = new Elysia({
     .get(
         "/coins/:id/assignments/:marketId/available-chains",
         { params: marketParam, query: listChainSelectSchema },
-        async ({ params, query, hx }) => {
+        async ({ params, query, hx, lister }) => {
             if (!hx.isHTMX) {
                 return redirect("/coins");
             }
@@ -637,7 +693,7 @@ export const AssignmentController = new Elysia({
             params: marketParam,
             body: t.Object({ chainId: t.Integer() }),
         },
-        async ({ params, body, hx }) => {
+        async ({ params, body, hx, lister }) => {
             const { data: link, error } = await lister["chain-link"].post({
                 marketId: params.marketId,
                 chainId: body.chainId,
@@ -696,7 +752,7 @@ export const AssignmentController = new Elysia({
                         marketId={params.marketId}
                         link={created}
                     />
-                    {await renderChainEmptyPartial(params.marketId)}
+                    {await renderChainEmptyPartial(lister, params.marketId)}
                 </>
             );
         },
@@ -712,7 +768,7 @@ export const AssignmentController = new Elysia({
                 withdrawEnabled: t.Optional(formBoolean),
             }),
         },
-        async ({ params, body, hx }) => {
+        async ({ params, body, hx, lister }) => {
             const depositEnabled = toBoolean(body.depositEnabled);
             const withdrawEnabled = toBoolean(body.withdrawEnabled);
 
@@ -753,7 +809,7 @@ export const AssignmentController = new Elysia({
     .delete(
         "/coins/:id/assignments/:marketId/chains/:chainLinkId",
         { params: chainLinkParam },
-        async ({ params, hx }) => {
+        async ({ params, hx, lister }) => {
             const { error } = await lister["chain-link"]({
                 id: params.chainLinkId,
             }).delete();
@@ -772,13 +828,17 @@ export const AssignmentController = new Elysia({
             hx.triggerEvent({
                 "make-toast": {
                     level: "success",
-                    message: "Chain unassigned",
+                    message: "Chain assignment removed",
+                    target: "body",
                 },
                 "assignment-chain-removed": {
+                    target: "body",
                     marketId: params.marketId,
                     chainLinkId: params.chainLinkId,
                 },
             });
-            return (await renderChainEmptyPartial(params.marketId)) ?? "";
+            return (
+                (await renderChainEmptyPartial(lister, params.marketId)) ?? ""
+            );
         },
     );

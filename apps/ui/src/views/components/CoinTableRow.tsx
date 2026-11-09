@@ -1,15 +1,15 @@
 import type { CryptocurrencySelect } from "@arbitrator/lister/types";
 
 import { timeAgo } from "../../utils";
-import { LinkIcon, PencilIcon, RouteIcon, TrashIcon } from "./icons";
+import { PencilIcon, RouteIcon } from "./icons";
+import { DeleteRowAction, RowActions } from "./RowActions";
 
 export const CoinTableRow = (props: CryptocurrencySelect) => {
-    // const logoUrl = `https://s2.coinmarketcap.com/static/img/coins/64x64/${props.cmcId}.png`;
     return (
         <tr id={`coin-table-row-${props.id}`}>
-            <td>
+            <td class="max-w-0 sm:max-w-none">
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="avatar">
+                    <div class="avatar hidden shrink-0 min-[360px]:block">
                         <div class="mask mask-circle size-8 sm:size-10">
                             {/* decorative: the coin name sits next to it */}
                             <img src={props.logo} alt="" loading="lazy" />
@@ -19,13 +19,19 @@ export const CoinTableRow = (props: CryptocurrencySelect) => {
                         <div class="truncate font-medium" safe>
                             {props.name}
                         </div>
-                        <div class="truncate text-sm text-base-content/60" safe>
+                        <div
+                            class="hidden truncate text-sm text-base-content/70 sm:block"
+                            safe
+                        >
                             {props.slug}
+                        </div>
+                        <div class="truncate text-xs text-base-content/70 sm:hidden">
+                            {props.symbol.toUpperCase()}
                         </div>
                     </div>
                 </div>
             </td>
-            <td class="font-medium" safe>
+            <td class="hidden font-medium sm:table-cell" safe>
                 {props.symbol.toUpperCase()}
             </td>
             <td class="hidden tabular-nums sm:table-cell">{props.cmcId}</td>
@@ -45,54 +51,61 @@ export const CoinTableRow = (props: CryptocurrencySelect) => {
                 <div class="flex justify-end gap-1">
                     <button
                         type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm"
+                        class="btn btn-ghost btn-sm hidden sm:inline-flex"
                         aria-label={`Edit ${props.name}`}
                         title={`Edit ${props.name}`}
-                        onclick="cryptocurrency_edit_modal.showModal()"
+                        data-open-dialog="cryptocurrency_edit_modal"
                         hx-get={`/coins/${props.id}/edit-modal`}
                         hx-target="#cryptocurrency_edit_modal_content"
                         hx-swap="innerHTML"
                     >
                         <PencilIcon />
+                        Edit
                     </button>
-                    <button
-                        type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm"
+                    <a
+                        href={`/coins/${props.id}/assignment`}
+                        class="btn btn-sm min-h-9"
                         aria-label={`Manage assignments for ${props.name}`}
-                        aria-haspopup="dialog"
-                        aria-controls="coin_assignment_dialog"
                         title={`Manage assignments for ${props.name}`}
-                        hx-get={`/coins/${props.id}/assignment`}
-                        hx-target="#coin_assignment_panel"
-                        hx-swap="innerHTML"
-                        hx-indicator="#coin-assignment-indicator"
-                        onclick="coin_assignment_dialog.showModal()"
                     >
-                        <LinkIcon />
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm"
-                        aria-label={`View transfer routes for ${props.name}`}
-                        title={`View transfer routes for ${props.name}`}
-                        hx-get={`/coins/${props.id}/routes`}
-                        hx-target="#coin-route-modal-content"
-                        hx-swap="innerHTML"
-                        hx-indicator="#coin-route-indicator, #coin-route-loading"
-                        onclick="coin_route_modal.showModal()"
+                        Assignments
+                    </a>
+                    <RowActions
+                        id={`coin-actions-${props.id}`}
+                        name={props.name}
                     >
-                        <RouteIcon />
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm btn-error"
-                        aria-label={`Delete ${props.name}`}
-                        hx-on:click="alert('ngawor sampean mas')"
-                        title={`Delete ${props.name}`}
-                        /* TODO: wire the delete request and add a confirmation step. */
-                    >
-                        <TrashIcon />
-                    </button>
+                        <li class="sm:hidden">
+                            <button
+                                type="button"
+                                class="min-h-10"
+                                aria-label={`Edit ${props.name}`}
+                                data-open-dialog="cryptocurrency_edit_modal"
+                                hx-get={`/coins/${props.id}/edit-modal`}
+                                hx-target="#cryptocurrency_edit_modal_content"
+                                hx-swap="innerHTML"
+                            >
+                                <PencilIcon /> Edit coin
+                            </button>
+                        </li>
+                        <li>
+                            <a
+                                href={`/coins/${props.id}/routes`}
+                                class="min-h-10"
+                                aria-label={`View transfer routes for ${props.name}`}
+                                title={`View transfer routes for ${props.name}`}
+                            >
+                                <RouteIcon />
+                                Transfer routes
+                            </a>
+                        </li>
+                        <DeleteRowAction
+                            entity="coin"
+                            name={props.name}
+                            url={`/coins/${props.id}`}
+                            target={`#coin-table-row-${props.id}`}
+                            impact={`This deletes ${props.name} and all of its exchange and chain assignments. Exchanges and chains are kept.`}
+                        />
+                    </RowActions>
                 </div>
             </td>
         </tr>

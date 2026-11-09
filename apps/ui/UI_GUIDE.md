@@ -32,7 +32,7 @@ that already ship: `coins`, `markets`, `chain`.
 
 - drawer + `Sidebar`
 - `Navbar` (menu button, page heading, theme picker)
-- `<main class="… p-4 sm:p-6 lg:p-8">`
+- `<main class="… p-3 sm:p-6 lg:p-8">`
 - footer
 - `#toast-container`
 
@@ -104,8 +104,8 @@ fragment:
 
 ```
 <section id="…-list">
-  <div class="card w-full bg-base-100 shadow-xl">
-    <div class="card-body p-4 sm:p-8">
+  <div class="card w-full bg-base-100 shadow-sm">
+    <div class="card-body gap-5 p-3 sm:p-6">
       <form id="…-filter" hx-target="#…-list-results">…</form>
       <div id="…-list-results">          ← the only htmx swap unit
         <input type="hidden" form="…-filter" name="orderBy" … />
@@ -145,6 +145,34 @@ Rules that keep it working:
 - Put `form` bodies through `z.coerce` before the API call; HTML sends
   strings. See the `exchangeBody` / `chainBody` schemas in the controllers.
 
+### Editing, assignments and removal
+
+- `EditDialog` / `EditForm` keep loading and validation inside native dialogs.
+  A 422 updates errors without replacing inputs; close on the entity's
+  `*-updated` event, not just request completion. Restore focus to the live
+  opener after row/header replacement, or its visible More trigger.
+- `RowActions` uses top-layer popovers so menus escape table clipping. Keep
+  their item-specific accessible names and keyboard dismissal.
+- `CoinWorkspace` uses normal links to reloadable `/coins/:id/assignment` and
+  `/coins/:id/routes` pages. The assignment filter searches loaded exchange
+  names and symbols locally. Mobile assignments stack identity/trading above
+  direct symbol, chain and More controls instead of squeezing table columns.
+- `AssignmentDialog` isolates exchange/chain selection and confirmation from
+  the workspace with an opaque surface, dimmed backdrop and local loading state.
+  Keep its shell stable across picker swaps; close only on success or dismissal.
+  Search forms use `input delay:300ms`; `changed` on the form suppresses input
+  requests because the form itself has no value.
+- An exchange assignment's `<tbody>` is its write fragment; chain links are
+  independent rows. Preserve expanded chain settings with `hx-morph-skip`
+  during symbol-editor morphs.
+- Trading/deposit/withdraw switches save immediately and roll back on failure.
+  Exchange symbols have their own Save/Cancel; after either, focus the live
+  symbol button at every width. Escape discards the symbol edit. These are not
+  bulk-pending changes.
+- `ConfirmDialog` starts on Cancel. Explain the actual cascade and which
+  records remain: removing an assignment keeps its coin/exchange/chain;
+  deleting a catalog record also removes its dependent assignments.
+
 ## Sorting
 
 Every data column header is a `SortableHeader` (`src/views/components/`). It
@@ -177,7 +205,7 @@ Data tables are the one place that overflows. Keep them inside the
   `hidden md:table-cell`, `hidden lg:table-cell`. Add the same class to the
   `<th>` **and** the `<td>`.
 - The visible columns plus actions must fit 320px. The `card-body` padding
-  squeezes the table on mobile, so use `p-4 sm:p-8` on the body, shrink the
+  squeezes the table on mobile, so use `p-3 sm:p-6` on the body, shrink the
   avatar and the row buttons with `size-8 sm:size-10` / `btn-xs sm:btn-sm`,
   and override daisy's `.table` cell padding per table with
   `[&_td]:px-2 [&_th]:px-2 sm:[&_td]:px-4 sm:[&_th]:px-4`.
@@ -205,6 +233,9 @@ class="select">` with a `<span class="sr-only">` name is enough for
 - A pointer-only `<label>` hamburger is not keyboard reachable. Use a
   `<button>` that toggles `#left-drawer` (see `Navbar`).
 - Toasts: `role="status"` for info/success, `role="alert"` only for errors.
+- Check warning foregrounds on their actual `alert-warning` / `badge-warning`
+  backgrounds in both themes. Removal labels stay neutral; the destructive
+  confirmation uses `btn-error`.
 - Respect `prefers-reduced-motion` for anything that animates.
 
 ## Copy
@@ -214,26 +245,33 @@ class="select">` with a `<span class="sr-only">` name is enough for
 - Errors say what to do next, next to the field: `Choose a password with at
 least 8 characters`, not `Invalid`.
 - Empty states orient and offer one action. Never park information there.
+- Omit page intros that repeat the heading or control labels; keep explanatory
+  copy where a decision needs it, such as removal impact or an unmapped chain.
 
 ## Verification before you call it done
 
 ```bash
+bun run lint               # repo root
 cd apps/ui
-bun run build:tailwind      # regenerate public/css/styles.css
-bunx tsc --noEmit           # pre-existing lister lib errors are unrelated
+bun run typecheck
+bun test
+bun run test:browser --executable-path /usr/bin/chromium
 ```
+
+Browser regressions build assets and use an in-memory upstream, not live
+mutations. Omit `--executable-path` when Playwright Chromium is installed.
 
 Then render the page and check: 320px, 390px and desktop widths; keyboard tab
 order from the top (skip link first, visible focus at every stop); open and
 close each modal; that the last table action is not clipped at 320px; and
-that the navbar heading follows htmx navigation.
+that the navbar heading follows htmx navigation. Check light and dark themes,
+422 input preservation, focus after Save/Cancel/Escape, toggle rollback, and
+counts/empty states after confirmed removal.
 
 ## Known gaps for the next pass
 
 - `Home` uses the same layout as the other pages; it is reachable from the
   brand logo (`/` redirects to `/home`) but has no sidebar entry.
-- The row delete button is styled and labelled but not wired to a request.
-  When wiring it, add a confirmation step (`hx-confirm` or a dialog).
 
 ## htmx 4 / HATEOAS conventions
 
@@ -243,6 +281,16 @@ Every write endpoint returns the **smallest fragment that changed** (one card, o
 
 **Events.** `HX-Trigger: <event>` or `HX-Trigger: {"<event>":{…detail…}}`; listeners are declarative: `hx-trigger="<event> from:body"` or an inline `hx-on:<event>="…"`. Custom event names are **colon-free and hyphenated** (`assignment-exchange-added`, `assignment-toggle-error`) so they cannot be confused with `hx-trigger` modifier tokens such as `from:`, `delay:`, `target:`. Inline `hx-on:*` handlers may read `event.detail` or toggle local presentation state; they must never issue requests or build URLs.
 
+For deletion events and their success toast, include `target: "body"` in the
+`HX-Trigger` detail: the source row is removed before headers fire. List
+filters listen for `coin-deleted` / `exchange-deleted` / `chain-deleted` to
+refresh counts and empty states through their own URLs.
+
 **Composability.** Every requestable region is its own component: one card, one row, one candidate, one cell. A component that can be requested alone is a component; a component that is only ever rendered inside a bigger blob is markup.
 
 **htmx 4 specifics.** `hx-status:422` for validation; `hx-status:5xx="swap:none"` wherever a 5xx body must not swap (in v4 all statuses swap except 204/304); `hx-sync="this:replace"` to cancel stale requests (prefer `replace` over `abort`); `hx-include="closest form"` on GET/DELETE because v4 does not include enclosing form data; morph (`outerMorph`/`innerMorph`/`outerSync`) only where preserving focus, scroll, or input state matters; `:inherited` only where inheritance is intended (`hx-target:inherited="#x"`); `hx-indicator` for anything that can take time; `hx-morph-skip` on a region whose live DOM state must survive a morph. Keep ids stable and keep `HX-Push-Url` behavior consistent with the existing pages.
+
+Use `data-hx-disable` for selector-based request disabling; installed Kita JSX
+types reserve `hx-disable` for the old boolean meaning. Presentation helpers
+live in `assets/scripts/management.ts`, loaded as `type="module"` to isolate
+minified names. Action URLs and requests remain in server HTML.

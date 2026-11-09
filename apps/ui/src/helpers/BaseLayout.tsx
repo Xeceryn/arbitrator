@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "@kitajs/html";
 
-import { XIcon } from "../views/components/icons";
+import { ConfirmDialog } from "../views/components/ConfirmDialog";
 import { Navbar } from "../views/components/Navbar";
 import { Sidebar } from "../views/components/Sidebar";
 
@@ -99,6 +99,11 @@ export const BaseLayout = async ({
                     />
                     <script src="/public/dist/dropdown.js"></script>
 
+                    <script
+                        src="/public/dist/management.js"
+                        type="module"
+                    ></script>
+
                     <link
                         rel="preload"
                         href="/public/dist/signal-board.js"
@@ -131,12 +136,12 @@ export const BaseLayout = async ({
                             class="drawer-toggle inline"
                         />
 
-                        <div class="drawer-content flex min-h-screen flex-col">
+                        <div class="drawer-content flex min-h-screen min-w-0 flex-col">
                             <progress class="progress w-full"></progress>
                             <Navbar heading={heading} />
                             <main
                                 id="main-content"
-                                class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8"
+                                class="min-w-0 flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8"
                             >
                                 {children}
                             </main>
@@ -163,50 +168,11 @@ export const BaseLayout = async ({
                                 class="drawer-overlay"
                                 aria-label="Close menu"
                             ></label>
-                            <Sidebar />
+                            <Sidebar active={heading} />
                         </div>
                     </div>
 
-                    {/* Assignment manager: a centered modal with a fixed header and a
-              scrollable body. `max-w-3xl!` overrides daisyUI's modal-box width. */}
-                    <dialog
-                        id="coin_assignment_dialog"
-                        class="modal modal-middle"
-                        aria-labelledby="coin_assignment_header"
-                    >
-                        <div class="modal-box flex max-w-3xl! flex-col overflow-hidden">
-                            <header class="flex items-center gap-3 border-b border-base-300 pb-4">
-                                <div
-                                    id="coin_assignment_header"
-                                    class="flex min-w-0 flex-1 items-center gap-3"
-                                >
-                                    <h2 class="text-lg font-semibold">
-                                        Assignments
-                                    </h2>
-                                </div>
-                                <span
-                                    id="coin-assignment-indicator"
-                                    class="htmx-indicator loading loading-spinner loading-sm"
-                                ></span>
-                                <form method="dialog">
-                                    <button
-                                        type="submit"
-                                        class="btn btn-square btn-ghost btn-sm"
-                                        aria-label="Close assignments"
-                                    >
-                                        <XIcon />
-                                    </button>
-                                </form>
-                            </header>
-                            <div
-                                id="coin_assignment_panel"
-                                class="min-h-0 flex-1 overflow-y-auto pt-4"
-                            ></div>
-                        </div>
-                        <form method="dialog" class="modal-backdrop">
-                            <button>close</button>
-                        </form>
-                    </dialog>
+                    <ConfirmDialog />
 
                     <div
                         id="toast-container"

@@ -1,5 +1,7 @@
 import type { ChainSelect, PaginatedChainList } from "@arbitrator/lister/types";
 
+import { ArrowRightIcon } from "./icons";
+
 /** Complete, current-state candidate URL. Every page control owns its URL. */
 function candidatePageUrl(
     coinId: number,
@@ -25,19 +27,21 @@ export const AvailableChainRow = ({
     <li id={`available-chain-${marketId}-${chain.id}`}>
         <button
             type="button"
-            class="flex items-center justify-between gap-2"
+            class="flex min-h-16 items-center justify-between gap-3 rounded-field bg-base-200 px-3 py-3 hover:bg-base-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             aria-label={`Select ${chain.name}`}
             hx-get={`/coins/${coinId}/assignments/${marketId}/chains/select?chainId=${chain.id}`}
             hx-target={`#market-chain-staging-${marketId}`}
             hx-swap="innerHTML"
-            hx-indicator="#coin-assignment-indicator"
+            hx-indicator={`#market-chain-staging-${marketId}-indicator`}
         >
-            <span class="truncate">{chain.name}</span>
-            <span class="flex items-center gap-2">
-                <span class="badge badge-ghost badge-sm font-mono uppercase">
+            <span class="min-w-0 text-left">
+                <span class="block break-words font-medium">{chain.name}</span>
+                <span class="block break-all font-mono text-xs uppercase text-base-content/80">
                     {chain.code}
                 </span>
-                <span class="text-xs font-medium text-primary">Select</span>
+            </span>
+            <span class="flex shrink-0 items-center gap-2 text-sm font-medium">
+                Select <ArrowRightIcon />
             </span>
         </button>
     </li>
@@ -68,12 +72,13 @@ export const AvailableChains = ({ coinId, marketId, data }: AvailableProps) => {
                             </p>
                             <button
                                 type="button"
-                                class="btn btn-ghost btn-xs mt-2"
+                                class="btn btn-sm min-h-11 mt-3"
                                 hx-get={`/coins/${coinId}/assignments/${marketId}/available-chains`}
                                 hx-target={`#available-chains-${marketId}`}
                                 hx-swap="innerHTML"
                                 hx-sync={`#available-chains-${marketId}:replace`}
                                 hx-indicator={`#chain-search-indicator-${marketId}`}
+                                hx-on:click={`const i=document.getElementById('chain-search-${marketId}');i.value='';i.focus()`}
                             >
                                 Clear search
                             </button>
@@ -85,7 +90,7 @@ export const AvailableChains = ({ coinId, marketId, data }: AvailableProps) => {
                     )}
                 </div>
             ) : (
-                <ul class="menu w-full rounded-field border border-base-300 bg-base-100 p-1 shadow-sm">
+                <ul class="menu w-full gap-2 p-0">
                     {data.data.map((chain) => (
                         <AvailableChainRow
                             coinId={coinId}
@@ -97,10 +102,10 @@ export const AvailableChains = ({ coinId, marketId, data }: AvailableProps) => {
             )}
 
             {data.meta.pages > 1 ? (
-                <div class="mt-2 flex items-center justify-between gap-2">
+                <div class="mt-4 flex items-center justify-between gap-2">
                     <button
                         type="button"
-                        class="btn btn-xs"
+                        class="btn btn-sm min-h-11"
                         disabled={!data.meta.hasPreviousPage}
                         aria-label="Previous page of chains"
                         hx-get={candidatePageUrl(
@@ -116,12 +121,12 @@ export const AvailableChains = ({ coinId, marketId, data }: AvailableProps) => {
                     >
                         Previous
                     </button>
-                    <span class="text-xs opacity-60">
+                    <span class="text-xs text-base-content/80">
                         Page {data.meta.page} of {data.meta.pages}
                     </span>
                     <button
                         type="button"
-                        class="btn btn-xs"
+                        class="btn btn-sm min-h-11"
                         disabled={!data.meta.hasNextPage}
                         aria-label="Next page of chains"
                         hx-get={candidatePageUrl(

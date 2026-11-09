@@ -22,8 +22,10 @@ export const ValidationErrorList = ({
     messages: ValidationMessage[];
 }) => (
     <ul class="list-inside list-disc">
-        {messages.map(({ message }) => (
-            <li safe>{message}</li>
+        {messages.map(({ field, message }) => (
+            <li data-validation-field={field} safe>
+                {message}
+            </li>
         ))}
     </ul>
 );
@@ -39,6 +41,9 @@ export function ariaInvalidHandler(): string {
         `const fields = (event.detail && event.detail.fields) || [];`,
         `this.querySelectorAll("input[name],select[name],textarea[name]").forEach((el) => {`,
         `el.setAttribute("aria-invalid", String(fields.includes(el.name)));`,
+        `el.classList.toggle(el.tagName==='SELECT'?'select-error':'input-error', fields.includes(el.name));`,
         `});`,
+        `this.querySelectorAll('[data-field-error]').forEach((el)=>{const item=Array.from(this.querySelectorAll('[data-validation-field]')).find((item)=>item.dataset.validationField===el.dataset.fieldError);el.textContent=item?.textContent||'';el.hidden=!item;});`,
+        `this.querySelector('[aria-invalid=true]')?.focus();`,
     ].join("");
 }

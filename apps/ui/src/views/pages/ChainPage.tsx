@@ -31,18 +31,18 @@ const ChainFilter = (props: Resolved<ListChainInput>) => {
             hx-get="/chain/list"
             hx-target="#chain-list-results"
             hx-swap="outerMorph"
-            hx-trigger="submit, input delay:300ms"
+            hx-trigger="submit, input delay:300ms, chain-deleted from:body"
             hx-sync="this:replace"
             hx-indicator="#chain-list-indicator"
-            class="flex flex-wrap items-center gap-2"
+            class="relative flex flex-wrap items-center gap-3"
         >
             <span
                 id="chain-list-indicator"
-                class="htmx-indicator loading loading-spinner loading-sm"
+                class="htmx-indicator loading loading-spinner loading-xs absolute -right-2 -top-2"
             ></span>
 
-            <div class="join">
-                <label class="input input-bordered join-item">
+            <div class="join min-w-0 w-full sm:w-auto sm:flex-1">
+                <label class="input join-item min-w-0 flex-1">
                     <span class="sr-only">Search chains</span>
                     <SearchIcon />
                     <input
@@ -53,7 +53,7 @@ const ChainFilter = (props: Resolved<ListChainInput>) => {
                         autocomplete="off"
                     />
                 </label>
-                <label class="select select-bordered join-item">
+                <label class="select join-item w-24 shrink-0 sm:w-36">
                     <span class="sr-only">Search by</span>
                     <select name="searchBy">
                         {ChainSearchByOptions.map((option) => (
@@ -65,7 +65,7 @@ const ChainFilter = (props: Resolved<ListChainInput>) => {
                 </label>
             </div>
 
-            <label class="select select-bordered w-40">
+            <label class="select w-24 shrink-0">
                 <span class="sr-only">Rows per page</span>
                 <select name="limit">
                     {LIMIT_OPTIONS.map((option) => (
@@ -158,7 +158,7 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
                                 name="Code"
                                 orderBy={props.orderBy}
                                 order={props.order}
-                                class="w-24"
+                                class="hidden w-24 sm:table-cell"
                             >
                                 Code
                             </SortableHeader>
@@ -173,7 +173,7 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
                                 order={props.order}
                                 class="hidden md:table-cell"
                             >
-                                Created At
+                                Created
                             </SortableHeader>
                             <SortableHeader
                                 form="chain-filter"
@@ -186,11 +186,9 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
                                 order={props.order}
                                 class="hidden md:table-cell"
                             >
-                                Updated At
+                                Updated
                             </SortableHeader>
-                            <th class="w-20 text-right">
-                                <span class="sr-only">Actions</span>
-                            </th>
+                            <th class="w-20 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="chain-table-body">
@@ -201,18 +199,33 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
                         ) : (
                             <tr id="chain-table-empty">
                                 <td colspan="5" class="py-16 text-center">
-                                    <p class="font-medium">No chains yet</p>
-                                    <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
-                                        Add a chain to group the markets that
-                                        trade on it.
+                                    <p class="font-medium">
+                                        {props.search
+                                            ? "No matching chains"
+                                            : "No chains yet"}
                                     </p>
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary mt-4"
-                                        onclick="add_chain_modal.showModal()"
-                                    >
-                                        <PlusIcon /> Add chain
-                                    </button>
+                                    {props.search ? (
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm mt-4"
+                                            hx-get="/chain/list"
+                                            hx-include="#chain-filter"
+                                            hx-vals='{"search":""}'
+                                            hx-target="#chain-list-results"
+                                            hx-swap="outerMorph"
+                                            hx-on:click="document.querySelector('#chain-filter [name=search]').value=''"
+                                        >
+                                            Clear search
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary mt-4"
+                                            onclick="add_chain_modal.showModal()"
+                                        >
+                                            <PlusIcon /> Add chain
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         )}
@@ -241,6 +254,7 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
                         <PageButton
                             form="chain-filter"
                             page={1}
+                            edge
                             disabled={data.meta.page === 1}
                         >
                             First
@@ -255,7 +269,7 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
                         <button
                             type="button"
                             disabled
-                            class="join-item btn btn-outline"
+                            class="join-item btn btn-sm sm:btn-md"
                         >
                             Page{" "}
                             <span class="tabular-nums" safe>
@@ -272,6 +286,7 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
                         <PageButton
                             form="chain-filter"
                             page={data.meta.pages}
+                            edge
                             disabled={
                                 data.meta.page === data.meta.pages ||
                                 data.meta.items === 0
@@ -291,8 +306,8 @@ export const ChainResults = async (props: Resolved<ListChainInput>) => {
  */
 export const ChainList = (props: Resolved<ListChainInput>) => (
     <section id="chain-list" class="w-full">
-        <div class="card w-full bg-base-100 shadow-xl">
-            <div class="card-body p-4 sm:p-8">
+        <div class="card w-full bg-base-100 shadow-sm">
+            <div class="card-body gap-5 p-3 sm:p-6">
                 <ChainFilter {...props} />
                 <ChainResults {...props} />
             </div>

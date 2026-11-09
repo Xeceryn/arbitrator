@@ -1,72 +1,68 @@
-import type { ChainSelect } from "@arbitrator/lister/types";
+import type { ChainSelect, PaginatedChainList } from "@arbitrator/lister/types";
 
+import { AvailableChains } from "./AssignChainDropdown";
 import { SearchIcon } from "./icons";
 
 /**
- * Step 1 of the staged chain flow inside one expanded market card. Mirrors the
- * exchange picker with per-market ids so several markets can stage at once.
+ * Step 1 inside an exchange's assignment dialog, using per-market region ids.
  */
 export const ChainPicker = ({
     coinId,
     marketId,
+    data,
 }: {
     coinId: number;
     marketId: number;
+    data: PaginatedChainList;
 }) => (
     <div id={`market-chain-picker-${marketId}`}>
-        <div class="mb-2 flex items-center justify-between gap-2">
-            <h4 class="text-xs font-semibold">Choose a chain</h4>
-            <button
-                type="button"
-                class="btn btn-ghost btn-xs"
-                hx-on:click={`this.closest('#market-chain-staging-${marketId}').replaceChildren(); document.getElementById('add-chain-button-${marketId}')?.setAttribute('aria-expanded','false')`}
-            >
-                Cancel
-            </button>
-        </div>
+        <h3 class="mb-3 text-base font-semibold">Choose a chain</h3>
 
         <form
             class="flex flex-col"
             hx-get={`/coins/${coinId}/assignments/${marketId}/available-chains`}
             hx-target={`#available-chains-${marketId}`}
             hx-swap="innerHTML"
-            hx-trigger="submit"
+            hx-trigger="submit, input delay:300ms, search"
             hx-sync={`#available-chains-${marketId}:replace`}
             hx-indicator={`#chain-search-indicator-${marketId}`}
         >
-            <label class="input input-bordered input-sm w-full">
+            <label class="input min-h-11 w-full bg-base-100">
                 <span class="sr-only">Search chains</span>
                 <SearchIcon />
                 <input
                     id={`chain-search-${marketId}`}
                     type="search"
                     name="search"
-                    placeholder="Search chain"
+                    class="min-w-0 placeholder:text-base-content/70 placeholder:opacity-100 focus:border-transparent focus:ring-0 focus:outline-none"
+                    placeholder="Search chains"
                     autocomplete="off"
-                    hx-get={`/coins/${coinId}/assignments/${marketId}/available-chains`}
-                    hx-target={`#available-chains-${marketId}`}
-                    hx-swap="innerHTML"
-                    hx-trigger="input changed delay:300ms, search"
-                    hx-include="closest form"
-                    hx-sync={`#available-chains-${marketId}:replace`}
-                    hx-indicator={`#chain-search-indicator-${marketId}`}
+                    data-autofocus
                 />
+                <span
+                    id={`chain-search-indicator-${marketId}`}
+                    class="htmx-indicator loading loading-spinner loading-xs"
+                ></span>
             </label>
-            <span
-                id={`chain-search-indicator-${marketId}`}
-                class="htmx-indicator loading loading-spinner loading-xs"
-            ></span>
-            <button type="submit" class="btn btn-primary btn-xs mt-2 w-fit">
-                Search
-            </button>
         </form>
 
         <div
             id={`available-chains-${marketId}`}
             role="status"
             aria-live="polite"
-            class="mt-2 flex flex-col"
-        ></div>
+            class="mt-4 flex flex-col"
+        >
+            <AvailableChains coinId={coinId} marketId={marketId} data={data} />
+        </div>
+        <div class="mt-5 flex justify-end border-t border-base-300 pt-4">
+            <button
+                type="button"
+                class="btn min-h-11"
+                hx-on:click="this.closest('dialog').close()"
+            >
+                Cancel
+            </button>
+        </div>
     </div>
 );
 
@@ -76,9 +72,7 @@ export const ChainError = ({ message }: { message: string }) => (
 );
 
 /**
- * Step 2 of the chain flow. Like the exchange confirm card, the root
- * re-requests step 1 after `assignment-chain-added` bubbles from the assign
- * request, resetting the staging region from server markup alone.
+ * Step 2 closes the dialog only when the chain has actually been assigned.
  */
 export const ChainConfirmCard = ({
     coinId,
@@ -91,17 +85,11 @@ export const ChainConfirmCard = ({
 }) => (
     <div
         id={`market-chain-confirm-${marketId}`}
-        hx-trigger={`assignment-chain-added[detail.marketId === ${marketId}] from:body`}
-        hx-get={`/coins/${coinId}/assignments/${marketId}/chains/new`}
-        hx-target={`#market-chain-staging-${marketId}`}
-        hx-swap="innerHTML"
-        hx-indicator="#coin-assignment-indicator"
+        hx-on:assignment-chain-added="this.closest('dialog').close()"
     >
-        <h4 class="text-xs font-semibold">Confirm chain</h4>
-        <p class="mt-1 text-sm opacity-70">
-            Assign <span class="font-medium">{chain.name}</span> (
-            <span class="font-mono uppercase">{chain.code}</span>) to this
-            market?
+        <h3 class="break-words text-base font-semibold">Add {chain.name}?</h3>
+        <p class="mt-1 break-all font-mono text-sm uppercase text-base-content/80">
+            {chain.code}
         </p>
 
         <div
@@ -111,30 +99,44 @@ export const ChainConfirmCard = ({
         ></div>
 
         <form
-            class="mt-3 flex flex-wrap gap-2"
+            class="mt-5 flex flex-col gap-4"
             hx-post={`/coins/${coinId}/assignments/${marketId}/chains`}
             hx-target={`#market-chains-list-${marketId}`}
             hx-swap="beforeend"
-            hx-indicator="#coin-assignment-indicator"
+            hx-indicator={`#market-chain-staging-${marketId}-indicator`}
+            data-hx-disable="find button[type=submit]"
             {...{
                 "hx-status:422": `target:#market-chain-error-${marketId} swap:innerHTML`,
             }}
             {...{ "hx-status:5xx": "swap:none" }}
         >
             <input type="hidden" name="chainId" value={String(chain.id)} />
-            <button type="submit" class="btn btn-primary btn-xs">
-                Assign chain
-            </button>
             <button
                 type="button"
-                class="btn btn-ghost btn-xs"
+                class="btn btn-sm min-h-11 w-fit"
                 hx-get={`/coins/${coinId}/assignments/${marketId}/chains/new`}
                 hx-target={`#market-chain-staging-${marketId}`}
                 hx-swap="innerHTML"
-                hx-indicator="#coin-assignment-indicator"
+                hx-indicator={`#market-chain-staging-${marketId}-indicator`}
             >
-                Choose another chain
+                Change chain
             </button>
+            <div class="flex flex-wrap justify-end gap-2 border-t border-base-300 pt-4">
+                <button
+                    type="button"
+                    class="btn min-h-11"
+                    hx-on:click="this.closest('dialog').close()"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    class="btn btn-primary min-h-11"
+                    data-autofocus
+                >
+                    Add chain
+                </button>
+            </div>
         </form>
     </div>
 );

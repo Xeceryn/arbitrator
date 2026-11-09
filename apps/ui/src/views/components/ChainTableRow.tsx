@@ -1,15 +1,24 @@
 import type { ChainSelect } from "@arbitrator/lister/types";
 
 import { timeAgo } from "../../utils";
-import { PencilIcon, TrashIcon } from "./icons";
+import { PencilIcon } from "./icons";
+import { DeleteRowAction, RowActions } from "./RowActions";
 
 export const ChainTableRow = (props: ChainSelect) => {
     return (
         <tr id={`chain-table-row-${props.id}`}>
-            <td class="font-medium" safe>
-                {props.name}
+            <td class="max-w-0 font-medium sm:max-w-none">
+                <div class="truncate" safe>
+                    {props.name}
+                </div>
+                <div
+                    class="truncate text-xs font-normal uppercase text-base-content/70 sm:hidden"
+                    safe
+                >
+                    {props.code}
+                </div>
             </td>
-            <td>
+            <td class="hidden sm:table-cell">
                 <span class="badge badge-outline font-mono uppercase" safe>
                     {props.code}
                 </span>
@@ -24,28 +33,29 @@ export const ChainTableRow = (props: ChainSelect) => {
                 <div class="flex justify-end gap-1">
                     <button
                         type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm"
+                        class="btn btn-ghost btn-sm min-h-9"
                         aria-label={`Edit ${props.name}`}
                         title={`Edit ${props.name}`}
-                        onclick="chain_edit_modal.showModal()"
+                        data-open-dialog="chain_edit_modal"
                         hx-get={`/chain/${props.id}/edit-modal`}
                         hx-target="#chain_edit_modal_content"
                         hx-swap="innerHTML"
                     >
                         <PencilIcon />
+                        Edit
                     </button>
-                    <button
-                        type="button"
-                        class="btn btn-square btn-outline btn-xs sm:btn-sm btn-error"
-                        aria-label={`Delete ${props.name}`}
-                        title={`Delete ${props.name}`}
-                        hx-delete={`/chain/${props.id}`}
-                        hx-confirm={`Delete ${props.name}?`}
-                        hx-target={`#chain-table-row-${props.id}`}
-                        hx-swap="outerHTML"
+                    <RowActions
+                        id={`chain-actions-${props.id}`}
+                        name={props.name}
                     >
-                        <TrashIcon />
-                    </button>
+                        <DeleteRowAction
+                            entity="chain"
+                            name={props.name}
+                            url={`/chain/${props.id}`}
+                            target={`#chain-table-row-${props.id}`}
+                            impact={`This deletes ${props.name} and removes its assignments from every exchange. Coins and exchanges are kept.`}
+                        />
+                    </RowActions>
                 </div>
             </td>
         </tr>

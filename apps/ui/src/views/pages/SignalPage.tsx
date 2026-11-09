@@ -185,8 +185,10 @@ export const SignalBoard = ({ data }: { data: SignalsData }) => {
             <div class="py-16 text-center">
                 <p class="font-medium">No profitable signals</p>
                 <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
-                    Start two or more exchanges under Worker Orchestration to
-                    stream transferable coins.
+                    <a href="/workers" class="link">
+                        Start at least two exchanges
+                    </a>{" "}
+                    to stream transferable coins.
                 </p>
             </div>
         );

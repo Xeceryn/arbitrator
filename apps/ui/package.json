@@ -8,6 +8,7 @@
         "dev:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css --watch",
         "build": "bun run build.ts",
         "build:tailwind": "tailwindcss -i ./assets/styles/styles.css -o ./public/css/styles.css",
+        "test:browser": "bun tests/browser/keyboard.ts",
         "typecheck": "bun --check"
     },
     "dependencies": {
@@ -38,6 +39,7 @@
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/typography": "^0.5.20",
         "daisyui": "^5.7.47",
+        "playwright": "catalog:tools",
         "tailwindcss": "^4.3.3"
     }
 }

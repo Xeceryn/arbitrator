@@ -29,6 +29,7 @@
                 "typebox": "^1.4.2"
             },
             "tools": {
+                "playwright": "^1.64.0",
                 "axios": "^1.11.0",
                 "winston": "^3.19.0",
                 "drizzle-kit": "^1.0.0-beta.22",
