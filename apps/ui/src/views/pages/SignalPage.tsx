@@ -24,6 +24,19 @@ const ORDER_BY_OPTIONS: Array<{ value: SignalOrderBy; label: string }> = [
 ];
 
 /**
+ * Transfer routes, keyed by the buy/sell exchange base currency pair. The key
+ * is also the CSS class that colours the card (`signal-<buy>-<sell>` in
+ * `assets/styles/styles.css`), so the swatch in the filter matches the card.
+ * Filtering is client-side: `signal-board.ts` hides cards by `data-route`.
+ */
+const SIGNAL_ROUTES = [
+    { key: "idr-usdt", letter: "A", label: "IDR → USDT" },
+    { key: "usdt-idr", letter: "B", label: "USDT → IDR" },
+    { key: "usdt-usdt", letter: "C", label: "USDT → USDT" },
+    { key: "idr-idr", letter: "D", label: "IDR → IDR" },
+] as const;
+
+/**
  * Alarm clips, one per integer profit percentage (5 covers 5% and above).
  * `signal-audio.ts` plays the matching one for the board's first card.
  */
@@ -125,6 +138,36 @@ export const SignalControls = ({
             </ul>
         </details>
 
+        <details class="dropdown dropdown-end [&:not([open])>.dropdown-content]:hidden">
+            <summary class="btn btn-outline btn-sm">
+                Routes
+                <span id="signal-route-count"></span>
+            </summary>
+            <ul class="dropdown-content menu z-50 w-64 flex-nowrap rounded-box border border-base-300 bg-base-100 p-2 shadow-2xl">
+                {SIGNAL_ROUTES.map((route) => (
+                    <li>
+                        <label class="flex cursor-pointer items-center gap-2">
+                            <input
+                                type="checkbox"
+                                name="route"
+                                value={route.key}
+                                class="checkbox checkbox-sm"
+                                checked
+                            />
+                            <span
+                                class={`signal-${route.key} signal-bg size-2.5 shrink-0 rounded-full`}
+                                aria-hidden="true"
+                            ></span>
+                            <span>Rute {route.letter}</span>
+                            <span class="ml-auto text-xs font-normal opacity-60">
+                                {route.label}
+                            </span>
+                        </label>
+                    </li>
+                ))}
+            </ul>
+        </details>
+
         <div class="ml-auto flex items-center gap-2">
             <button
                 id="signal-audio-mute"
@@ -195,15 +238,24 @@ export const SignalBoard = ({ data }: { data: SignalsData }) => {
     }
 
     return (
-        <div
-            id="signal-list"
-            data-signal-list="true"
-            class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"
-        >
-            {data.signals.map((signal) => (
-                <SignalCard signal={signal} />
-            ))}
-        </div>
+        <>
+            <div
+                id="signal-list"
+                data-signal-list="true"
+                class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"
+            >
+                {data.signals.map((signal) => (
+                    <SignalCard signal={signal} />
+                ))}
+            </div>
+            {/* Shown by `signal-board.ts` when the local filters hide every card. */}
+            <div id="signal-filter-empty" class="hidden py-16 text-center">
+                <p class="font-medium">No signals for these filters</p>
+                <p class="mx-auto mt-1 max-w-prose text-sm opacity-60">
+                    Widen the exchange or route filter to see the board again.
+                </p>
+            </div>
+        </>
     );
 };
 

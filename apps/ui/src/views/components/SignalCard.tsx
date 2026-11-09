@@ -75,6 +75,7 @@ export const SignalCard = ({ signal }: Props) => {
             data-theme="light"
             data-buy-slug={buyExchange.slug}
             data-sell-slug={sellExchange.slug}
+            data-route={`${buyExchange.baseCurrency}-${sellExchange.baseCurrency}`}
             data-profit-percentage={profitPercentage}
             data-profit-volume={profitVolume}
             class={`card border border-base-300 bg-base-100 text-base-content shadow-lg ${signalColorClass(

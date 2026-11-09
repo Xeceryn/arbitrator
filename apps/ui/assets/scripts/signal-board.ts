@@ -6,6 +6,8 @@
  * and applies two things after every push:
  *
  * - `hide`: which cards match a hidden exchange, via `style.display`.
+ * - `route`: which of the four buy→sell base-currency routes to show. All four
+ *   checked (or none, for a stale form) means no route filtering.
  * - rank: descending by the active metric, via the CSS `order` property on the
  *   grid items.
  *
@@ -32,6 +34,8 @@ const ORDER_ATTRS: Record<OrderBy, string> = {
 function readState(): {
     orderBy: OrderBy;
     hide: Set<string>;
+    routes: Set<string>;
+    routeCount: number;
 } {
     const form = document.querySelector<HTMLFormElement>("#signal-controls");
     const orderBy =
@@ -45,25 +49,38 @@ function readState(): {
         ).map((input) => input.value),
     );
 
-    return { orderBy, hide };
+    const routeInputs = Array.from(
+        form?.querySelectorAll<HTMLInputElement>('input[name="route"]') ?? [],
+    );
+    const routes = new Set(
+        routeInputs
+            .filter((input) => input.checked)
+            .map((input) => input.value),
+    );
+
+    return { orderBy, hide, routes, routeCount: routeInputs.length };
 }
 
 function applyState(emit = false) {
     const list = document.querySelector<HTMLElement>("[data-signal-list]");
     if (!list) return;
 
-    const { orderBy, hide } = readState();
+    const { orderBy, hide, routes, routeCount } = readState();
     const attr = ORDER_ATTRS[orderBy];
+    const filterByRoute = routes.size > 0 && routes.size < routeCount;
 
     const nodes = Array.from(
         list.querySelectorAll<HTMLElement>("[data-signal-node]"),
     );
 
+    let visible = 0;
     for (const node of nodes) {
         const hidden =
             hide.has(node.dataset.buySlug ?? "") ||
-            hide.has(node.dataset.sellSlug ?? "");
+            hide.has(node.dataset.sellSlug ?? "") ||
+            (filterByRoute && !routes.has(node.dataset.route ?? ""));
         node.style.display = hidden ? "none" : "";
+        if (!hidden) visible += 1;
     }
 
     nodes.sort((a, b) => {
@@ -78,6 +95,20 @@ function applyState(emit = false) {
 
     const count = document.querySelector("#signal-hide-count");
     if (count) count.textContent = hide.size > 0 ? ` (${hide.size})` : "";
+
+    const routeLabel = document.querySelector("#signal-route-count");
+    if (routeLabel) {
+        routeLabel.textContent = filterByRoute
+            ? ` (${routes.size}/${routeCount})`
+            : "";
+    }
+
+    // The server only renders the empty state when there are no signals at
+    // all; local filters hiding every card needs its own message.
+    const filterEmpty = document.querySelector("#signal-filter-empty");
+    if (filterEmpty) {
+        filterEmpty.classList.toggle("hidden", visible > 0);
+    }
 
     if (!emit) return;
 
