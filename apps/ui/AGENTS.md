@@ -63,8 +63,10 @@ percentage picks the clip (`1.x` → 1 beep … `5%` and above → 5), from
   omitting defaults so the canonical view stays a bare `/signals`.
   `#signal-filter-empty` explains a board that the filters emptied.
 - `Opportunity.list` stops at the **top 60** rows before the browser filters
-  anything, so a route filter only narrows what is already in that top 60 —
-  a route can look empty while matching signals exist below the cut.
+  anything. That cap is deliberate (it bounds what the board pulls after the
+  sort); do not raise it. The consequence is that a route filter only narrows
+  what is already in that top 60, so a route can look sparse or empty while
+  matching signals sit below the cut.
 
 ## Non-obvious rules
 
