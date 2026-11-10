@@ -13,6 +13,7 @@ import { SignalCard } from "../views/components/SignalCard";
 import {
     SignalBoard,
     SignalPage,
+    parseRoutes,
     type SignalQuery,
     type SignalsData,
 } from "../views/pages/SignalPage";
@@ -34,6 +35,8 @@ const orderBySchema = t.Union(
 const signalQuerySchema = t.Object({
     orderBy: orderBySchema,
     hide: t.Optional(t.Union([t.String(), t.Array(t.String())])),
+    /** Route keys are validated leniently in `parseRoutes`, not by TypeBox. */
+    route: t.Optional(t.Union([t.String(), t.Array(t.String())])),
 });
 
 /** The same `orderBy` choice, but for the socket's subscription query. */
@@ -233,6 +236,7 @@ export const SignalController = new Elysia({
         const filters: SignalQuery = {
             orderBy: query.orderBy,
             hide: toStringArray(query.hide),
+            routes: parseRoutes(toStringArray(query.route)),
         };
 
         const [data, exchanges] = await Promise.all([

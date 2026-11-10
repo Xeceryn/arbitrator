@@ -16,6 +16,10 @@
  * click, so `clipboard.js` never sees it and the page can jump. With `order`,
  * the nodes stay put and only their paint order changes.
  *
+ * The same state is mirrored into the URL (`orderBy`, `hide`, `route`) with
+ * `replaceState`, so a filtered board can be reloaded, bookmarked or shared.
+ * Defaults are omitted to keep the canonical view at a bare `/signals`.
+ *
  * Once the state is on the DOM it emits `BOARD_APPLIED_EVENT` with the now
  * first card, which is what `signal-audio.ts` plays an alarm for. Only the
  * swap path emits: a fresh page, or a local sort/hide change, is not an
@@ -25,6 +29,8 @@
 import { BOARD_APPLIED_EVENT, type BoardAppliedDetail } from "./board-state";
 
 type OrderBy = "profitPercentage" | "profitVolume";
+
+const DEFAULT_ORDER_BY: OrderBy = "profitPercentage";
 
 const ORDER_ATTRS: Record<OrderBy, string> = {
     profitPercentage: "data-profit-percentage",
@@ -61,11 +67,51 @@ function readState(): {
     return { orderBy, hide, routes, routeCount: routeInputs.length };
 }
 
+type BoardState = ReturnType<typeof readState>;
+
+/**
+ * Mirror the filter state into the query string. Replacement (not push) keeps
+ * the browser history clean: the board changes every 500ms, and the user did
+ * not navigate. Only the params this board owns are touched, and nothing is
+ * written when the URL already matches, so a steady board costs no work.
+ */
+function syncUrl(state: BoardState) {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    if (state.orderBy === DEFAULT_ORDER_BY) params.delete("orderBy");
+    else params.set("orderBy", state.orderBy);
+
+    params.delete("hide");
+    for (const slug of [...state.hide].sort()) params.append("hide", slug);
+
+    params.delete("route");
+    const routeFilterActive =
+        state.routes.size > 0 && state.routes.size < state.routeCount;
+    if (routeFilterActive) {
+        for (const route of [...state.routes].sort()) {
+            params.append("route", route);
+        }
+    }
+
+    const query = params.toString();
+    const next = `${url.pathname}${query ? `?${query}` : ""}`;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (next === current) return;
+
+    window.history.replaceState(window.history.state, "", next);
+}
+
 function applyState(emit = false) {
+    if (!document.querySelector("#signal-controls")) return;
+
+    const state = readState();
+    syncUrl(state);
+    const { orderBy, hide, routes, routeCount } = state;
+
     const list = document.querySelector<HTMLElement>("[data-signal-list]");
     if (!list) return;
 
-    const { orderBy, hide, routes, routeCount } = readState();
     const attr = ORDER_ATTRS[orderBy];
     const filterByRoute = routes.size > 0 && routes.size < routeCount;
 

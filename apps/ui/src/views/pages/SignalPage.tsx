@@ -12,6 +12,8 @@ export type SignalQuery = {
     orderBy: SignalOrderBy;
     /** Exchange slugs whose signals are hidden (either leg). */
     hide: string[];
+    /** Transfer routes to show; empty means all four. */
+    routes: SignalRoute[];
 };
 
 export type SignalsData =
@@ -27,14 +29,40 @@ const ORDER_BY_OPTIONS: Array<{ value: SignalOrderBy; label: string }> = [
  * Transfer routes, keyed by the buy/sell exchange base currency pair. The key
  * is also the CSS class that colours the card (`signal-<buy>-<sell>` in
  * `assets/styles/styles.css`), so the swatch in the filter matches the card.
- * Filtering is client-side: `signal-board.ts` hides cards by `data-route`.
+ *
+ * Filtering is client-side (`signal-board.ts` hides cards by `data-route`); the
+ * selection lives in the URL as repeated `route=<key>` params so a filtered
+ * board can be bookmarked or shared.
  */
-const SIGNAL_ROUTES = [
+export const SIGNAL_ROUTES = [
     { key: "idr-usdt", letter: "A", label: "IDR → USDT" },
     { key: "usdt-idr", letter: "B", label: "USDT → IDR" },
     { key: "usdt-usdt", letter: "C", label: "USDT → USDT" },
     { key: "idr-idr", letter: "D", label: "IDR → IDR" },
 ] as const;
+
+export type SignalRoute = (typeof SIGNAL_ROUTES)[number]["key"];
+
+const SIGNAL_ROUTE_KEYS: readonly string[] = SIGNAL_ROUTES.map(
+    (route) => route.key,
+);
+
+/** Whether `value` names one of the four transfer routes. */
+export function isSignalRoute(value: string): value is SignalRoute {
+    return SIGNAL_ROUTE_KEYS.includes(value);
+}
+
+/**
+ * Route filter from the query string. Empty means "every route"; unknown keys
+ * are dropped rather than rejected, so an old bookmark still opens the board.
+ * The order is fixed by `SIGNAL_ROUTES`, which keeps the URL canonical.
+ */
+export function parseRoutes(values: string[]): SignalRoute[] {
+    const selected = new Set(values.filter(isSignalRoute));
+    return SIGNAL_ROUTES.map((route) => route.key).filter((key) =>
+        selected.has(key),
+    );
+}
 
 /**
  * Alarm clips, one per integer profit percentage (5 covers 5% and above).
@@ -66,10 +94,57 @@ export const SignalAlarm = () => (
 );
 
 /**
- * Filter chrome. `hide` is purely client-side, so changing it never touches
- * the network and the form keeps focus. `orderBy` is the exception: it picks
- * the stream this socket subscribes to, so `hx-ws:send` (default `change` for
- * a `<select>`) tells the server to move us to the `profitPercentage` or
+ * Route filter. Checked means shown; `routes` comes from the `route` query
+ * params, and an empty selection means every route (the four checkboxes are
+ * then all checked, and the client drops the param from the URL again).
+ */
+const RouteFilter = ({ routes }: { routes: SignalRoute[] }) => {
+    const active = new Set<string>(routes);
+    const filtered = routes.length > 0 && routes.length < SIGNAL_ROUTES.length;
+
+    return (
+        <details class="dropdown dropdown-end [&:not([open])>.dropdown-content]:hidden">
+            <summary class="btn btn-outline btn-sm">
+                Routes
+                <span id="signal-route-count">
+                    {filtered
+                        ? ` (${routes.length}/${SIGNAL_ROUTES.length})`
+                        : ""}
+                </span>
+            </summary>
+            <ul class="dropdown-content menu z-50 w-64 flex-nowrap rounded-box border border-base-300 bg-base-100 p-2 shadow-2xl">
+                {SIGNAL_ROUTES.map((route) => (
+                    <li>
+                        <label class="flex cursor-pointer items-center gap-2">
+                            <input
+                                type="checkbox"
+                                name="route"
+                                value={route.key}
+                                class="checkbox checkbox-sm"
+                                checked={!filtered || active.has(route.key)}
+                            />
+                            <span
+                                class={`signal-${route.key} signal-bg size-2.5 shrink-0 rounded-full`}
+                                aria-hidden="true"
+                            ></span>
+                            <span>Rute {route.letter}</span>
+                            <span class="ml-auto text-xs font-normal opacity-60">
+                                {route.label}
+                            </span>
+                        </label>
+                    </li>
+                ))}
+            </ul>
+        </details>
+    );
+};
+
+/**
+ * Filter chrome. `hide` and `route` are purely client-side, so changing them
+ * never touches the network and the form keeps focus; `signal-board.ts` also
+ * mirrors them into the URL. `orderBy` is the exception: it picks the stream
+ * this socket subscribes to, so `hx-ws:send` (default `change` for a
+ * `<select>`) tells the server to move us to the `profitPercentage` or
  * `profitVolume` room and resend that room's board. Signals are always ranked
  * descending, so there is no direction control.
  */
@@ -138,35 +213,7 @@ export const SignalControls = ({
             </ul>
         </details>
 
-        <details class="dropdown dropdown-end [&:not([open])>.dropdown-content]:hidden">
-            <summary class="btn btn-outline btn-sm">
-                Routes
-                <span id="signal-route-count"></span>
-            </summary>
-            <ul class="dropdown-content menu z-50 w-64 flex-nowrap rounded-box border border-base-300 bg-base-100 p-2 shadow-2xl">
-                {SIGNAL_ROUTES.map((route) => (
-                    <li>
-                        <label class="flex cursor-pointer items-center gap-2">
-                            <input
-                                type="checkbox"
-                                name="route"
-                                value={route.key}
-                                class="checkbox checkbox-sm"
-                                checked
-                            />
-                            <span
-                                class={`signal-${route.key} signal-bg size-2.5 shrink-0 rounded-full`}
-                                aria-hidden="true"
-                            ></span>
-                            <span>Rute {route.letter}</span>
-                            <span class="ml-auto text-xs font-normal opacity-60">
-                                {route.label}
-                            </span>
-                        </label>
-                    </li>
-                ))}
-            </ul>
-        </details>
+        <RouteFilter routes={query.routes} />
 
         <div class="ml-auto flex items-center gap-2">
             <button

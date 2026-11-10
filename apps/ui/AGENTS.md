@@ -53,11 +53,18 @@ percentage picks the clip (`1.x` → 1 beep … `5%` and above → 5), from
   (`arbitrator:signal-volume`, `arbitrator:signal-muted`).
 - Browsers block unmuted playback until the page has been interacted with, so
   the first alarm may be dropped; it is not an error.
-- The board's local filters (exchanges, and the four transfer routes
+- The board's filters (exchanges, and the four transfer routes
   A–D = IDR→USDT, USDT→IDR, USDT→USDT, IDR→IDR) live in `signal-board.ts` and
-  key off `data-buy-slug` / `data-sell-slug` / `data-route` on the card. They
-  are client-side only (not in the URL), and `#signal-filter-empty` explains a
-  board that the filters emptied.
+  key off `data-buy-slug` / `data-sell-slug` / `data-route` on the card.
+  Filtering is client-side, but the state is in the URL — `?orderBy=&hide=&route=`
+  — so a filtered board can be reloaded or shared. `/signals` renders the
+  checkboxes from those params (`parseRoutes` is lenient: unknown keys are
+  dropped) and `signal-board.ts` mirrors changes back with `replaceState`,
+  omitting defaults so the canonical view stays a bare `/signals`.
+  `#signal-filter-empty` explains a board that the filters emptied.
+- `Opportunity.list` stops at the **top 60** rows before the browser filters
+  anything, so a route filter only narrows what is already in that top 60 —
+  a route can look empty while matching signals exist below the cut.
 
 ## Non-obvious rules
 
