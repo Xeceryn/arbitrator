@@ -4,16 +4,9 @@ The single, typed environment surface for the monorepo. **Import `env` (or the
 helpers) instead of reading `process.env` / `Bun.env` anywhere else.**
 
 ```ts
-import {
-    env,
-    amqpUrl,
-    listerUrl,
-    senderUrl,
-    typeSafeApiKey,
-} from "@arbitrator/env-loader";
+import { env, amqpUrl, listerUrl, senderUrl } from "@arbitrator/env-loader";
 
 env.DATABASE_URL; // string (defaulted)
-env.TYPESAFE_API_KEY; // string | undefined (blank/unset -> undefined)
 amqpUrl(); // honors AMQP_URL -> RABBITMQ_URL -> localhost default
 ```
 

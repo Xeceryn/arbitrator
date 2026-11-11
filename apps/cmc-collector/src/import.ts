@@ -27,7 +27,7 @@ function formatEdenError(error: unknown): string {
  */
 type Outcome<T> = { data: T | null; error: unknown };
 
-function must<T>(label: string, result: Outcome<T>): T {
+export function must<T>(label: string, result: Outcome<T>): T {
     if (result.error) {
         throw new Error(`${label}: ${formatEdenError(result.error)}`);
     }
@@ -65,6 +65,13 @@ export type ImportOptions = {
      * elsewhere is kept.
      */
     pruneOrphanCoins?: boolean;
+    /**
+     * Leave markets that are absent from the snapshot untouched instead of
+     * disabling or deleting them. The Pintu scan uses this because a symbol
+     * that could not be resolved (new ticker collision) must not silently
+     * disable an existing market. `prune` still wins when explicitly requested.
+     */
+    keepMissingMarkets?: boolean;
 };
 
 export type ImportSummary = {
@@ -119,6 +126,7 @@ export async function importSnapshot(
         dryRun = false,
         unmappedChain = true,
         pruneOrphanCoins = false,
+        keepMissingMarkets = false,
     } = options;
 
     const summary: ImportSummary = {
@@ -162,7 +170,7 @@ export async function importSnapshot(
                         name: record.name,
                         slug: record.slug,
                         logo: record.logo,
-                        registeredOnCmc: true,
+                        registeredOnCmc: record.registeredOnCmc ?? true,
                         baseCurrency: record.baseCurrency,
                     }),
                 );
@@ -183,6 +191,10 @@ export async function importSnapshot(
         if (existing.cmcId !== record.cmcId) changes.cmcId = record.cmcId;
         if (existing.baseCurrency !== record.baseCurrency) {
             changes.baseCurrency = record.baseCurrency;
+        }
+        const registeredOnCmc = record.registeredOnCmc ?? true;
+        if (existing.registeredOnCmc !== registeredOnCmc) {
+            changes.registeredOnCmc = registeredOnCmc;
         }
 
         if (Object.keys(changes).length > 0) {
@@ -362,6 +374,7 @@ export async function importSnapshot(
 
     for (const [key, row] of dbMarketByKey) {
         if (wanted.has(key)) continue;
+        if (keepMissingMarkets && !prune) continue;
 
         if (prune) {
             console.log(

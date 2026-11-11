@@ -420,18 +420,6 @@ export type ResolvedChain = {
     canonical: boolean;
 };
 
-/**
- * Every canonical chain the alias table knows about, deduped by code. Used as
- * the Jev resolver's seed vocabulary when lister has few/no real chains yet, so
- * a label can be proposed a canonical code that does not exist in lister
- * *yet* (the import creates it when the suggestion is accepted).
- */
-export const CANONICAL_CHAINS: ReadonlyArray<{ code: string; name: string }> = [
-    ...new Map(
-        Object.values(CHAIN_ALIASES).map((chain) => [chain.code, chain]),
-    ).values(),
-];
-
 /** Tokens that describe the *kind* of a network, not a different chain. */
 const CHAIN_QUALIFIERS = new Set([
     "eth",

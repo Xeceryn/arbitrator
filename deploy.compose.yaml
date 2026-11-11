@@ -275,7 +275,6 @@ services:
             NODE_ENV: production
             # Optional external APIs; blank means the integration is skipped.
             CMC_API_KEY: ${CMC_API_KEY:-}
-            TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
             MEXC_API_KEY: ${MEXC_API_KEY:-}
             MEXC_API_SECRET: ${MEXC_API_SECRET:-}
             OKX_API_KEY: ${OKX_API_KEY:-}

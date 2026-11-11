@@ -12,6 +12,11 @@ export type ExchangeSnapshot = {
     slug: string;
     logo: string;
     baseCurrency: ExchangeBaseCurrency;
+    /**
+     * False for venues with no CoinMarketCap identity (Pintu). Omitted means
+     * true, so CMC/Indodax snapshots stay unchanged.
+     */
+    registeredOnCmc?: boolean;
 };
 
 /**
@@ -52,10 +57,11 @@ export type MarketSnapshot = {
     depositEnabled?: boolean;
 };
 
-/** Where a snapshot's rows came from. Indodax is scraped from its own API. */
+/** Where a snapshot's rows came from. Indodax and Pintu use their own APIs. */
 export type SnapshotSource =
     | "coinmarketcap-public"
     | "indodax-public"
+    | "pintu-public"
     | "coinmarketcap-public+indodax-public";
 
 /** The full local snapshot written by `--scrape` and read by `--import`. */

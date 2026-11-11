@@ -1,8 +1,8 @@
 # apps/cmc-collector
 
 CLI that scrapes CoinMarketCap's **keyless** public `data-api` (plus Indodax's
-own public `api/pairs`) and imports a snapshot into the lister database. No API
-key needed.
+`api/pairs` and Pintu's Pro web APIs) and imports a snapshot into the lister
+database. No API key needed.
 
 ## Run
 
@@ -12,6 +12,7 @@ bun run import   # --import: apply the stored snapshot to lister
 bun run sync     # --all: scrape then import
 bun run indodax  # --indodax: live Indodax-only reconcile (no CMC pair scrape)
 bun run indodax:symbols  # regenerate the sender's Indodax websocket pair table
+bun run pintu    # --pintu: live Pintu Pro reconcile (symbol-matched, no CMC ids)
 bun run typecheck
 bun test
 
@@ -29,7 +30,11 @@ Import options: `--prune` (delete delisted markets instead of disabling trading)
 - Fresh markets are linked to the placeholder `UNMPD` chain unless
   `--no-unmapped-chain` is passed (`src/config.ts`).
 - Scrape targets are configured in `src/config.ts` `EXCHANGE_TARGETS` — edit
-  there, not inline. Each target has a `source`: `cmc` or `indodax`.
+  there, not inline. Each target has a `source`: `cmc` or `indodax`. Pintu is
+  deliberately not in that list because it has no CMC ids; `--pintu` resolves
+  its tickers against lister first.
+- HTX and BitMart are no longer scrape targets. Their existing lister rows are
+  left alone (the generic import only touches exchanges present in a snapshot).
 
 ## Indodax special case
 
@@ -72,6 +77,43 @@ A full wipe of the existing Indodax assignments is still not scripted: the scan
 only deletes markets that are absent from the live pair list, so coins still
 listed (and their real chain links) are preserved.
 
+## Pintu special case
+
+Pintu is not registered on CMC and publishes no documented public API. The
+`--pintu` / `bun run pintu` scan reads the keyless web APIs behind
+`pintu.co.id/pro`:
+
+- `api.pintu.pro/v1/public/get-symbols-reference` — authoritative Pro pair list
+  (IDR only). `is_tokenized` rows are skipped: they are tokenized stocks, not
+  crypto markets.
+- `api.pintu.co.id/v3/transaction/market/list` — display name, logo and trading
+  state.
+- `api.pintu.co.id/v2/wallet/supportedCurrencies` — metadata fallback for
+  Pro-only symbols the retail catalogue hides (MKR).
+
+Because there are no CMC ids, each Pintu ticker is resolved against lister:
+
+1. an explicit `PINTU_SYMBOL_ALIASES` entry wins (`DOGE`→Dogecoin,
+   `MEME`→Memecoin, `PUMP`→Pump.fun);
+2. exactly one lister coin with that ticker is reused;
+3. otherwise a stable synthetic id is allocated from the reserved
+   `1,999,000–2,998,999` range. Starting at 1999 would collide with real CMC ids
+   (2010 is ADA), which is why the range is high.
+
+A ticker with several lister candidates is a conflict: it is printed, written
+to `data/pintu-symbols.json`, and skipped — never guessed. Review that file
+after a scan and add an alias (or fix the lister coin) when a new collision
+appears.
+
+Missing Pintu markets are left untouched by default because a skipped ticker
+must not disable an existing market; pass `--prune` to delete markets absent
+from the live Pro list (and orphan coins). `--dry-run` prints the whole
+resolution and import diff without writing.
+
+Pintu markets start on the `UNMPD` placeholder like every new market. Chain
+mapping is intentionally deferred (the wallet catalogue exposes networks, but
+the initial import does not need them).
+
 Files: `index.ts` (CLI/arg parsing), `scrape.ts`, `import.ts`, `storage.ts`,
-`cmc.ts`, `indodax.ts`, `indodax-symbols.ts`, `metadata.ts`, `market-pairs.ts`,
-`config.ts`, `types.ts`.
+`cmc.ts`, `indodax.ts`, `indodax-symbols.ts`, `pintu.ts`, `pintu-scan.ts`,
+`metadata.ts`, `market-pairs.ts`, `config.ts`, `types.ts`.

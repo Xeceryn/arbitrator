@@ -5,7 +5,13 @@ import type { ImportSummary } from "./import";
 import { scrape } from "./scrape";
 import { defaultDataDir, readSnapshot, writeSnapshot } from "./storage";
 
-type Mode = "scrape" | "import" | "all" | "indodax" | "indodax-symbols";
+type Mode =
+    | "scrape"
+    | "import"
+    | "all"
+    | "indodax"
+    | "indodax-symbols"
+    | "pintu";
 
 type CliOptions = {
     mode: Mode;
@@ -23,11 +29,13 @@ function parseArgs(argv: string[]): CliOptions {
     const wantsIndodax =
         argv.includes("--indodax") || argv.includes("--indodax-scan");
     const wantsSymbols = argv.includes("--indodax-symbols");
+    const wantsPintu = argv.includes("--pintu");
     const wantsScrape = argv.includes("--scrape") || wantsAll;
     const wantsImport = argv.includes("--import") || wantsAll;
 
     let mode: Mode = "scrape";
-    if (wantsSymbols) mode = "indodax-symbols";
+    if (wantsPintu) mode = "pintu";
+    else if (wantsSymbols) mode = "indodax-symbols";
     else if (wantsIndodax) mode = "indodax";
     else if (wantsImport && wantsScrape) mode = "all";
     else if (wantsImport) mode = "import";
@@ -53,6 +61,7 @@ function parseArgs(argv: string[]): CliOptions {
         "--indodax",
         "--indodax-scan",
         "--indodax-symbols",
+        "--pintu",
         "--prune",
         "--dry-run",
         "--no-unmapped-chain",
@@ -85,7 +94,7 @@ function parseArgs(argv: string[]): CliOptions {
 }
 
 function printHelp(): void {
-    console.log(`cmc-collector — scrape CoinMarketCap + Indodax into lister
+    console.log(`cmc-collector — scrape CoinMarketCap + Indodax + Pintu into lister
 
 Usage:
   bun run src/index.ts [options]
@@ -104,12 +113,21 @@ Modes (default: --scrape):
                      indodax-symbols.ts) from https://indodax.com/api/pairs.
                      Uses the same IDR-only filter, CMC id aliases and
                      old_ticker_id preference as the importer.
+  --pintu            Scan Pintu Pro live. Pintu is not on CMC, so its tickers
+                     are matched against lister coins; a ticker with several
+                     candidates is reported and skipped, an unmatched one gets
+                     a synthetic CMC id in the reserved 1,999,000+ range.
+                     Tokenized stocks and non-IDR pairs are skipped. The
+                     resolution audit is written to data/pintu-symbols.json.
+                     Missing markets are left untouched unless --prune.
 
 Import options:
   --prune            Delete delisted markets instead of disabling trading.
-                     (Deleting cascades the market's chain links.)
-  --dry-run          Print the diff without writing (also works with --indodax,
-                     where it prints the generated pair table instead).
+                     (Deleting cascades the market's chain links.) With
+                     --pintu it also enables deleting absent markets; without
+                     it they are left untouched.
+  --dry-run          Print the diff without writing (also works with --indodax
+                     and --pintu).
   --out <path>       With --indodax-symbols: write somewhere other than the
                      sender worker file.
   --no-unmapped-chain
@@ -120,11 +138,10 @@ General:
   -h, --help         Show this help.
 
 Environment:
-  DATABASE_URL       lister database (required for --import/--indodax).
+  DATABASE_URL       lister database (required for --import/--indodax/--pintu).
 
-All scraping is keyless: CMC's public data-api for every venue except Indodax,
-which is read from https://indodax.com/api/pairs so its own display tickers and
-maintenance/suspension flags are preserved.`);
+All scraping is keyless: CMC's public data-api for the CMC venues, Indodax's
+public pair list, and Pintu's Pro web APIs.`);
 }
 
 async function runScrape(dataDir: string): Promise<void> {
@@ -183,6 +200,24 @@ async function runIndodaxScan(options: {
     });
 
     printSummary(summary, "indodax scan");
+}
+
+/**
+ * Pintu-only live scan. Pintu has no CMC ids, so the scan resolves its tickers
+ * against lister first and reports every conflict/synthetic id before importing.
+ */
+async function runPintuReconcile(options: {
+    dryRun: boolean;
+    prune: boolean;
+    unmappedChain: boolean;
+    dataDir: string;
+}): Promise<void> {
+    const { runPintuScan } = await import("./pintu-scan");
+
+    const { summary, reportPath } = await runPintuScan(options);
+
+    console.log(`pintu report: ${reportPath}`);
+    printSummary(summary, "pintu scan");
 }
 
 async function runIndodaxSymbols(options: {
@@ -267,6 +302,15 @@ async function main(): Promise<void> {
         await runIndodaxSymbols({
             dryRun: options.dryRun,
             outPath: options.outPath,
+        });
+    }
+
+    if (options.mode === "pintu") {
+        await runPintuReconcile({
+            dryRun: options.dryRun,
+            prune: options.prune,
+            unmappedChain: options.unmappedChain,
+            dataDir: options.dataDir,
         });
     }
 }

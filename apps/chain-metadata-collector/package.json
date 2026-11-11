@@ -6,7 +6,6 @@
         "scrape": "bun run src/index.ts --scrape",
         "import": "bun run src/index.ts --import",
         "sync": "bun run src/index.ts --all",
-        "resolve": "bun run src/index.ts --resolve",
         "analyze": "bun run src/index.ts --analyze",
         "test": "bun test",
         "typecheck": "bun --check"

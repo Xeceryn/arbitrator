@@ -52,8 +52,6 @@ const envSchema = z.object({
 
     // External APIs / venue keys (absent -> the integration is skipped)
     CMC_API_KEY: optionalString,
-    TYPESAFE_API_KEY: optionalString,
-    JEV_API_KEY: optionalString,
     MEXC_API_KEY: optionalString,
     MEXC_API_SECRET: optionalString,
     OKX_API_KEY: optionalString,
@@ -105,9 +103,4 @@ export function listerUrl(): string {
 /** sender base URL. */
 export function senderUrl(): string {
     return env.SENDER_URL;
-}
-
-/** Jev/TypeSafe key, honoring the legacy `JEV_API_KEY` alias. */
-export function typeSafeApiKey(): string | undefined {
-    return env.TYPESAFE_API_KEY ?? env.JEV_API_KEY;
 }

@@ -8,6 +8,7 @@
         "sync": "bun run src/index.ts --all",
         "indodax": "bun run src/index.ts --indodax",
         "indodax:symbols": "bun run src/index.ts --indodax-symbols",
+        "pintu": "bun run src/index.ts --pintu",
         "test": "bun test",
         "typecheck": "bun --check"
     },

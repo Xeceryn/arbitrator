@@ -12,7 +12,6 @@ data an operator otherwise looks up by hand on every venue while arbitraging;
 bun run scrape    # --scrape: crawl and write a snapshot to the data dir
 bun run import    # --import: apply the stored snapshot to lister
 bun run sync      # --all: scrape then import
-bun run resolve   # --resolve: ask Jev to map unmapped labels (opt-in)
 bun run typecheck
 
 # raw flags:
@@ -97,25 +96,6 @@ Merges backed only by name are flagged for review. This is the tool for "is
 folder X's `AVAX_C` the same as Binance's `AVAXC`?" — it answers with the
 evidence, not a guess.
 
-## Jev resolver (advisory only)
-
-`--resolve` asks Jev (TypeSafe's `systemone` decision model) to _propose_ a
-canonical code for the labels the deterministic rules could not place. It is
-**advisory**: it only writes `data/chain-aliases.generated.json` (accepted set +
-review queue) and never touches lister. Two stages: a Choice proposes a
-candidate, a three-level Score (`different`/`related`/`same`) verifies it.
-
-- Set `TYPESAFE_API_KEY` (legacy alias `JEV_API_KEY`). Without it `--resolve`
-  errors; `scrape`/`import` are unaffected.
-- **Why advisory:** on real data the model called `MANTAETH`/`ZKLETH` the same
-  as `ETH` and `KMD` the same as `DCR`; and called `LINEAETH`/`KAVAEVM` merely
-  "related". It is a review aid, not a merge authority. Durable mappings belong
-  in `CHAIN_ALIASES`.
-- `--min-confidence` (default 0.5) only changes what is _listed_ as accepted.
-
-Files: `src/jev.ts` (HTTP client), `src/resolve.ts` (ranking, batching, gating),
-`src/aliases.ts` (suggestion file + grouping keys), `src/lister.ts` (SDK helpers).
-
 ## Notes
 
 - Snapshots land in `apps/chain-metadata-collector/data/` (gitignored).
@@ -124,6 +104,5 @@ Files: `src/jev.ts` (HTTP client), `src/resolve.ts` (ranking, batching, gating),
 - Import requires lister (`LISTER_URL`, default `http://localhost:3001`) and goes
   through `@arbitrator/sdk`.
 
-Files: `index.ts` (CLI), `scrape.ts`, `import.ts`, `resolve.ts`, `jev.ts`,
-`aliases.ts`, `lister.ts`, `chains.ts`, `storage.ts`, `report.ts`, `http.ts`,
-`config.ts`, `types.ts`.
+Files: `index.ts` (CLI), `scrape.ts`, `import.ts`, `analyze.ts`, `lister.ts`,
+`chains.ts`, `storage.ts`, `report.ts`, `http.ts`, `config.ts`, `types.ts`.
