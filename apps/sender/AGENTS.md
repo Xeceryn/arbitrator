@@ -71,9 +71,9 @@ keeps the server up.
   directly from each worker (`sendToQueueNow` to `Queues.orderbookFor(exchange)`).
   Do not route orderbook data through the parent.
 - Migrated workers use the contracts protocol (`bootstrap` / `onCommand` /
-  `createOrderbookPublisher`): `binance`, `gate-io`, `indodax`, `kucoin`, `mexc`.
-  Legacy workers still read `Bun.argv` and `self.postMessage` and use the
-  `src/types` / `src/utils` shims: `bitget`, `bitmart`, `huobi`, `pintu`.
+  `createOrderbookPublisher`): `binance`, `gate-io`, `indodax`, `kucoin`,
+  `mexc`, `pintu`. Legacy workers still read `Bun.argv` and `self.postMessage`
+  and use the `src/types` / `src/utils` shims: `bitget`, `bitmart`, `huobi`.
 - Indodax displays `traded_currency_unit` (what lister stores as
   `market.exchangeSymbol`) but subscribes with its pair `id` (or with
   `old_ticker_id` for renamed markets — AAVE trades as `lendidr`). The worker
@@ -81,8 +81,13 @@ keeps the server up.
   (generated from `indodax.com/api/pairs`), falling back to `<ticker>idr`.
   Regenerate it with `bun run indodax:symbols` in `apps/cmc-collector`; do not
   hand-edit the table.
+- Pintu subscribes to `aggrbook.snapshot.50.<ticker>-IDR` and is IDR-quoted:
+  the worker multiplies the reported base volume by price so the published
+  level is `[price, idr_notional]`, which is what the receiver expects for
+  `baseCurrency: "idr"`. The server sends `heartbeat-request`; the worker echoes
+  its `request_id` with `heartbeat-response`.
 - To typecheck a worker, add its file to `tsconfig.app.json` `include`. That list
-  currently names only `binance`, `gate-io`, `indodax`, `kucoin` — `mexc` is
+  currently names `binance`, `gate-io`, `indodax`, `kucoin`, `pintu` — `mexc` is
   migrated but not included yet, so it is not covered by the focused `tsc`.
 - A worker that dies is respawned by the pool, not by a reconcile; worker socket
   retry is the worker's own concern.

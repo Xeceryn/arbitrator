@@ -51,6 +51,14 @@ export const workerAdapters: Record<string, WorkerAdapter> = {
         maxSubscriptionsPerConnection: 50,
         supportsDynamicSubscribe: true,
     },
+    pintu: {
+        slug: "pintu",
+        modulePath: "src/workers/orderbooks/pintu.ts",
+        workerFile: resolveWorkerFile("pintu"),
+        baseCurrency: "idr",
+        maxSubscriptionsPerConnection: 100,
+        supportsDynamicSubscribe: true,
+    },
     kucoin: {
         slug: "kucoin",
         modulePath: "src/workers/orderbooks/kucoin.ts",

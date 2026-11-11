@@ -38,6 +38,7 @@ const workers = await Bun.build({
         "./src/workers/orderbooks/indodax.ts",
         "./src/workers/orderbooks/kucoin.ts",
         "./src/workers/orderbooks/mexc.ts",
+        "./src/workers/orderbooks/pintu.ts",
     ],
     root: "./src",
     outdir: "./dist",

@@ -386,7 +386,6 @@ Each task ends on a checkable bound.
 - [x] Receiver price conversion + opportunity persistence (receiver writes the
       DB directly; sender owns create/delete via `opportunity.sync`).
 - [ ] `listTransferableCoins` filters for the future signal row.
-- [ ] Migrate the remaining exchange workers (bitget, bitmart, huobi, indodax,
-      kucoin, mexc, pintu) to the contracts protocol. They are the only
-      consumers of the legacy shims left in `src/types/` and `src/utils/`;
-      delete those shims once migrated.
+- [ ] Migrate the remaining exchange workers (bitget, bitmart, huobi) to the
+      contracts protocol. They are the only consumers of the legacy shims left
+      in `src/types/` and `src/utils/`; delete those shims once migrated.
