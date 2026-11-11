@@ -23,10 +23,13 @@ services:
             # The UI dev server runs on the host (bun --watch) on port 3000.
             # host.docker.internal points back at the host from inside the container.
             UI_UPSTREAM: ${UI_UPSTREAM:-host.docker.internal:3000}
+            # RabbitMQ management (UI + HTTP API), same path-prefix mount as the
+            # deploy stack so https://<LOCAL_DOMAIN>/rabbitmq/ works here too.
+            RABBITMQ_MANAGEMENT_UPSTREAM: host.docker.internal:15672
             # The single hostname nginx serves (the host's own mDNS name).
             LOCAL_DOMAIN: ${LOCAL_DOMAIN:-condor.local}
             # Only substitute our variables; leave nginx's own $host, $scheme, etc.
-            NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|LOCAL_DOMAIN)$$"
+            NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|RABBITMQ_MANAGEMENT_UPSTREAM|LOCAL_DOMAIN)$$"
         ports:
             - "${NGINX_HTTP_PORT:-80}:80"
             - "${NGINX_HTTPS_PORT:-443}:443"
@@ -49,6 +52,8 @@ services:
             - "15672:15672" # HTTP API
         volumes:
             - rabbitmq-data:/var/lib/rabbitmq
+            # Serves the management UI/API under /rabbitmq (nginx mounts it).
+            - ./infra/rabbitmq/conf.d/20-path-prefix.conf:/etc/rabbitmq/conf.d/20-path-prefix.conf:ro
         healthcheck:
             test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
             interval: 30s

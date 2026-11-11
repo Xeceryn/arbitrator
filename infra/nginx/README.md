@@ -42,12 +42,36 @@ The production-ish stack reuses this same nginx and template, but proxies the
 
 ```
 client ──https──▶ nginx :443 ──▶ ui:3000 ──▶ lister / sender
+                              └─▶ rabbitmq:15672   (path prefix /rabbitmq/)
 ```
 
-`deploy.compose.yaml` sets `UI_UPSTREAM: ui:3000` and publishes only nginx
-(80/443), so the UI is not reachable on the host directly. Everything else —
-the single hostname, path-based routing and the cert files — is identical to
-local development.
+`deploy.compose.yaml` sets `UI_UPSTREAM: ui:3000` and
+`RABBITMQ_MANAGEMENT_UPSTREAM: rabbitmq:15672`, and publishes only nginx
+(80/443), so neither the UI nor the RabbitMQ management UI is reachable on the
+host directly — the broker's `15672` stays unpublished and is proxied from
+`https://<LOCAL_DOMAIN>/rabbitmq/`.
+
+That mount relies on the broker being configured to serve the management plugin
+under the same prefix, or every asset and API call would 404. The deploy stack
+mounts `infra/rabbitmq/conf.d/20-path-prefix.conf`, which sets:
+
+```ini
+management.path_prefix = /rabbitmq
+```
+
+Consequences worth knowing:
+
+- Navigate to `https://<LOCAL_DOMAIN>/rabbitmq/` (the trailing slash matters;
+  `/rabbitmq` redirects to it). Log in with `RABBITMQ_USER` / `RABBITMQ_PASSWORD`.
+- Because the prefix is configured **in RabbitMQ**, nginx forwards the URI
+  unchanged (`proxy_pass http://rabbitmq_upstream;` — no trailing slash, no
+  rewrite). Do not strip the prefix in nginx.
+- Anything that talks to the HTTP API from the host needs the prefix too, e.g.
+  `rabbitmqadmin --base-path /rabbitmq ...`.
+- RabbitMQ 4.4's `js/main.js` hardcodes two root-relative URLs that ignore the
+  prefix (the logout redirect and the import-definitions form). The nginx
+  `location /rabbitmq/` block rewrites both with `sub_filter`; if a future
+  release renames those strings the filter stops matching, it does not break.
 
 ```bash
 # 1. Certificates (once per hostname; same script as above)
@@ -58,8 +82,14 @@ docker compose -f deploy.compose.yaml up --build
 ```
 
 `LOCAL_DOMAIN`, `NGINX_HTTP_PORT` and `NGINX_HTTPS_PORT` are shared by both
-stacks (they come from the root `.env`). Only `UI_UPSTREAM` differs, and
-`deploy.compose.yaml` sets it itself — do not override it there.
+stacks (they come from the root `.env`). Only the upstreams differ, and
+`deploy.compose.yaml` sets them itself — do not override them there.
+
+`compose.yaml` (local infra) points `RABBITMQ_MANAGEMENT_UPSTREAM` at
+`host.docker.internal:15672` and mounts the same
+`infra/rabbitmq/conf.d/20-path-prefix.conf`, so the dev broker serves its UI at
+`http://localhost:15672/rabbitmq/` — **not** at `/` — while nginx serves it at
+`https://<LOCAL_DOMAIN>/rabbitmq/`.
 
 After re-issuing a certificate, reload nginx so it picks up the new files:
 
@@ -164,12 +194,13 @@ ip route get 1.1.1.1 | awk '{print $7; exit}'   # shows your LAN IP
 
 All overridable via environment (see `.envrc`):
 
-| Variable           | Default                     | Purpose                                     |
-| ------------------ | --------------------------- | ------------------------------------------- |
-| `LOCAL_DOMAIN`     | `$(hostname).local`         | The single vhost (`server_name`) + cert SAN |
-| `UI_UPSTREAM`      | `host.docker.internal:3000` | Where the UI listens (`ui:3000` in deploy)  |
-| `NGINX_HTTP_PORT`  | `80`                        | Published HTTP port (redirects)             |
-| `NGINX_HTTPS_PORT` | `443`                       | Published HTTPS port                        |
+| Variable                       | Default                      | Purpose                                                 |
+| ------------------------------ | ---------------------------- | ------------------------------------------------------- |
+| `LOCAL_DOMAIN`                 | `$(hostname).local`          | The single vhost (`server_name`) + cert SAN             |
+| `UI_UPSTREAM`                  | `host.docker.internal:3000`  | Where the UI listens (`ui:3000` in deploy)              |
+| `RABBITMQ_MANAGEMENT_UPSTREAM` | `host.docker.internal:15672` | Management UI/API upstream (`rabbitmq:15672` in deploy) |
+| `NGINX_HTTP_PORT`              | `80`                         | Published HTTP port (redirects)                         |
+| `NGINX_HTTPS_PORT`             | `443`                        | Published HTTPS port                                    |
 
 ## Why the UI stays on 3000
 

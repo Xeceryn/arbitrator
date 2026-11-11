@@ -10,6 +10,11 @@ upstream ui_upstream {
     keepalive 16;
 }
 
+upstream rabbitmq_upstream {
+    server ${RABBITMQ_MANAGEMENT_UPSTREAM};
+    keepalive 16;
+}
+
 # --- HTTP: ACME challenge + redirect everything to HTTPS ---
 server {
     listen      80 default_server;
@@ -64,5 +69,38 @@ server {
 
     location / {
         proxy_pass http://ui_upstream;
+    }
+
+    # RabbitMQ management UI + HTTP API, mounted as a path prefix.
+    # The plugin itself is configured with `management.path_prefix = /rabbitmq`
+    # (infra/rabbitmq/conf.d/20-path-prefix.conf), so the URI is forwarded
+    # UNCHANGED — nginx must not strip the prefix, or the UI's assets, its
+    # session cookie path and its /rabbitmq/api calls all break.
+    location = /rabbitmq {
+        return 301 /rabbitmq/;
+    }
+
+    location /rabbitmq/ {
+        # No trailing slash on purpose: RabbitMQ is configured with
+        # `management.path_prefix = /rabbitmq`, so it expects the prefix to
+        # arrive. Stripping it here would 404 every asset and /rabbitmq/api call.
+        proxy_pass http://rabbitmq_upstream;
+
+        # Buffered responses: the management UI is plain assets + JSON polling
+        # (no SSE/streaming), and buffering is what lets sub_filter below see
+        # whole responses instead of fragments (the server block turns it off
+        # globally for the Elysia/htmx UI).
+        proxy_buffering on;
+
+        # RabbitMQ 4.4's js/main.js hardcodes two root-relative URLs that ignore
+        # `management.path_prefix`: the logout redirect (location.href = "/")
+        # and the import-definitions form action ("/definitions"). Rewrite them
+        # so logging out returns to the UI instead of the arbitrator app. If a
+        # future release renames those strings the filter simply stops
+        # matching — it cannot break the UI.
+        sub_filter_once off;
+        sub_filter_types application/javascript;
+        sub_filter 'location.href =  "/"' 'location.href =  "/rabbitmq/"';
+        sub_filter 'var form_action = "/definitions"' 'var form_action = "/rabbitmq/definitions"';
     }
 }

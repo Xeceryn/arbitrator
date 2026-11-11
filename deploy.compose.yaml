@@ -7,7 +7,9 @@
 #
 # Only nginx is published on the host (80/443); it terminates TLS and proxies
 # the UI, which is reachable only on the Compose network. The lister, sender and
-# receiver talk to each other over that same network.
+# receiver talk to each other over that same network. The RabbitMQ management UI
+# is exposed the same way, under the path prefix /rabbitmq/ (its 15672 port is
+# never published).
 #
 # TLS certs are bind-mounted from `infra/certs/` (see infra/nginx/README.md).
 # Generate them before the first start, or nginx will fail to boot:
@@ -58,6 +60,8 @@ services:
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-arbitrator}
         volumes:
             - rabbitmq-data:/var/lib/rabbitmq
+            # Serves the management UI/API under /rabbitmq; see the file.
+            - ./infra/rabbitmq/conf.d/20-path-prefix.conf:/etc/rabbitmq/conf.d/20-path-prefix.conf:ro
         healthcheck:
             test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
             interval: 10s
@@ -215,10 +219,13 @@ services:
         restart: unless-stopped
         environment:
             UI_UPSTREAM: ui:3000
+            # RabbitMQ management (UI + HTTP API). Port 15672 stays unpublished;
+            # nginx is the only way in, at https://$LOCAL_DOMAIN/rabbitmq/.
+            RABBITMQ_MANAGEMENT_UPSTREAM: rabbitmq:15672
             # The single vhost (`server_name`). Must be covered by the cert SAN.
             LOCAL_DOMAIN: ${LOCAL_DOMAIN:-localhost}
             # Only substitute our variables; leave nginx's own $host, $scheme, etc.
-            NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|LOCAL_DOMAIN)$$"
+            NGINX_ENVSUBST_FILTER: "^(UI_UPSTREAM|RABBITMQ_MANAGEMENT_UPSTREAM|LOCAL_DOMAIN)$$"
         depends_on:
             ui:
                 condition: service_healthy
