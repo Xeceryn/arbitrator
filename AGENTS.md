@@ -1,5 +1,7 @@
 # AGENTS.md
 
+never commit unless i told to.
+
 Bun workspace monorepo (`apps/*`, `packages/*`). No turbo/nx/task runner — the
 root `package.json` scripts are the whole build system.
 
