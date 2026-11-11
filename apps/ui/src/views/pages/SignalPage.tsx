@@ -38,6 +38,7 @@ export const SIGNAL_ROUTES = [
     { key: "idr-usdt", letter: "A", label: "IDR → USDT" },
     { key: "usdt-idr", letter: "B", label: "USDT → IDR" },
     { key: "usdt-usdt", letter: "C", label: "USDT → USDT" },
+    // Only reachable once two IDR-quoted venues (Indodax + Pintu) are started.
     { key: "idr-idr", letter: "D", label: "IDR → IDR" },
 ] as const;
 

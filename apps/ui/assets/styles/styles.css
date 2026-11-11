@@ -86,7 +86,8 @@ input {
     --signal-color: #16a34a; /* green */
 }
 .signal-idr-idr {
-    --signal-color: #d2691e; /* chocolate */
+    /* Route D (IDR → IDR): only possible once a second IDR venue exists. */
+    --signal-color: #d2691e; /* brown */
 }
 
 .signal-color {

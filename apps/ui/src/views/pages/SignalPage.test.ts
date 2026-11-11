@@ -38,6 +38,16 @@ describe("parseRoutes", () => {
     });
 });
 
+describe("SIGNAL_ROUTES", () => {
+    test("route D is IDR to IDR", () => {
+        expect(SIGNAL_ROUTES).toContainEqual({
+            key: "idr-idr",
+            letter: "D",
+            label: "IDR → IDR",
+        });
+    });
+});
+
 describe("isSignalRoute", () => {
     test("accepts the four keys only", () => {
         const keys: SignalRoute[] = [
