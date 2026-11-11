@@ -33,6 +33,22 @@ function routeKey(route: OpportunityRoute): string {
     return `${route.cmcId}:${route.buyExchangeId}:${route.sellExchangeId}`;
 }
 
+/**
+ * Rows per statement in `sync`. Every row binds nine parameters and PostgreSQL
+ * rejects a query above 65,535 of them, a limit a full reseed already reaches
+ * (six exchanges ≈ 9.4k legs ≈ 85k parameters): the batch size is what keeps the
+ * statement legal, not the route count staying small.
+ */
+const SYNC_CHUNK = 500;
+
+function chunks<T>(rows: readonly T[], size: number): T[][] {
+    const batched: T[][] = [];
+    for (let start = 0; start < rows.length; start += size) {
+        batched.push(rows.slice(start, start + size));
+    }
+    return batched;
+}
+
 export namespace Opportunity {
     /**
      * Directed transferable legs for the given exchanges. A leg exists when the
@@ -157,6 +173,11 @@ export namespace Opportunity {
      * the sender calls it on start/stop and metadata changes.
      *
      * Rows are seeded with zero prices/volumes; the receiver owns updating them.
+     *
+     * Writes are batched and transactional: one `values()` call for every missing
+     * leg overflows the PostgreSQL parameter limit as soon as a reseed counts a
+     * few thousand rows, and because the delete ran first a failing insert used
+     * to leave the table empty for every retry after it.
      */
     export async function sync(
         exchangeIds: number[],
@@ -164,78 +185,80 @@ export namespace Opportunity {
         const desired = await computeRoutes(exchangeIds);
         const desiredKeys = new Set(desired.map(routeKey));
 
-        const existing = await database
-            .select({
-                id: opportunity.id,
-                cmcId: opportunity.cmcId,
-                buyExchangeId: opportunity.buyExchangeId,
-                sellExchangeId: opportunity.sellExchangeId,
-                buyExchangeSymbol: opportunity.buyExchangeSymbol,
-                sellExchangeSymbol: opportunity.sellExchangeSymbol,
-            })
-            .from(opportunity);
-
-        const existingByKey = new Map<string, (typeof existing)[number]>();
-        const staleIds: number[] = [];
-        for (const row of existing) {
-            const key = routeKey(row);
-            existingByKey.set(key, row);
-            if (!desiredKeys.has(key)) staleIds.push(row.id);
-        }
-
-        const missing: OpportunityRoute[] = [];
-        const renamed: Array<{ id: number; route: OpportunityRoute }> = [];
-        for (const route of desired) {
-            const row = existingByKey.get(routeKey(route));
-            if (!row) {
-                missing.push(route);
-                continue;
-            }
-            if (
-                row.buyExchangeSymbol !== route.buyExchangeSymbol ||
-                row.sellExchangeSymbol !== route.sellExchangeSymbol
-            ) {
-                renamed.push({ id: row.id, route });
-            }
-        }
-
-        if (staleIds.length > 0) {
-            await database
-                .delete(opportunity)
-                .where(inArray(opportunity.id, staleIds));
-        }
-
-        if (missing.length > 0) {
-            await database.insert(opportunity).values(
-                missing.map((route) => ({
-                    cmcId: route.cmcId,
-                    buyExchangeId: route.buyExchangeId,
-                    sellExchangeId: route.sellExchangeId,
-                    buyExchangeSymbol: route.buyExchangeSymbol,
-                    sellExchangeSymbol: route.sellExchangeSymbol,
-                    buyPrice: 0,
-                    sellPrice: 0,
-                    buyVolume: 0,
-                    sellVolume: 0,
-                })),
-            );
-        }
-
-        for (const { id, route } of renamed) {
-            await database
-                .update(opportunity)
-                .set({
-                    buyExchangeSymbol: route.buyExchangeSymbol,
-                    sellExchangeSymbol: route.sellExchangeSymbol,
+        return await database.transaction(async (tx) => {
+            const existing = await tx
+                .select({
+                    id: opportunity.id,
+                    cmcId: opportunity.cmcId,
+                    buyExchangeId: opportunity.buyExchangeId,
+                    sellExchangeId: opportunity.sellExchangeId,
+                    buyExchangeSymbol: opportunity.buyExchangeSymbol,
+                    sellExchangeSymbol: opportunity.sellExchangeSymbol,
                 })
-                .where(eq(opportunity.id, id));
-        }
+                .from(opportunity);
 
-        return {
-            created: missing.length,
-            updated: renamed.length,
-            deleted: staleIds.length,
-        };
+            const existingByKey = new Map<string, (typeof existing)[number]>();
+            const staleIds: number[] = [];
+            for (const row of existing) {
+                const key = routeKey(row);
+                existingByKey.set(key, row);
+                if (!desiredKeys.has(key)) staleIds.push(row.id);
+            }
+
+            const missing: OpportunityRoute[] = [];
+            const renamed: Array<{ id: number; route: OpportunityRoute }> = [];
+            for (const route of desired) {
+                const row = existingByKey.get(routeKey(route));
+                if (!row) {
+                    missing.push(route);
+                    continue;
+                }
+                if (
+                    row.buyExchangeSymbol !== route.buyExchangeSymbol ||
+                    row.sellExchangeSymbol !== route.sellExchangeSymbol
+                ) {
+                    renamed.push({ id: row.id, route });
+                }
+            }
+
+            for (const batch of chunks(staleIds, SYNC_CHUNK)) {
+                await tx
+                    .delete(opportunity)
+                    .where(inArray(opportunity.id, batch));
+            }
+
+            for (const batch of chunks(missing, SYNC_CHUNK)) {
+                await tx.insert(opportunity).values(
+                    batch.map((route) => ({
+                        cmcId: route.cmcId,
+                        buyExchangeId: route.buyExchangeId,
+                        sellExchangeId: route.sellExchangeId,
+                        buyExchangeSymbol: route.buyExchangeSymbol,
+                        sellExchangeSymbol: route.sellExchangeSymbol,
+                        buyPrice: 0,
+                        sellPrice: 0,
+                        buyVolume: 0,
+                        sellVolume: 0,
+                    })),
+                );
+            }
+
+            for (const { id, route } of renamed) {
+                await tx
+                    .update(opportunity)
+                    .set({
+                        buyExchangeSymbol: route.buyExchangeSymbol,
+                        sellExchangeSymbol: route.sellExchangeSymbol,
+                    })
+                    .where(eq(opportunity.id, id));
+            }
+
+            return {
+                created: missing.length,
+                updated: renamed.length,
+                deleted: staleIds.length,
+            };
+        });
     }
 
     /**
