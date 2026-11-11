@@ -67,6 +67,8 @@ async function ensureModel(): Promise<RecoveringChannelModel> {
 // ---------------------------------------------------------------- publish
 let publishChannel: Channel | undefined;
 let ensuringPublisher: Promise<Channel> | undefined;
+/** Queues already declared on the current publisher channel. */
+const assertedQueues = new Set<string>();
 
 /** Ensure the shared publisher channel and exchange exist. */
 export function ensurePublisher(): Promise<Channel> {
@@ -79,7 +81,10 @@ export function ensurePublisher(): Promise<Channel> {
             logger.warn(`rabbitmq publisher channel error: ${error.message}`),
         );
         channel.on("close", () => {
-            if (publishChannel === channel) publishChannel = undefined;
+            if (publishChannel !== channel) return;
+            publishChannel = undefined;
+            // A new channel has to declare the queues again from its own scope.
+            assertedQueues.clear();
         });
         await channel.assertExchange(AMQP_EXCHANGE, "topic", { durable: true });
         publishChannel = channel;
@@ -154,12 +159,31 @@ export function publishNow(
 }
 
 /**
+ * Declare a durable queue before sending to it by name. `sendToQueue` to a queue
+ * nobody has declared is silently dropped by the broker, and the consumer that
+ * normally declares a private queue only does so at its own startup — so any
+ * publisher that owns a queue (the orderbook workers) has to assert it too, or
+ * a queue created after the consumer booted swallows every message.
+ *
+ * Idempotent and cached per publisher channel.
+ */
+export async function ensureQueue(
+    queue: string,
+    durable = true,
+): Promise<void> {
+    if (assertedQueues.has(queue)) return;
+    const channel = await ensurePublisher();
+    await channel.assertQueue(queue, { durable });
+    assertedQueues.add(queue);
+}
+
+/**
  * Synchronous send straight to a named queue over the default exchange. Used by
  * the orderbook workers, where each exchange owns its own queue. Returns false
  * when the channel is not ready yet (and kicks off reconnect).
  *
- * The queue must already exist: the receiver declares it on startup, and the
- * broker silently drops a send to a queue nobody has declared.
+ * The queue must already exist: callers `await ensureQueue(queue)` first, since
+ * the broker silently drops a send to a queue nobody has declared.
  */
 export function sendToQueueNow(
     queue: string,

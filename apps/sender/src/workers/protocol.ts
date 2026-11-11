@@ -8,7 +8,11 @@ import {
     type WorkerState,
     workerCommandSchema,
 } from "@arbitrator/contracts";
-import { ensurePublisher, sendToQueueNow } from "@arbitrator/messaging";
+import {
+    ensurePublisher,
+    ensureQueue,
+    sendToQueueNow,
+} from "@arbitrator/messaging";
 import { Value } from "typebox/value";
 
 /** Payload every orderbook worker is spawned with. */
@@ -79,6 +83,12 @@ export async function createOrderbookPublisher(
     await ensurePublisher();
 
     const queue = Queues.orderbookFor(exchange);
+    // The receiver declares these queues at its own boot, so a queue for an
+    // exchange added while it is running does not exist yet — and a
+    // `sendToQueue` to an undeclared queue is dropped by the broker without an
+    // error. Asserting it here makes the first snapshot for a new exchange wait
+    // in the queue instead of vanishing.
+    await ensureQueue(queue);
 
     return {
         publish(update) {

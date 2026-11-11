@@ -69,7 +69,9 @@ keeps the server up.
 - **Control vs data plane (ADR 0002):** `postMessage` carries control only
   (`workerCommandSchema`/`workerEventSchema`); orderbook data goes to RabbitMQ
   directly from each worker (`sendToQueueNow` to `Queues.orderbookFor(exchange)`).
-  Do not route orderbook data through the parent.
+  Do not route orderbook data through the parent. `createOrderbookPublisher`
+  asserts that queue first, so an exchange added while the receiver is running
+  still has a queue to publish into (the receiver only declares queues at boot).
 - Migrated workers use the contracts protocol (`bootstrap` / `onCommand` /
   `createOrderbookPublisher`): `binance`, `gate-io`, `indodax`, `kucoin`,
   `mexc`, `pintu`. Legacy workers still read `Bun.argv` and `self.postMessage`

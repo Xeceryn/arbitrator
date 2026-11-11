@@ -24,15 +24,17 @@ export const RoutingKeys = {
  * Queues. Every receiver process competes on each exchange's orderbook queue,
  * so each message is handled by exactly one process. All queues are durable and
  * never auto-deleted: the receiver declares one `orderbookFor(exchange)` queue
- * per exchange on startup and the sender declares `metadataChanged`, so
+ * per exchange on startup, the sender asserts the same queue before its first
+ * send (see `ensureQueue`), and the sender declares `metadataChanged`, so
  * publishers can fan in regardless of whether a consumer is currently
  * connected.
  */
 export const Queues = {
     /**
      * Per-exchange durable queue, e.g. `arbitrator.orderbook.indodax`. Sender
-     * workers send directly to it over the default exchange; the receiver declares
-     * it. No binding is involved.
+     * workers send directly to it over the default exchange, asserting it first so
+     * a new exchange can publish before the receiver has declared (or even seen)
+     * it; the receiver declares it too, at boot. No binding is involved.
      */
     orderbookFor: (exchange: string) => `arbitrator.orderbook.${exchange}`,
     /**
