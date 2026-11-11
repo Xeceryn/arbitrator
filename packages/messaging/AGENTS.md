@@ -14,7 +14,7 @@ Shared RabbitMQ (amqplib) wrapper used by lister, sender and receiver.
   — returns an async-iterable `Consumer` with **manual ack** (`delivery.ack()`
   after success; a throw leaves it unacked for redelivery). `patterns` binds to
   the topic exchange; omit for direct-to-queue sends.
-- `ensurePublisher()`, `closeMessaging()`.
+- `ensurePublisher()`, `ensureQueue(queue, durable?)`, `closeMessaging()`.
 
 ## Non-obvious rules
 
@@ -24,7 +24,9 @@ Shared RabbitMQ (amqplib) wrapper used by lister, sender and receiver.
 - amqplib recovery reconnects the model but does **not** recreate channels —
   `ConsumerImpl` recreates its own channel and consumer on close. Keep that
   pattern if you add channels.
-- `sendToQueueNow` targets a queue the receiver must have declared; a send to an
-  undeclared queue is silently dropped by the broker.
+- `sendToQueueNow` targets a queue that must already be declared; a send to an
+  undeclared queue is silently dropped by the broker. A publisher owning its own
+  queue therefore has to `await ensureQueue(queue)` before the first send — the
+  consumer that declares it at boot may never have seen it.
 
 Deps: `amqplib` (`catalog:core`); `@types/amqplib` (`catalog:types`).
